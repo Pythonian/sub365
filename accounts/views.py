@@ -111,9 +111,15 @@ def discord_callback(request):
 
 def dashboard(request):
     profile = SocialAccount.objects.get(provider='discord', user=request.user)
-    print(profile)
+    user_info = profile.extra_data
+    avatar = user_info.get('avatar', '')
+    username = user_info.get('username', '')
+    discord_id = user_info.get('id', '')
 
     context = {
-        'profile': profile
+        'profile': profile,
+        'avatar': avatar,
+        'username': username,
+        'discord_id': discord_id,
     }
     return render(request, 'dashboard.html', context)
