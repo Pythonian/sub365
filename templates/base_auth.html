@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}{% endblock title %} | Sub365.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="{% static 'styles/dashboard.min.css' %}" rel="stylesheet">
+    <style>
+        .bg-image {
+            background-image: url("{% static 'img/3.jpg' %}");
+            background-size: cover;
+            background-position: center center;
+        }
+    </style>
+</head>
+
+<body>
+    {% include '_alerts.html' %}
+    
+    <main class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 d-none d-md-flex bg-image"></div>
+            <div class="col-md-6 bg-primary">
+                <div class="d-flex align-items-center justify-content-center py-4 px-2 vh-100">
+                {% block content %}
+                {% endblock content %}
+                </div>
+            </div>
+        </div>        
+    </main>
+
+    <script src="{% static 'scripts/jquery.min.js' %}"></script>
+    <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'scripts/dashboard.min.js' %}"></script>
+    <script>
+        window.onload = (event) => {
+            let myAlert = document.querySelector('.toast');
+            let bsAlert = new bootstrap.Toast(myAlert);
+            bsAlert.show();
+        }
+    </script>
+</body>
+</html>

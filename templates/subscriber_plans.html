@@ -1,0 +1,15 @@
+{% extends "base.html" %} 
+
+{% block title %} 
+{% endblock title %}
+
+{% block content %}
+
+{% for plan in plans %}
+<div>
+    <p>{{ plan.name }} - ${{ plan.amount }} / {{ plan.interval }}</p>
+    <a href="{% url 'subscriber_payment' subdomain=subdomain plan_id=plan.id %}" class="btn btn-primary">Subscribe</a>
+</div>
+{% endfor %}
+
+{% endblock content %}

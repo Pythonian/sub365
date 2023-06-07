@@ -1,45 +1,22 @@
-{% extends "base.html" %}
-{% load static socialaccount %}
-{% load widget_tweaks %}
+{% extends "base_auth.html" %}
 
-{% block title %}Welcome!{% endblock title %}
+{% load static widget_tweaks %}
+
+{% block title %}Choose a Subdomain Name{% endblock title %}
 
 {% block content %}
 
-<style>
-    .bg-image {
-        background-image: url("{% static 'img/3.jpg' %}");
-        background-size: cover;
-        background-position: center center;
-    }
-</style>
-
-
-<div class="row">
-    <div class="col-md-6 d-none d-md-flex bg-image"></div>
-    <div class="col-md-6 bg-light">
-        <div class="d-flex align-items-center justify-content-center py-4 px-2 vh-100">
-            <div class="mx-auto bg-white justify-content-center p-5 text-center" style="width: 450px;">
-                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
-                <h6 class="my-4 text-dark">Choose your Server and Enter a subdomain name below:</h6>
-                <div class="text-dark my-2">
-                    Servers:
-                    {% for server in server_list %}
-                    <p>{{ server.name }}</p>
-                    {% endfor %}
-                </div>
-                <div class="text-start">
-                    <form action="" method="post">
-                        {% csrf_token %}
-                        <label class="form-label" for="id_subdomain">Enter Subdomain:</label>
-                        {% render_field form.subdomain class="form-control mb-3" %}
-                        <button class="btn btn-success py-3 w-100" type="submit">
-                            Connect with Stripe
-                        </button>
-                    </form>
-                </div>                
-            </div>
-        </div>
+<div class="mx-auto bg-white justify-content-center p-5 text-center" style="width: 450px;">
+    <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+    <h6 class="my-4 text-dark">Enter a Subdomain name below for custom URL:</h6>
+    <div class="text-start">
+        <form action="" method="post">
+            {% csrf_token %}
+            {% render_field form.subdomain class="form-control mb-3" placeholder="Enter your Subdomain" %}
+            <button class="btn btn-primary py-3 w-100" type="submit">
+                Connect with Stripe
+            </button>
+        </form>
     </div>
 </div>
 

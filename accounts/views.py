@@ -10,7 +10,7 @@ import requests
 import stripe
 from django.conf import settings
 
-from .models import Profile, StripePlan, Subscriber
+from .models import Profile, StripePlan
 from .forms import PlanForm, ProfileForm
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -43,6 +43,10 @@ def discord_callback(request):
         social_token.token_secret = ''
         social_token.save()
 
+        # Check if the user is already authenticated and has a profile
+        if request.user.is_authenticated and Profile.objects.filter(user=request.user).exists():
+            return redirect('dashboard')
+
         # Retrieve the access token from the callback URL parameters
         access_token = request.GET.get('access_token')
 
@@ -58,6 +62,7 @@ def discord_callback(request):
 
             # Store the server list in the session
             request.session['server_list'] = server_list
+            # DEBUG
             print(f'Servers: {server_list}')
             # Redirect to the select_server view with the server list
             return redirect('choose_name')
@@ -66,12 +71,19 @@ def discord_callback(request):
             messages.error(request, "Failed to retrieve server information from Discord.")
             return redirect('landing_page')
 
-    # Handle the case when authentication fails
-    return redirect('landing_page')
+    # Handle the case when authentication fails (Previous code)
+    # return redirect('landing_page')
+
+    else:
+        # Handle the authorization error
+        messages.error(request, 'Failed to authenticate with Discord.')
+        return redirect('landing_page')
 
 
 @login_required
 def choose_name(request):
+    if request.user.profile.subdomain:
+        return redirect('dashboard')
     if request.method == 'POST':
         form = ProfileForm(request.POST)
         if form.is_valid():
@@ -141,15 +153,9 @@ def collect_user_info(request):
 
 
 @login_required
-def so_dashboard(request):
-    user_profile = Profile.objects.get(user=request.user)
-    dashboard_url = user_profile.get_dashboard_url()
-    return redirect(dashboard_url)
-
-
-@login_required
 def dashboard(request):
-    profile = Profile.objects.get(user=request.user)
+    profile = get_object_or_404(Profile, user=request.user)
+    # profile = Profile.objects.get(user=request.user)
 
     if request.method == 'POST':
         form = PlanForm(request.POST)
@@ -228,17 +234,14 @@ def stripe_refresh(request):
     profile = Profile.objects.get(user=request.user)
 
     # Retrieve the Stripe account ID from the request or the Stripe API response
-    stripe_account_id = request.GET.get('account_id')  # Example: Retrieving from request URL query parameter
-    # Or fetch the Stripe account ID using the Stripe API
-    # stripe_account_id = get_stripe_account_id()
+    stripe_account_id = request.GET.get('account_id')
 
     # Update the profile's stripe_account_id field
     profile.stripe_account_id = stripe_account_id
     profile.save()
 
-    # Redirect the user to the dashboard or show a success message
+    # Redirect the user to the dashboard
     return redirect('dashboard')
-
 
 
 @login_required
@@ -291,66 +294,3 @@ def delete_plan(request):
         plan = get_object_or_404(StripePlan, id=plan_id, user=request.user)
         plan.delete()
     return redirect('dashboard')
-
-
-###########################
-#
-#  SUBSCRIBERS
-#
-###########################
-
-@login_required
-def subscriber_auth(request, subdomain):
-    # Check if the user has already authenticated with Discord
-    if SocialAccount.objects.filter(provider='discord', user=request.user).exists():
-        return redirect('subscriber_plans', subdomain=subdomain)
-    
-    adapter = DiscordOAuth2Adapter(request)
-    client = OAuth2Client(request, adapter)
-    app = SocialApp.objects.get(provider='discord')
-    provider = app.get_provider()
-
-    # Redirect the subscriber to Discord for authentication
-    redirect_url = request.build_absolute_uri(reverse('subscriber_callback', args=[subdomain]))
-    return provider.oauth2_login(request, app, redirect_url)
-
-
-def subscriber_callback(request, subdomain):
-    # Handle the OAuth2 callback from Discord
-    adapter = DiscordOAuth2Adapter(request)
-    client = OAuth2Client(request, adapter)
-    token = adapter.parse_token(request)
-    app = SocialApp.objects.get(provider='discord')
-    provider = app.get_provider()
-
-    if token:
-        # Exchange the authorization code for an access token
-        access_token = client.get_access_token(token)
-        # Retrieve user information from the access token
-        user_info = provider.sociallogin_from_response(request, access_token)
-        # Retrieve user information from the social account
-        social_account = SocialAccount.objects.get(provider='discord', user=request.user)
-        user_info = social_account.extra_data
-        
-        # Save the access token to the social account
-        social_token = SocialToken(app=app, token=access_token)
-        social_token.account = social_account
-        social_token.token_secret = ''
-        social_token.save()
-
-        # Create or update the Subscriber model for the authenticated user
-        subscriber, created = Subscriber.objects.get_or_create(user=request.user)
-        subscriber.discord_id = user_info.get('id', '')
-        subscriber.save()
-
-        return redirect('subscriber_plans', subdomain=subdomain)
-
-    return redirect('dashboard')
-
-
-@login_required
-def subscriber_plans(request, subdomain):
-    # Retrieve the UserProfile based on the subdomain
-    user_profile = Profile.objects.get(subdomain=subdomain)
-    plans = user_profile.plans.all()
-    return render(request, 'subscriber_plans.html', {'plans': plans})

@@ -1,21 +1,14 @@
-{% extends "base.html" %}
-{% load static socialaccount %}
+{% extends "base_auth.html" %}
+{% load static %}
 
 {% block title %}Login Cancelled{% endblock title %}
 
 {% block content %}
-<div class="row">
-    <div class="col-xl-6">
-        <img class="bg-img-cover bg-center" src="{% static 'img/3.jpg' %}" alt="landingpage">
-    </div>
-    <div class="col-xl-6 p-0">
-        <div class="login-card">
-            <div class="theme-form login-form text-center">
-                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
-                <h6 class="my-4">Your attempt to Login with your Discord was aborted!</h6>
-                <a href="/" class="btn btn-primary py-3 w-100">Return Home</a>
-            </div>
-        </div>
-    </div>
+
+<div class="mx-auto bg-white justify-content-center p-5 text-center" style="width: 450px;">
+    <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+    <h6 class="my-4">Your attempt to Login with your Discord was aborted!</h6>
+    <a href="/" class="btn btn-primary py-3 w-100">Return Home</a>
 </div>
+
 {% endblock content %}
