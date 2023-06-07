@@ -240,8 +240,8 @@ def stripe_refresh(request):
     profile.stripe_account_id = stripe_account_id
     profile.save()
 
-    # Redirect the user to the dashboard
-    return redirect('dashboard')
+    # Redirect the user to the onboarding process
+    return redirect('collect_user_info')
 
 
 @login_required
