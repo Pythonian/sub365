@@ -3,11 +3,13 @@
     <div class="col-sm-12 mb-4">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">My Plans</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Available Plans</h6>
+                {% url 'dashboard' as dashboard_url %}{% if request.get_full_path == dashboard_url %}
                 <a data-toggle="modal" data-target="#createPlanModal"
                     class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     Create New Plan
                 </a>
+                {% endif %}
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -30,6 +32,7 @@
                                 <td>{{ plan.amount }}.00</td>
                                 <td>{{ plan.currency }}</td>
                                 <td>{{ plan.interval }}</td>
+                                {% url 'dashboard' as dashboard_url %}{% if request.get_full_path == dashboard_url %}
                                 <td>
                                     <div class="flex align-items-center list-user-action">
                                         <a class="btn btn-sm btn-danger" title="Delete" data-toggle="modal"
@@ -67,6 +70,15 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% else %} 
+                                <td>
+                                    <div class="flex align-items-center list-user-action">
+                                        <a class="btn btn-sm btn-success" href="{% url 'subscribe_to_plan' plan_id=plan.id %}" title="Subscribe">
+                                            Subscribe <i class="fas fa-thumbs-up"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                                {% endif %}
                             </tr>
                             {% empty %}
                             <tr>
@@ -92,7 +104,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form method="post" action=".">
+                <form method="post" action="{% url 'create_plan' %}">
                     {% csrf_token %}
                     <label class="form-label" for="id_name">Enter Plan Name:</label>
                     {% render_field form.name class="form-control mb-3" %}

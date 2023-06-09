@@ -2,13 +2,14 @@
 
 {% block title %}Plans{% endblock title %} 
 
-{% block content %} 
+{% block content %}
 
-{% for plan in plans %}
-<div>
-    <p>{{ plan.name }} - ${{ plan.amount / 100 }} / {{ plan.interval }}</p>
-    <a href="{% url 'subscriber_payment' subdomain=subdomain plan_id=plan.id %}" class="btn btn-primary">Subscribe</a>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Subscription Plans</h1>
+    </div>
+    
+    {% include '_plans_row.html' %}
 </div>
-{% endfor %}
 
 {% endblock content %}

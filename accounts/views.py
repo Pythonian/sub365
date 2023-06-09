@@ -219,11 +219,15 @@ def dashboard(request):
     # Get the count of plans created by the user
     plan_count = stripe_plans.count()
 
+    # Get the count of subscribers for all plans created by the user
+    # subscriber_count = Subscriber.objects.filter(plan__user=request.user).count()
+
     context = {
         'profile': profile,
         'form': form,
         'stripe_plans': stripe_plans,
-        'plan_count': plan_count
+        'plan_count': plan_count,
+        # 'subscriber_count': subscriber_count
     }
     return render(request, 'dashboard.html', context)
 
@@ -294,3 +298,47 @@ def delete_plan(request):
         plan = get_object_or_404(StripePlan, id=plan_id, user=request.user)
         plan.delete()
     return redirect('dashboard')
+
+
+@login_required
+def list_plans(request, subdomain):
+    user_profile = Profile.objects.get(subdomain=subdomain)
+    # stripe_plans = user_profile.plans.all()
+    user = request.user
+    stripe_plans = StripePlan.objects.filter(user=user)
+    return render(request, 'plans.html', {'stripe_plans': stripe_plans, 'user_profile': user_profile})
+
+
+@login_required
+def subscribe_to_plan(request, plan_id):
+    plan = get_object_or_404(StripePlan, id=plan_id)
+    
+    # Create a Stripe Checkout Session
+    session = stripe.checkout.Session.create(
+        success_url=request.build_absolute_uri(reverse('subscribe_success')),
+        cancel_url=request.build_absolute_uri(reverse('subscribe_cancel')),
+        # payment_method_types=['card'],
+        line_items=[
+            {
+                'price': plan.plan_id,
+                'quantity': 1,
+            }
+        ],
+        mode='subscription',
+    )
+    
+    # Redirect the user to the Stripe Checkout page
+    return redirect(session.url)
+
+
+def subscribe_success(request):
+    # Handle the successful subscription confirmation
+    # You can perform any necessary actions here
+    
+    return render(request, 'dashboard.html')
+
+def subscribe_cancel(request):
+    # Handle the subscription cancellation or failure
+    # You can perform any necessary actions here
+    
+    return render(request, 'dashboard.html')
