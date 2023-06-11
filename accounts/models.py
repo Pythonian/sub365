@@ -29,3 +29,13 @@ class StripePlan(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Server(models.Model):
+    owner = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='servers')
+    server_id = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
+    choice_server = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name

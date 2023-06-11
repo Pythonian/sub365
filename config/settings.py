@@ -128,8 +128,8 @@ AUTHENTICATION_BACKENDS = [
 SOCIALACCOUNT_PROVIDERS = {
     'discord': {
         'SCOPE': ['email', 'identify', 'connections', 'guilds'],
-        'CLIENT_ID': config('DISCORD_CLIENT_ID'),
-        'SECRET': config('DISCORD_CLIENT_SECRET'),
+        # 'CLIENT_ID': config('DISCORD_CLIENT_ID'),
+        # 'SECRET': config('DISCORD_CLIENT_SECRET'),
     }
 }
 
@@ -140,3 +140,6 @@ LOGOUT_REDIRECT_URL = '/'
 
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
+
+DISCORD_CLIENT_ID = config('DISCORD_CLIENT_ID')
+DISCORD_CLIENT_SECRET = config('DISCORD_CLIENT_SECRET')

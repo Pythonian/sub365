@@ -1,19 +1,22 @@
 from allauth.socialaccount.models import SocialApp, SocialAccount, SocialToken
-from allauth.socialaccount.providers.discord.views import DiscordOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from django.contrib.auth import login
+from django.contrib import messages
+from allauth.socialaccount.providers.discord.views import DiscordOAuth2Adapter
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.urls import reverse
 from django.http import HttpResponse
 import requests
 import stripe
 from django.conf import settings
+from django.contrib.auth import login, get_backends
 
-from .models import Profile, StripePlan
-from .forms import PlanForm, ProfileForm
+from .models import Profile, StripePlan, User, Server
+from .forms import PlanForm, ChooseServerSubdomainForm
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
 
 def landing_page(request):
     template = 'landing.html'
@@ -22,62 +25,93 @@ def landing_page(request):
 
 
 def discord_callback(request):
-    adapter = DiscordOAuth2Adapter(request)
-    client = OAuth2Client(request, adapter)
-    token = adapter.parse_token(request)
-    app = SocialApp.objects.get(provider='discord')
-    provider = app.get_provider()
-
-    if token:
-        # Exchange the authorization code for an access token
-        access_token = client.get_access_token(token)
-        # Retrieve user information from the access token
-        user_info = provider.sociallogin_from_response(request, access_token)
-        # Retrieve user information from the social account
-        social_account = SocialAccount.objects.get(provider='discord', user=request.user)
-        user_info = social_account.extra_data
-
-        # Save the access token to the social account
-        social_token = SocialToken(app=app, token=access_token)
-        social_token.account = social_account
-        social_token.token_secret = ''
-        social_token.save()
-
-        # Check if the user is already authenticated and has a profile
-        if request.user.is_authenticated and Profile.objects.filter(user=request.user).exists():
-            return redirect('dashboard')
-
-        # Retrieve the access token from the callback URL parameters
-        access_token = request.GET.get('access_token')
-
-        # Make a request to the Discord API to get the user's server information
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {access_token}',
+    # Retrieve the authorization code from the URL parameters
+    code = request.GET.get('code')
+    if code:
+        # Prepare the payload for the token request
+        payload = {
+            'client_id': settings.DISCORD_CLIENT_ID,
+            'client_secret': settings.DISCORD_CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': 'http://127.0.0.1:8000/accounts/discord/login/callback/',
+            'scope': 'identify guilds',
         }
-        response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
 
+        # Make the POST request to obtain the access token
+        token_url = 'https://discord.com/api/oauth2/token'
+        response = requests.post(token_url, data=payload)
+
+        # Check the status code
         if response.status_code == 200:
-            server_list = response.json()
+            # Access token obtained successfully
+            access_token = response.json().get('access_token')
 
-            # Store the server list in the session
-            request.session['server_list'] = server_list
-            # DEBUG
-            print(f'Servers: {server_list}')
-            # Redirect to the select_server view with the server list
-            return redirect('choose_name')
+            # Use the access token to retrieve user information or perform other actions
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {access_token}',
+            }
+
+            response = requests.get('https://discord.com/api/users/@me', headers=headers)
+            if response.status_code == 200:
+                # Get the user information from the response
+                user_info = response.json()
+
+            guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
+            if guild_response.status_code == 200:
+                # Gets all the discord servers joined by the user
+                server_list = guild_response.json()
+                # Process the server list to only returned servers owned by user
+                owned_servers = []
+                if server_list:
+                    for server in server_list:
+                        server_id = server['id']
+                        server_name = server['name']
+                        permissions = server['permissions']
+
+                        # Check if user owns the server (ADMINISTRATOR permission)
+                        if permissions & 0x00000008 == 0x00000008:
+                            owned_servers.append({
+                                'id': server_id,
+                                'name': server_name
+                            })
+
+                # Retrieve or create the user based on Discord information
+                try:
+                    social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
+                    user = social_account.user
+                except (SocialAccount.DoesNotExist, IndexError):
+                    # Create a new user and social account
+                    user = User.objects.create_user(username=user_info['username'])
+                    social_account = SocialAccount.objects.create(
+                        user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
+                    profile = Profile.objects.get(user=user)
+                    profile.discord_id = user_info.get('id', '')
+                    profile.username = user_info.get('username', '')
+                    profile.avatar = user_info.get('avatar', '')
+                    profile.email = user_info.get('email', '')
+                    profile.save()
+                    
+                    for server in owned_servers:
+                        profile_server = Server.objects.create(owner=profile)
+                        profile_server.server_id = server['id']
+                        profile_server.name = server['name']
+                        profile_server.save()
+                    
+                # Set the backend attribute on the user
+                user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
+                login(request, user, backend=user.backend)
+                
+                return redirect('choose_name')
+            else:
+                print("Failed to retrieve user's server list.")
+                return HttpResponse('Failed to retrieve user\'s server list.')
         else:
-            # Handle API error
-            messages.error(request, "Failed to retrieve server information from Discord.")
-            return redirect('landing_page')
+            print("Failed to obtain access token.")
+            return HttpResponse('Failed to obtain access token.')
 
-    # Handle the case when authentication fails (Previous code)
-    # return redirect('landing_page')
-
-    else:
-        # Handle the authorization error
-        messages.error(request, 'Failed to authenticate with Discord.')
-        return redirect('landing_page')
+    return redirect('landing_page')
 
 
 @login_required
@@ -85,31 +119,22 @@ def choose_name(request):
     if request.user.profile.subdomain:
         return redirect('dashboard')
     if request.method == 'POST':
-        form = ProfileForm(request.POST)
+        form = ChooseServerSubdomainForm(request.POST, user=request.user)
         if form.is_valid():
-            profile = form.save(commit=False)
-            new_user = SocialAccount.objects.get(provider='discord', user=request.user)
-            user_info = new_user.extra_data
-            profile = Profile.objects.get(user=request.user)
-            profile.subdomain = form.cleaned_data.get('subdomain')
-            profile.discord_id = user_info.get('id', '')
-            profile.username = user_info.get('username', '')
-            profile.avatar = user_info.get('avatar', '')
-            profile.email = user_info.get('email', '')
-            profile.save()
-            # Redirect the user to the Stripe account link
+            subdomain = form.cleaned_data['subdomain']
+            server = form.cleaned_data['server']
+            # Update the server choice_server flag
+            server.choice_server = True
+            server.save()
             return redirect('create_stripe_account')
         else:
-            return HttpResponse('Error')
+            messages.warning(request, "An Error occured")
     else:
-        form = ProfileForm()
-
-    # Retrieve the server list from the session
-    server_list = request.session.get('server_list', [])
+        form = ChooseServerSubdomainForm(user=request.user)
 
     context = {
         'form': form,
-        'server_list': server_list,
+        'server_list': request.user.profile.servers.all(),
     }
 
     return render(request, 'choose_name.html', context)
@@ -129,18 +154,14 @@ def create_stripe_account(request):
     profile.stripe_account_id = stripe_account_id
     profile.save()
     
-    # Redirect to the next step, such as a form to collect additional user information
     return redirect('collect_user_info')
 
 
 def collect_user_info(request):
-    # Perform actions on behalf of the user using the Stripe account ID
-    # Assuming you have stored the Stripe account ID in the user's profile
     profile = request.user.profile
     stripe_account_id = profile.stripe_account_id
-    
-    # Use the stripe_account_id to perform actions on behalf of the user
-    # For example, you can create an account link to guide the user through onboarding
+
+    # Generate an account link for the onboarding process    
     account_link = stripe.AccountLink.create(
         account=stripe_account_id,
         refresh_url=request.build_absolute_uri(reverse('stripe_refresh')),
@@ -155,7 +176,6 @@ def collect_user_info(request):
 @login_required
 def dashboard(request):
     profile = get_object_or_404(Profile, user=request.user)
-    # profile = Profile.objects.get(user=request.user)
 
     if request.method == 'POST':
         form = PlanForm(request.POST)
