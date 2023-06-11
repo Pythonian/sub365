@@ -1,10 +1,12 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import User
-from .models import Profile
+from .models import ServerOwner, Subscriber, User
 
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        if instance.is_serverowner:
+            ServerOwner.objects.create(user=instance)
+        if instance.is_subscriber:
+            Subscriber.objects.create(user=instance)

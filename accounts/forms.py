@@ -1,5 +1,7 @@
 from django import forms
-from .models import Profile, StripePlan, Server
+
+from .models import User, ServerOwner, Server, StripePlan, Subscriber
+
 
 class ChooseServerSubdomainForm(forms.Form):
     subdomain = forms.CharField(max_length=20)
@@ -16,7 +18,7 @@ class ChooseServerSubdomainForm(forms.Form):
     def save(self, user):
         subdomain = self.cleaned_data['subdomain']
         server = self.cleaned_data['server']
-        profile = Profile.objects.get(user=user)
+        profile = ServerOwner.objects.get(user=user)
         profile.subdomain = subdomain
         profile.save()
         server.choice_server = True
@@ -26,9 +28,3 @@ class ChooseServerSubdomainForm(forms.Form):
 class PlanForm(forms.Form):
     name = forms.CharField(label='Plan Name', max_length=100)
     amount = forms.IntegerField(label='Amount')
-   
-
-# class PlanForm(forms.ModelForm):
-#     class Meta:
-#         model = StripePlan
-#         fields = ['']

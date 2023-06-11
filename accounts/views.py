@@ -12,7 +12,7 @@ import stripe
 from django.conf import settings
 from django.contrib.auth import login, get_backends
 
-from .models import Profile, StripePlan, User, Server
+from .models import User, ServerOwner, Server, StripePlan, Subscriber
 from .forms import PlanForm, ChooseServerSubdomainForm
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -83,21 +83,21 @@ def discord_callback(request):
                     user = social_account.user
                 except (SocialAccount.DoesNotExist, IndexError):
                     # Create a new user and social account
-                    user = User.objects.create_user(username=user_info['username'])
+                    user = User.objects.create_user(username=user_info['username'], is_serverowner=True)
                     social_account = SocialAccount.objects.create(
                         user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
-                    profile = Profile.objects.get(user=user)
-                    profile.discord_id = user_info.get('id', '')
-                    profile.username = user_info.get('username', '')
-                    profile.avatar = user_info.get('avatar', '')
-                    profile.email = user_info.get('email', '')
-                    profile.save()
+                    serverowner = ServerOwner.objects.get(user=user)
+                    serverowner.discord_id = user_info.get('id', '')
+                    serverowner.username = user_info.get('username', '')
+                    serverowner.avatar = user_info.get('avatar', '')
+                    serverowner.email = user_info.get('email', '')
+                    serverowner.save()
                     
                     for server in owned_servers:
-                        profile_server = Server.objects.create(owner=profile)
-                        profile_server.server_id = server['id']
-                        profile_server.name = server['name']
-                        profile_server.save()
+                        owner_server = Server.objects.create(owner=serverowner)
+                        owner_server.server_id = server['id']
+                        owner_server.name = server['name']
+                        owner_server.save()
                     
                 # Set the backend attribute on the user
                 user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
@@ -116,25 +116,20 @@ def discord_callback(request):
 
 @login_required
 def choose_name(request):
-    if request.user.profile.subdomain:
+    if request.user.serverowner.subdomain:
         return redirect('dashboard')
     if request.method == 'POST':
         form = ChooseServerSubdomainForm(request.POST, user=request.user)
         if form.is_valid():
-            subdomain = form.cleaned_data['subdomain']
-            server = form.cleaned_data['server']
-            # Update the server choice_server flag
-            server.choice_server = True
-            server.save()
+            form.save(user=request.user)
             return redirect('create_stripe_account')
         else:
-            messages.warning(request, "An Error occured")
+            messages.warning(request, "An error occurred.")
     else:
         form = ChooseServerSubdomainForm(user=request.user)
 
     context = {
         'form': form,
-        'server_list': request.user.profile.servers.all(),
     }
 
     return render(request, 'choose_name.html', context)
@@ -150,16 +145,16 @@ def create_stripe_account(request):
     stripe_account_id = connected_account.id
     
     # Update the Stripe account ID for the current user
-    profile = request.user.profile
-    profile.stripe_account_id = stripe_account_id
-    profile.save()
+    serverowner = request.user.serverowner
+    serverowner.stripe_account_id = stripe_account_id
+    serverowner.save()
     
     return redirect('collect_user_info')
 
 
 def collect_user_info(request):
-    profile = request.user.profile
-    stripe_account_id = profile.stripe_account_id
+    serverowner = request.user.serverowner
+    stripe_account_id = serverowner.stripe_account_id
 
     # Generate an account link for the onboarding process    
     account_link = stripe.AccountLink.create(
@@ -175,7 +170,7 @@ def collect_user_info(request):
 
 @login_required
 def dashboard(request):
-    profile = get_object_or_404(Profile, user=request.user)
+    profile = get_object_or_404(ServerOwner, user=request.user)
 
     if request.method == 'POST':
         form = PlanForm(request.POST)
@@ -218,7 +213,7 @@ def dashboard(request):
     # Retrieve the user's Stripe plans from the database
     stripe_plans = StripePlan.objects.filter(user=request.user)
     # Retrieve the user's Stripe account ID from the profile
-    profile = Profile.objects.get(user=request.user)
+    profile = ServerOwner.objects.get(user=request.user)
     stripe_account_id = profile.stripe_account_id
     # Retrieve the Stripe plans from the Stripe API using the account ID
     stripe_plans_api = stripe.Plan.list(limit=100, stripe_account=stripe_account_id)
@@ -255,7 +250,7 @@ def dashboard(request):
 @login_required
 def stripe_refresh(request):
     # Get the logged-in user's profile
-    profile = Profile.objects.get(user=request.user)
+    profile = ServerOwner.objects.get(user=request.user)
 
     # Retrieve the Stripe account ID from the request or the Stripe API response
     stripe_account_id = request.GET.get('account_id')
@@ -322,7 +317,7 @@ def delete_plan(request):
 
 @login_required
 def list_plans(request, subdomain):
-    user_profile = Profile.objects.get(subdomain=subdomain)
+    user_profile = ServerOwner.objects.get(subdomain=subdomain)
     # stripe_plans = user_profile.plans.all()
     user = request.user
     stripe_plans = StripePlan.objects.filter(user=user)
@@ -362,3 +357,36 @@ def subscribe_cancel(request):
     # You can perform any necessary actions here
     
     return render(request, 'dashboard.html')
+
+
+def subscription_plans(request, subdomain):
+    if not request.user.is_authenticated:
+        redirect('subscriber_redirect')
+
+
+def subscribe_redirect(request, subdomain):
+    # Perform any necessary checks/validation here
+    
+    # Create a new Subscriber user if it doesn't exist
+    subscriber_user, _ = User.objects.get_or_create(username='Subscriber')
+    subscriber_user.is_subscriber = True
+    subscriber_user.save()
+    
+    # Redirect the user to Discord authentication
+    discord_client_id = settings.DISCORD_CLIENT_ID
+    redirect_uri = 'http://127.0.0.1:8000/accounts/discord/login/callback/'
+    redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify'
+    return redirect(redirect_url)
+
+
+def subscribe(request):
+    # Retrieve the necessary information from the Discord callback
+    code = request.GET.get('code')
+    subdomain = request.GET.get('state')  # Retrieve the subdomain value passed as the state parameter
+    
+    # Perform the necessary actions to create/update the Subscriber user
+    # and associate it with the subdomain serverowner
+    # ...
+
+    # Render the subscription page for the subdomain
+    return render(request, 'subscriber_plans.html', {'subdomain': subdomain})

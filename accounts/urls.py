@@ -17,5 +17,7 @@ urlpatterns = [
     # path('subscriber_auth/<str:subdomain>/', views.subscriber_auth, name='subscriber_auth'),
     # path('subscriber-callback/<str:subdomain>/', views.subscriber_callback, name='subscriber_callback'),
     # path('<str:subdomain>/subscribe/', views.subscriber_plans, name='subscriber_plans'),
+    path('<str:subdomain>/subscribe/', views.subscribe_redirect, name='subscribe_redirect'),
+    path('subscribe/', views.subscribe, name='subscribe'),
     path('', views.landing_page, name='landing_page'),
 ]
