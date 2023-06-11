@@ -4,7 +4,7 @@
             <div class="card-header py-3 d-flex align-items-center justify-content-between">
                 <h6 class="m-0 font-weight-bold text-primary">Recent Subscribers</h6>
                 <button id="copy-button" class="btn btn-sm btn-success"
-                    data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/{{ request.user.profile.subdomain }}/subscribe/">Copy
+                    data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/{{ request.user.serverowner.subdomain }}/subscribe/">Copy
                     Subscription Link</button>
             </div>
             <div class="card-body p-0">

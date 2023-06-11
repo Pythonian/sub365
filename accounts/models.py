@@ -11,7 +11,7 @@ class ServerOwner(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     discord_id = models.CharField(max_length=255, unique=True)
     username = models.CharField(max_length=255, unique=True)
-    avatar = models.CharField(max_length=255)
+    avatar = models.CharField(max_length=255, blank=True, null=True)
     subdomain = models.CharField(max_length=20, unique=True)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
@@ -34,12 +34,12 @@ class Subscriber(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     discord_id = models.CharField(max_length=255, unique=True)
     username = models.CharField(max_length=255, unique=True)
-    avatar = models.CharField(max_length=255)
+    avatar = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
-        return self.user
+        return self.discord_id
 
 
 class StripePlan(models.Model):

@@ -1,8 +1,6 @@
-from allauth.socialaccount.models import SocialApp, SocialAccount, SocialToken
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import login
 from django.contrib import messages
-from allauth.socialaccount.providers.discord.views import DiscordOAuth2Adapter
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -27,6 +25,7 @@ def landing_page(request):
 def discord_callback(request):
     # Retrieve the authorization code from the URL parameters
     code = request.GET.get('code')
+    state = request.GET.get('state')
     if code:
         # Prepare the payload for the token request
         payload = {
@@ -57,27 +56,51 @@ def discord_callback(request):
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
+            
+            if state == 'subscriber':
+                try:
+                    social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
+                    user = social_account.user
+                except (SocialAccount.DoesNotExist, IndexError):
+                    # Create a new user and social account
+                    user = User.objects.create_user(username=user_info['username'], is_subscriber=True)
+                    social_account = SocialAccount.objects.create(
+                        user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
+                    subscriber = Subscriber.objects.get(user=user)
+                    subscriber.discord_id = user_info.get('id', '')
+                    subscriber.username = user_info.get('username', '')
+                    subscriber.avatar = user_info.get('avatar', '')
+                    subscriber.email = user_info.get('email', '')
+                    subscriber.save()
+                    
+                # Set the backend attribute on the user
+                user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
+                login(request, user, backend=user.backend)
+                
+                return redirect('subscribe')
+            else:
 
-            guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
-            if guild_response.status_code == 200:
-                # Gets all the discord servers joined by the user
-                server_list = guild_response.json()
-                # Process the server list to only returned servers owned by user
-                owned_servers = []
-                if server_list:
-                    for server in server_list:
-                        server_id = server['id']
-                        server_name = server['name']
-                        permissions = server['permissions']
+                guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
+                if guild_response.status_code == 200:
+                    # Gets all the discord servers joined by the user
+                    server_list = guild_response.json()
+                    # Process the server list to only returned servers owned by user
+                    owned_servers = []
+                    if server_list:
+                        for server in server_list:
+                            server_id = server['id']
+                            server_name = server['name']
+                            permissions = server['permissions']
 
-                        # Check if user owns the server (ADMINISTRATOR permission)
-                        if permissions & 0x00000008 == 0x00000008:
-                            owned_servers.append({
-                                'id': server_id,
-                                'name': server_name
-                            })
+                            # Check if user owns the server (ADMINISTRATOR permission)
+                            if permissions & 0x00000008 == 0x00000008:
+                                owned_servers.append({
+                                    'id': server_id,
+                                    'name': server_name
+                                })
+                else:
+                    return HttpResponse("Failed to retrieve user's server list.")
 
-                # Retrieve or create the user based on Discord information
                 try:
                     social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
                     user = social_account.user
@@ -104,9 +127,6 @@ def discord_callback(request):
                 login(request, user, backend=user.backend)
                 
                 return redirect('choose_name')
-            else:
-                print("Failed to retrieve user's server list.")
-                return HttpResponse('Failed to retrieve user\'s server list.')
         else:
             print("Failed to obtain access token.")
             return HttpResponse('Failed to obtain access token.')
@@ -359,34 +379,25 @@ def subscribe_cancel(request):
     return render(request, 'dashboard.html')
 
 
-def subscription_plans(request, subdomain):
-    if not request.user.is_authenticated:
-        redirect('subscriber_redirect')
-
-
 def subscribe_redirect(request, subdomain):
-    # Perform any necessary checks/validation here
-    
-    # Create a new Subscriber user if it doesn't exist
-    subscriber_user, _ = User.objects.get_or_create(username='Subscriber')
-    subscriber_user.is_subscriber = True
-    subscriber_user.save()
-    
     # Redirect the user to Discord authentication
     discord_client_id = settings.DISCORD_CLIENT_ID
     redirect_uri = 'http://127.0.0.1:8000/accounts/discord/login/callback/'
-    redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify'
+    redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber'
     return redirect(redirect_url)
 
 
 def subscribe(request):
-    # Retrieve the necessary information from the Discord callback
+    # Retrieve info from the Discord callback
     code = request.GET.get('code')
-    subdomain = request.GET.get('state')  # Retrieve the subdomain value passed as the state parameter
-    
-    # Perform the necessary actions to create/update the Subscriber user
-    # and associate it with the subdomain serverowner
-    # ...
+    # Retrieve the subdomain value passed as the state parameter
+    subdomain = request.GET.get('state')
 
-    # Render the subscription page for the subdomain
+    # try:
+    #     server_owner = ServerOwner.objects.get(subdomain=subdomain)
+    # except ServerOwner.DoesNotExist:
+    #     server_owner = ''
+    # # Retrieve the subscriptions associated with the server owner
+    # subscriptions = server_owner.subscriptions.all()
+
     return render(request, 'subscriber_plans.html', {'subdomain': subdomain})
