@@ -15,6 +15,19 @@ class ChooseServerSubdomainForm(forms.Form):
             # Add a default choice to the queryset
             self.fields['server'].empty_label = 'Choose a server'
 
+    def clean_subdomain(self):
+        subdomain = self.cleaned_data.get('subdomain')
+        if ServerOwner.objects.filter(subdomain=subdomain).exists():
+            raise forms.ValidationError('This subdomain has already been chosen.')
+        return subdomain
+
+    def clean(self):
+        cleaned_data = super().clean()
+        server = cleaned_data.get('server')
+        if server and server.choice_server:
+            raise forms.ValidationError('This server has already been chosen by another user.')
+        return cleaned_data
+
     def save(self, user):
         subdomain = self.cleaned_data['subdomain']
         server = self.cleaned_data['server']

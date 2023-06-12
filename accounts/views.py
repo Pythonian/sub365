@@ -56,16 +56,6 @@ def discord_callback(request):
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
-                
-                """
-                check if user exists (try...catch)
-                if user exists
-                    then get user info (serverowner | subscriber)
-                    if serverowner
-                        manually redirect to dashboard
-                    else
-                        redirect to dashboard | subscribe_page
-                """
             
                 if state == 'subscriber':
                     try:
