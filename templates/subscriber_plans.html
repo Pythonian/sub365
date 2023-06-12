@@ -12,4 +12,13 @@
 </div>
 {% endfor %}
 
+{% for plan in plans %}
+<h3>{{ plan.name }}</h3>
+<p>Amount: {{ plan.amount }}</p>
+<p>Currency: {{ plan.currency }}</p>
+<p>Interval: {{ plan.interval }}</p>
+{% empty %}
+<p>No plans available.</p>
+{% endfor %}
+
 {% endblock content %}

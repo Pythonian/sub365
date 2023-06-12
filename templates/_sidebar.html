@@ -1,52 +1,45 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-
-    <!-- Sidebar - Brand -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
         <div class="sidebar-brand-text mx-3">SUB365.co</div>
     </a>
-
-    <!-- Divider -->
     <hr class="sidebar-divider my-0">
-
-    <!-- Nav Item - Dashboard -->
+    {% if request.user.is_serverowner %}
     <li class="nav-item">
         <a class="nav-link" href="{% url 'dashboard' %}">
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
-
     <hr class="sidebar-divider">
-
     <li class="nav-item">
-        <a class="nav-link" href="/{{ user.profile.subdomain }}/subscriptions/">
+        <a class="nav-link" href="/plans/">
             <i class="fas fa-fw fa-ranking-star"></i>
             <span>Plans</span></a>
     </li>
-
     <li class="nav-item">
-        <a class="nav-link" href="javascript:void(0)">
+        <a class="nav-link" href="/subscribers/">
             <i class="fas fa-fw fa-users"></i>
             <span>Subscribers</span></a>
     </li>
-
     <li class="nav-item">
         <a class="nav-link" href="javascript:void(0)">
             <i class="fas fa-fw fa-people-group"></i>
             <span>Affiliates</span></a>
     </li>
-
+    {% else %}
+    <li class="nav-item">
+        <a class="nav-link" href="javascript:void(0)">
+            <i class="fas fa-fw fa-cubes"></i>
+            <span>Subscription</span></a>
+    </li>
     <hr class="sidebar-divider d-none d-md-block">
-
-    <!-- Sidebar Toggler (Sidebar) -->
-    <div class="text-center d-none d-md-inline">
-        <button class="rounded-circle border-0" id="sidebarToggle"></button>
-    </div>
-
-    <!-- Sidebar Message -->
     <div class="sidebar-card d-none d-lg-flex">
         <i class="fas fa-rocket fa-3x text-center mb-2"></i>
         <p class="text-center mb-2">At <strong>Sub365</strong> you can earn more when you invite others.</p>
         <a class="btn btn-primary btn-sm" href="javascript:void(0)">Become an Affiliate</a>
+    </div>
+    {% endif %}
+    <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle"></button>
     </div>
 
 </ul>

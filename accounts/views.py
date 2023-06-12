@@ -23,9 +23,12 @@ def landing_page(request):
 
 
 def discord_callback(request):
-    # Retrieve the authorization code from the URL parameters
+    # Retrieve values from the URL parameters
     code = request.GET.get('code')
     state = request.GET.get('state')
+    subdomain = request.session.get('subdomain_redirect')
+    print(f'subdomain {subdomain}')
+    
     if code:
         # Prepare the payload for the token request
         payload = {
@@ -41,12 +44,8 @@ def discord_callback(request):
         token_url = 'https://discord.com/api/oauth2/token'
         response = requests.post(token_url, data=payload)
 
-        # Check the status code
         if response.status_code == 200:
-            # Access token obtained successfully
             access_token = response.json().get('access_token')
-
-            # Use the access token to retrieve user information or perform other actions
             headers = {
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {access_token}',
@@ -77,9 +76,9 @@ def discord_callback(request):
                 user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                 login(request, user, backend=user.backend)
                 
-                return redirect('subscribe')
+                return redirect('subscribe_success')
             else:
-
+                # state is serverowner
                 guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
                 if guild_response.status_code == 200:
                     # Gets all the discord servers joined by the user
@@ -128,7 +127,6 @@ def discord_callback(request):
                 
                 return redirect('choose_name')
         else:
-            print("Failed to obtain access token.")
             return HttpResponse('Failed to obtain access token.')
 
     return redirect('landing_page')
@@ -335,13 +333,13 @@ def delete_plan(request):
     return redirect('dashboard')
 
 
-@login_required
-def list_plans(request, subdomain):
-    user_profile = ServerOwner.objects.get(subdomain=subdomain)
-    # stripe_plans = user_profile.plans.all()
-    user = request.user
-    stripe_plans = StripePlan.objects.filter(user=user)
-    return render(request, 'plans.html', {'stripe_plans': stripe_plans, 'user_profile': user_profile})
+# @login_required
+# def list_plans(request):
+#     user_profile = ServerOwner.objects.get(subdomain=subdomain)
+#     # stripe_plans = user_profile.plans.all()
+#     user = request.user
+#     stripe_plans = StripePlan.objects.filter(user=user)
+#     return render(request, 'plans.html', {'stripe_plans': stripe_plans, 'user_profile': user_profile})
 
 
 @login_required
@@ -370,7 +368,7 @@ def subscribe_success(request):
     # Handle the successful subscription confirmation
     # You can perform any necessary actions here
     
-    return render(request, 'dashboard.html')
+    return render(request, 'subscriber_success.html')
 
 def subscribe_cancel(request):
     # Handle the subscription cancellation or failure
@@ -379,25 +377,34 @@ def subscribe_cancel(request):
     return render(request, 'dashboard.html')
 
 
-def subscribe_redirect(request, subdomain):
+def subscribe_redirect(request):
     # Redirect the user to Discord authentication
+    subdomain = request.GET.get('subdomain')
+    request.session['subdomain_redirect'] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
     redirect_uri = 'http://127.0.0.1:8000/accounts/discord/login/callback/'
-    redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber'
+    redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}'
+    print(f'redirect: {redirect_url}')
     return redirect(redirect_url)
 
 
-def subscribe(request):
-    # Retrieve info from the Discord callback
-    code = request.GET.get('code')
+def subscriber_plans(request, subdomain):
+    # if not request.user.is_authenticated:
+    #     discord_client_id = settings.DISCORD_CLIENT_ID
+    #     redirect_uri = 'http://127.0.0.1:8000/accounts/discord/login/callback/<str:subdomain>/'
+    #     redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber'
+    #     return redirect(redirect_url)
+
     # Retrieve the subdomain value passed as the state parameter
-    subdomain = request.GET.get('state')
+    # subdomain = request.GET.get('state')
+    # Retrieve the ServerOwner instance based on the subdomain
+    server_owner = get_object_or_404(ServerOwner, subdomain=subdomain)
 
-    # try:
-    #     server_owner = ServerOwner.objects.get(subdomain=subdomain)
-    # except ServerOwner.DoesNotExist:
-    #     server_owner = ''
-    # # Retrieve the subscriptions associated with the server owner
-    # subscriptions = server_owner.subscriptions.all()
+    # Retrieve the plans associated with the ServerOwner
+    plans = StripePlan.objects.filter(user=server_owner.user)
 
-    return render(request, 'subscriber_plans.html', {'subdomain': subdomain})
+    context = {
+        'plans': plans
+    }
+
+    return render(request, 'subscriber_plans.html', context)

@@ -8,7 +8,7 @@
 <div class="mx-auto bg-white justify-content-center p-5 text-center" style="width: 450px;">
     <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
     <h6 class="my-4 text-dark">Manage the subscriptions to your discord servers seamlessly.</h6>
-    <form method="post" action="{% provider_login_url 'discord' %}">
+    <form method="post" action="/accounts/discord/login/">
         {% csrf_token %}
         <button class="btn btn-primary py-3 w-100" type="submit">
             Sign in with Discord
