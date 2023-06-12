@@ -6,7 +6,7 @@
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Welcome, {{ profile.username }}</h1>
+        <h1 class="h3 mb-0 text-gray-800">Welcome, {{ profile.username }} (ServerOwner)</h1>
         <button id="copy-button" class="btn btn-sm btn-success"
             data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}">Copy Subscription Link</button>
     </div>

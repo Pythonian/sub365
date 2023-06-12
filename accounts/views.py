@@ -31,12 +31,13 @@ def discord_callback(request):
     
     if code:
         # Prepare the payload for the token request
+        redirect_uri = request.build_absolute_uri(reverse('discord_callback'))
         payload = {
             'client_id': settings.DISCORD_CLIENT_ID,
             'client_secret': settings.DISCORD_CLIENT_SECRET,
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': 'http://127.0.0.1:8000/accounts/discord/login/callback/',
+            'redirect_uri': redirect_uri,
             'scope': 'identify guilds',
         }
 
@@ -408,7 +409,7 @@ def subscribe_redirect(request):
     subdomain = request.GET.get('subdomain')
     request.session['subdomain_redirect'] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
-    redirect_uri = 'http://127.0.0.1:8000/accounts/discord/login/callback/'
+    redirect_uri = request.build_absolute_uri(reverse('discord_callback'))
     redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}'
     return redirect(redirect_url)
 
