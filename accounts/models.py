@@ -22,7 +22,7 @@ class ServerOwner(models.Model):
 
 class Server(models.Model):
     owner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name='servers')
-    server_id = models.CharField(max_length=100, unique=True)
+    server_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     choice_server = models.BooleanField(default=False)
 
