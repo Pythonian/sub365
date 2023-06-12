@@ -55,94 +55,87 @@ def discord_callback(request):
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
-                
-                """
-                check if user exists (try...catch)
-                if user exists
-                    then get user info (serverowner | subscriber)
-                    if serverowner
-                        manually redirect to dashboard
-                    else
-                        redirect to dashboard | subscribe_page
-                """
+
+            """
+            check if user exists (try...catch)
+            if user exists
+                then get user info (serverowner | subscriber)
+                if serverowner
+                    manually redirect to dashboard
+                else
+                    redirect to dashboard | subscribe_page
+            """
             
-                if state == 'subscriber':
-                    try:
-                        social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
-                        user = social_account.user
-                        user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
-                        login(request, user, backend=user.backend)
-                        
-                        return redirect('dashboard_view')
-                    except (SocialAccount.DoesNotExist, IndexError):
-                        # Create a new user and social account
-                        user = User.objects.create_user(username=user_info['username'], is_subscriber=True)
-                        social_account = SocialAccount.objects.create(
-                            user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
-                        subscriber = Subscriber.objects.get(user=user)
-                        subscriber.discord_id = user_info.get('id', '')
-                        subscriber.username = user_info.get('username', '')
-                        subscriber.avatar = user_info.get('avatar', '')
-                        subscriber.email = user_info.get('email', '')
-                        subscriber.save()
-                        
-                    # Set the backend attribute on the user
-                    user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
-                    login(request, user, backend=user.backend)
+            if state == 'subscriber':
+                try:
+                    social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
+                    user = social_account.user
+                except (SocialAccount.DoesNotExist, IndexError):
+                    # Create a new user and social account
+                    user = User.objects.create_user(username=user_info['username'], is_subscriber=True)
+                    social_account = SocialAccount.objects.create(
+                        user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
+                    subscriber = Subscriber.objects.get(user=user)
+                    subscriber.discord_id = user_info.get('id', '')
+                    subscriber.username = user_info.get('username', '')
+                    subscriber.avatar = user_info.get('avatar', '')
+                    subscriber.email = user_info.get('email', '')
+                    subscriber.save()
                     
-                    return redirect('subscribe_success')
+                # Set the backend attribute on the user
+                user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
+                login(request, user, backend=user.backend)
+                
+                return redirect('subscribe_success')
+            else:
+                # state is serverowner
+                guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
+                if guild_response.status_code == 200:
+                    # Gets all the discord servers joined by the user
+                    server_list = guild_response.json()
+                    # Process the server list to only returned servers owned by user
+                    owned_servers = []
+                    if server_list:
+                        for server in server_list:
+                            server_id = server['id']
+                            server_name = server['name']
+                            permissions = server['permissions']
+
+                            # Check if user owns the server (ADMINISTRATOR permission)
+                            if permissions & 0x00000008 == 0x00000008:
+                                owned_servers.append({
+                                    'id': server_id,
+                                    'name': server_name
+                                })
                 else:
-                    # state is serverowner
-                    guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
-                    if guild_response.status_code == 200:
-                        # Gets all the discord servers joined by the user
-                        server_list = guild_response.json()
-                        # Process the server list to only returned servers owned by user
-                        owned_servers = []
-                        if server_list:
-                            for server in server_list:
-                                server_id = server['id']
-                                server_name = server['name']
-                                permissions = server['permissions']
+                    return HttpResponse("Failed to retrieve user's server list.")
 
-                                # Check if user owns the server (ADMINISTRATOR permission)
-                                if permissions & 0x00000008 == 0x00000008:
-                                    owned_servers.append({
-                                        'id': server_id,
-                                        'name': server_name
-                                    })
-                    else:
-                        return HttpResponse("Failed to retrieve user's server list.")
-
-                    try:
-                        social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
-                        user = social_account.user
-                    except (SocialAccount.DoesNotExist, IndexError):
-                        # Create a new user and social account
-                        user = User.objects.create_user(username=user_info['username'], is_serverowner=True)
-                        social_account = SocialAccount.objects.create(
-                            user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
-                        serverowner = ServerOwner.objects.get(user=user)
-                        serverowner.discord_id = user_info.get('id', '')
-                        serverowner.username = user_info.get('username', '')
-                        serverowner.avatar = user_info.get('avatar', '')
-                        serverowner.email = user_info.get('email', '')
-                        serverowner.save()
-                        
-                        for server in owned_servers:
-                            owner_server = Server.objects.create(owner=serverowner)
-                            owner_server.server_id = server['id']
-                            owner_server.name = server['name']
-                            owner_server.save()
-                        
-                    # Set the backend attribute on the user
-                    user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
-                    login(request, user, backend=user.backend)
+                try:
+                    social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
+                    user = social_account.user
+                except (SocialAccount.DoesNotExist, IndexError):
+                    # Create a new user and social account
+                    user = User.objects.create_user(username=user_info['username'], is_serverowner=True)
+                    social_account = SocialAccount.objects.create(
+                        user=user, provider='discord', uid=user_info['id'], extra_data=user_info)
+                    serverowner = ServerOwner.objects.get(user=user)
+                    serverowner.discord_id = user_info.get('id', '')
+                    serverowner.username = user_info.get('username', '')
+                    serverowner.avatar = user_info.get('avatar', '')
+                    serverowner.email = user_info.get('email', '')
+                    serverowner.save()
                     
-                    if request.user.is_serverowner:
-                        return redirect('choose_name')
-                    else:
-                        return redirect('subscribe_success')
+                    for server in owned_servers:
+                        owner_server = Server.objects.create(owner=serverowner)
+                        owner_server.server_id = server['id']
+                        owner_server.name = server['name']
+                        owner_server.save()
+                    
+                # Set the backend attribute on the user
+                user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
+                login(request, user, backend=user.backend)
+                
+                return redirect('choose_name')
         else:
             return HttpResponse('Failed to obtain access token.')
 
@@ -168,15 +161,6 @@ def choose_name(request):
     }
 
     return render(request, 'choose_name.html', context)
-
-
-def dashboard_view(request):
-    if request.user.is_serverowner:
-        return redirect('dashboard')
-    elif request.user.is_subscriber:
-        return redirect('subscribe_success')
-    else:
-        return redirect('landing_page')
 
 
 def create_stripe_account(request):

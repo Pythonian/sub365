@@ -133,7 +133,7 @@ SOCIALACCOUNT_PROVIDERS = {
 
 SOCIALACCOUNT_ADAPTER = 'accounts.adapters.MySocialAccountAdapter'
 
-LOGIN_REDIRECT_URL = 'choose_name'
+LOGIN_REDIRECT_URL = 'dashboard_view'
 LOGOUT_REDIRECT_URL = '/'
 
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
