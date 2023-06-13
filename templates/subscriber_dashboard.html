@@ -8,63 +8,94 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Welcome, {{ request.user.subscriber.username }}</h1>
-        
     </div>
 
-    <div class="row">
-        <div class="col-12 mb-4">
-            <p>This is your Subscriber Dashboard</p>
+    {% if subscription %} 
+       <div class="row">
+            <div class="col-sm-12 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Subscription Details for Server: {{ server }}</h6>
+                        <a class="btn btn-sm btn-danger" href="{% url 'cancel_subscription' subscription.id %}" title="Subscribe">
+                            Cancel Subscription
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr class="ligth">
+                                        <th>Plan Name</th>
+                                        <th>Amount</th>
+                                        <th>Subscribed via</th>
+                                        <th>Subscription date</th>
+                                        <th>Expiry date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{ subscription.plan.name }}</td>
+                                        <td>${{ subscription.plan.amount }} / monthly</td>
+                                        <td>{{ subscription.subscribed_via }}</td>
+                                        <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
+                                        <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <!-- <div class="row">
+    {% else %}
+    <div class="row">
         <div class="col-sm-12 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Subscription Details</h6>
-                    <button id="copy-button" class="btn btn-sm btn-success"
-                        data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/{{ request.user.serverowner.subdomain }}/subscribe/">Subscribe Now</button>
+                    <h6 class="m-0 font-weight-bold text-primary">Subscription Details for Server: {{ server }}</h6>
+                    
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr class="ligth">
-                                    <th>Username</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Plan</th>
-                                    <th>Subscribed Date</th>
-                                    <th>Expiry Date</th>
+                                    <th>Plan Name</th>
+                                    <th>Amount</th>
+                                    <th>Interval</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                {% for plan in plans %}
                                 <tr>
-                                    <td>John Doe</td>
-                                    <td>johndoe@gmail.com</td>
-                                    <td><span class="badge text-bg-primary">Active</span></td>
-                                    <td>Monthly</td>
-                                    <td>2023/12/01</td>
-                                    <td>2023/12/31</td>
+                                    <td>{{ plan.name }}</td>
+                                    <td>${{ plan.amount }}</td>
+                                    <td>monthly</td>
                                     <td>
                                         <div class="flex align-items-center list-user-action">
-                                            <a class="btn btn-sm btn-success" title="View" href="#">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a class="btn btn-sm btn-danger" title="Delete" href="#">
-                                                <i class="fas fa-trash"></i>
+                                            <a class="btn btn-sm btn-success"
+                                                href="{% url 'subscribe_to_plan' plan_id=plan.id %}" title="Subscribe">
+                                                Subscribe
                                             </a>
                                         </div>
                                     </td>
                                 </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6">No Plans Found</td>
+                                </tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
-    </div> -->
+    </div>
+    {% endif %}
 </div>
 
 {% endblock %}

@@ -16,6 +16,7 @@ urlpatterns = [
     path('plans/subscribe/cancel/', views.subscribe_cancel, name='subscribe_cancel'),
     path('subscribe/', views.subscribe_redirect, name='subscribe_redirect'),
     path('<str:subdomain>/subscriptions/', views.subscriber_plans, name='subscriber_plans'),
+    path('cancel_subscription/<int:subscription_id>/', views.cancel_subscription, name='cancel_subscription'),
     path('dashboard_view/', views.dashboard_view, name='dashboard_view'),
     path('', views.landing_page, name='landing_page'),
 ]

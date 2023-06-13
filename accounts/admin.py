@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import User, ServerOwner, Server, StripePlan, Subscriber
+from .models import User, ServerOwner, Server, StripePlan, Subscriber, Subscription
 
 
 @admin.register(Server)
@@ -19,4 +19,9 @@ class ServerOwnerAdmin(admin.ModelAdmin):
 class SubscriberAdmin(admin.ModelAdmin):
     list_display = ['username', 'email', 'subscribed_via']
 
-admin.site.register([User, StripePlan])
+
+@admin.register(StripePlan)
+class StripePlanAdmin(admin.ModelAdmin):
+    list_display = ['name', 'user', 'amount']
+
+admin.site.register([User, Subscription])

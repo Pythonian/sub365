@@ -30,8 +30,8 @@
                                 <td>{{ plan.name }}</td>
                                 <td>{{ plan.plan_id }}</td>
                                 <td>{{ plan.amount }}</td>
-                                <td>{{ plan.currency }}</td>
-                                <td>{{ plan.interval }}</td>
+                                <td>USD</td>
+                                <td>monthly</td>
                                 {% url 'dashboard' as dashboard_url %}{% if request.get_full_path == dashboard_url %}
                                 <td>
                                     <div class="flex align-items-center list-user-action">
@@ -83,6 +83,7 @@
                             {% empty %}
                             <tr>
                                 <td colspan="6">No Plans Found</td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -110,6 +111,8 @@
                     {% render_field form.name class="form-control mb-3" %}
                     <label class="form-label" for="id_amount">Enter Amount Per Month:</label>
                     {% render_field form.amount class="form-control mb-3" %}
+                    <label for="id_description" class="form-label">Description (Optional):</label>
+                    {% render_field form.description class="form-control mb-3" %}
                     <button type="submit" class="btn btn-primary">Create</button>
                 </form>
             </div>
