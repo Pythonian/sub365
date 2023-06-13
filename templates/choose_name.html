@@ -10,7 +10,7 @@
     <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
     <h6 class="my-4 text-dark">Enter a Subdomain name below for custom URL and choose a Server you want to use:</h6>
     <div class="text-start">
-        <form action="" method="post" novalidate>
+        <form action="" method="post">
             {% csrf_token %}
 
             {{ form.non_field_errors }}

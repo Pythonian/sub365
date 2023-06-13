@@ -27,7 +27,6 @@ def discord_callback(request):
     code = request.GET.get('code')
     state = request.GET.get('state')
     subdomain = request.session.get('subdomain_redirect')
-    print(f'subdomain {subdomain}')
     
     if code:
         # Prepare the payload for the token request
@@ -76,12 +75,17 @@ def discord_callback(request):
                         subscriber.avatar = user_info.get('avatar', '')
                         subscriber.email = user_info.get('email', '')
                         subscriber.save()
+
+                        # Associate the subscriber with the ServerOwner based on the subdomain
+                        server_owner = ServerOwner.objects.get(subdomain=subdomain)
+                        subscriber.subscribed_via = server_owner
+                        subscriber.save()
                         
                     # Set the backend attribute on the user
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
                     
-                    return redirect('subscribe_success')
+                    return redirect('subscriber_dashboard')
                 else:
                     # state is serverowner
                     guild_response = requests.get('https://discord.com/api/users/@me/guilds', headers=headers)
@@ -133,7 +137,7 @@ def discord_callback(request):
                     if request.user.is_serverowner:
                         return redirect('choose_name')
                     else:
-                        return redirect('subscribe_success')
+                        return redirect('subscriber_dashboard')
         else:
             return HttpResponse('Failed to obtain access token.')
 
@@ -145,6 +149,7 @@ def choose_name(request):
     if request.user.serverowner.subdomain:
         return redirect('dashboard')
     if request.method == 'POST':
+        print(f'POST Data: {request.POST}')
         form = ChooseServerSubdomainForm(request.POST, user=request.user)
         if form.is_valid():
             form.save(user=request.user)
@@ -165,7 +170,7 @@ def dashboard_view(request):
     if request.user.is_serverowner:
         return redirect('dashboard')
     elif request.user.is_subscriber:
-        return redirect('subscribe_success')
+        return redirect('subscriber_dashboard')
     else:
         return redirect('landing_page')
 
@@ -365,7 +370,7 @@ def subscribe_to_plan(request, plan_id):
     
     # Create a Stripe Checkout Session
     session = stripe.checkout.Session.create(
-        success_url=request.build_absolute_uri(reverse('subscribe_success')),
+        success_url=request.build_absolute_uri(reverse('subscriber_dashboard')),
         cancel_url=request.build_absolute_uri(reverse('subscribe_cancel')),
         # payment_method_types=['card'],
         line_items=[
@@ -381,11 +386,11 @@ def subscribe_to_plan(request, plan_id):
     return redirect(session.url)
 
 
-def subscribe_success(request):
+def subscriber_dashboard(request):
     # Handle the successful subscription confirmation
     # You can perform any necessary actions here
     
-    return render(request, 'subscriber_success.html')
+    return render(request, 'subscriber_dashboard.html')
 
 def subscribe_cancel(request):
     # Handle the subscription cancellation or failure
@@ -403,15 +408,6 @@ def subscribe_redirect(request):
     redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}'
     return redirect(redirect_url)
 
-
-# def discord_authenticate(request):
-#     subdomain = request.GET.get('subdomain')
-#     request.session['subdomain_redirect'] = subdomain
-#     discord_client_id = settings.DISCORD_CLIENT_ID
-#     redirect_uri = 'http://127.0.0.1:8000/accounts/discord/login/callback/'
-#     if subdomain:
-#         redirect_url = f'https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}'
-#     return redirect(redirect_url)
 
 def subscriber_plans(request, subdomain):
     # if not request.user.is_authenticated:

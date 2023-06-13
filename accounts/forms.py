@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import User, ServerOwner, Server, StripePlan, Subscriber
+from .models import ServerOwner, Server, StripePlan
 
 
 class ChooseServerSubdomainForm(forms.Form):
@@ -12,7 +12,6 @@ class ChooseServerSubdomainForm(forms.Form):
         super(ChooseServerSubdomainForm, self).__init__(*args, **kwargs)
         if user:
             self.fields['server'].queryset = Server.objects.filter(owner__user=user)
-            # Add a default choice to the queryset
             self.fields['server'].empty_label = 'Choose a server'
 
     def clean_subdomain(self):
@@ -20,13 +19,16 @@ class ChooseServerSubdomainForm(forms.Form):
         if ServerOwner.objects.filter(subdomain=subdomain).exists():
             raise forms.ValidationError('This subdomain has already been chosen.')
         return subdomain
+   
+    def clean_server(self):
+        server = self.cleaned_data.get('server')
+        subdomain = self.cleaned_data.get('subdomain')
 
-    def clean(self):
-        cleaned_data = super().clean()
-        server = cleaned_data.get('server')
         if server and server.choice_server:
-            raise forms.ValidationError('This server has already been chosen by another user.')
-        return cleaned_data
+            selected_server_id = server.id
+            if selected_server_id and ServerOwner.objects.filter(server_id=selected_server_id, subdomain=subdomain).exists():
+                raise forms.ValidationError('This server has already been chosen by another user.')
+        return server
 
     def save(self, user):
         subdomain = self.cleaned_data['subdomain']
