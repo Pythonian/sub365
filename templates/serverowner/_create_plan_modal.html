@@ -1,0 +1,26 @@
+{% load widget_tweaks %}
+<div class="modal fade" id="createPlanModal" tabindex="-1" role="dialog" aria-labelledby="createPlanModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPlanModalLabel">Create Plan</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'create_plan' %}">
+                    {% csrf_token %}
+                    <label class="form-label" for="id_name">Enter Plan Name:</label>
+                    {% render_field form.name class="form-control mb-3" %}
+                    <label class="form-label" for="id_amount">Enter Amount Per Month:</label>
+                    {% render_field form.amount class="form-control mb-3" %}
+                    <label for="id_description" class="form-label">Description (Optional):</label>
+                    {% render_field form.description class="form-control mb-3" %}
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -293,7 +293,7 @@ def dashboard(request):
         'subscribers': subscribers,
         'total_earnings': total_earnings,
     }
-    return render(request, 'dashboard.html', context)
+    return render(request, 'serverowner/dashboard.html', context)
 
 
 @login_required
@@ -395,7 +395,7 @@ def create_plan(request):
         'form': form,
     }
     
-    return render(request, 'dashboard.html', context)
+    return render(request, 'serverowner/dashboard.html', context)
 
 @login_required
 def delete_plan(request):
@@ -535,7 +535,7 @@ def subscribe_cancel(request):
     # Handle the subscription cancellation or failure
     # You can perform any necessary actions here
     
-    return render(request, 'dashboard.html')
+    return render(request, 'serverowner/dashboard.html')
 
 
 def subscribe_redirect(request):
