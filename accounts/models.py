@@ -52,6 +52,7 @@ class StripePlan(models.Model):
     description = models.TextField(blank=True, null=True)
     currency = models.CharField(max_length=3)
     interval = models.CharField(max_length=10)
+    subscriber_count = models.IntegerField(default=0)
 
     def __str__(self):
         return self.name

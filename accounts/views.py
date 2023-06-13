@@ -462,6 +462,10 @@ def subscribe_to_plan(request, plan_id):
         subscribed=True,
         # subscription_id=subscription.id,
     )
+
+    # Increment the subscriber count for the plan
+    plan.subscriber_count += 1
+    plan.save()
     
     # Redirect the user to the Stripe Checkout page
     return redirect(session.url)

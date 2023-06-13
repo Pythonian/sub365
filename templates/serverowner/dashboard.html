@@ -29,44 +29,42 @@
         </a>
     </div>
     
-
-    <div class="row g-4">
-        
-            {% for plan in stripe_plans %}
-            <div class="col-xl-4 col-lg-5">
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-primary py-3">
-                        
-                    </div>
-                    <div class="card-body">
-                        <p class="text-primary fw-bold">{{ plan.name }}</p>
-                        <h5 class="fw-bold mb-3">${{ plan.amount }}/mo</h5>
-                        <p class="font-monospace">0 Subscribers</p>
-                        <a class="btn btn-sm btn-danger" title="Delete" data-toggle="modal" data-target="#deleteModal{{ plan.id }}">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </div>
+    <div class="row g-4 mb-4">
+        {% for plan in stripe_plans %}
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary py-3"></div>
+                <div class="card-body">
+                    <p class="text-primary fw-bold">{{ plan.name }}</p>
+                    <h5 class="fw-bold mb-3">${{ plan.amount }}/mo</h5>
+                    <p class="font-monospace">{{ plan.subscriber_count }} Subscriber{{ plan.subscriber_count|pluralize }}</p>
+                    <a class="btn btn-sm btn-danger" title="Delete" data-toggle="modal" data-target="#deleteModal{{ plan.id }}">
+                        <i class="fas fa-trash"></i>
+                    </a>
                 </div>
             </div>
-            {% include 'serverowner/_delete_plan_modal.html' %}
-            {% endfor %}
-        
-       
+        </div>
+        {% include 'serverowner/_delete_plan_modal.html' %}
+        {% endfor %}
     </div>
     {% else %}
-    <div class="text-center pt-3 pb-5">
-        
-            <span class="text-primary fa-stack fa-4x mb-3">
-                <i class="fas fa-cloud fa-stack-2x"></i>
-                <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
-            </span>
-            <h3 class="text-dark">Start selling Subscriptions with Stripe Products</h3>
+    <div class="text-center pt-3 pb-5"> 
+        <span class="text-primary fa-stack fa-4x mb-3">
+            <i class="fas fa-cloud fa-stack-2x"></i>
+            <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
+        </span>
+        <h3 class="text-dark">Start selling Subscriptions with Stripe Products</h3>
         <p class="mb-3">Your products are hosted on your stripe account <br> and we provide a seamless integration for managing them here.</p>
         <a data-toggle="modal" data-target="#createPlanModal" class="text-decoration-none btn py-2 px-4 btn-primary shadow-sm rounded-5">
             <small class="pb-5">Create a Product on Stripe</small>
         </a>
     </div>
     {% endif %}
+
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="text-gray-800">All Subscribers</h5>
+    </div>
+
     {% include '_subscribers_row.html' %}
 </div>
 

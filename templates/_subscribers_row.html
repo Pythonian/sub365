@@ -1,48 +1,44 @@
 {% for subscriber in subscribers %}
-<div class="row">
-    <div class="col-sm-12 mb-4">
+<div class="row g-4">
+    <div class="col-xl-4 col-lg-5">
         <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">Recent Subscribers</h6>
-                <!-- <button id="copy-button" class="btn btn-sm btn-success"
-                    data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/{{ request.user.serverowner.subdomain }}/subscribe/">Copy
-                    Subscription Link</button> -->
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr class="ligth">
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Plan</th>
-                                <th>Amount</th>
-                                <th>Subscribed Date</th>
-                                <th>Expiry Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>{{ subscriber.subscriber.username }}</td>
-                                <td>{{ subscriber.subscriber.email }}</td>
-                                <td>{{ subscriber.plan }}</td>
-                                <td>{{ subscriber.plan.amount }} / monthly</td>
-                                <td>{{ subscriber.subscription_date|date:"F j, Y" }}</td>
-                                <td>{{ subscriber.expiration_date|date:"F j, Y" }}</td>
-                                <td>
-                                    <div class="flex align-items-center list-user-action">
-                                        <a class="btn btn-sm btn-danger" title="Delete" href="#">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-header bg-primary py-3"></div>
+            <div class="card-body">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">NAME:</p>
+                        <span>{{ subscriber.subscriber.username }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">PLAN:</p>
+                        <span>{{ subscriber.plan }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
+                        <span>${{ subscriber.plan.amount }}/month</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">SUBSCRIBED ON</p>
+                        <span>{{ subscriber.subscription_date|date:"F j, Y" }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">EXPIRES</p>
+                        <span>{{ subscriber.expiration_date|date:"F j, Y" }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">STATUS</p>
+                        <span class="text-success">ACTIVE</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
+
 {% endfor %}
