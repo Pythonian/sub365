@@ -20,3 +20,5 @@ View plan and all accounts who subscribed to it
 Extract plan list into template
 View subscriber detail and transaction history
 Add max_length to plan description
+Change how the empty state of the Plans template works
+django messages/alert toast
