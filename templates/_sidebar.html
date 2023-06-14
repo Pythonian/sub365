@@ -4,30 +4,22 @@
     </a>
     <hr class="sidebar-divider my-0">
     {% if request.user.is_serverowner %}
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'dashboard' %}">
+    <li class="nav-item {% url 'dashboard' as dashboard_url %}{% if request.get_full_path == dashboard_url %}active{% endif %}">
+        <a class="nav-link" href="{{ dashboard_url }}">
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/subscribers/">
-            <i class="fas fa-fw fa-users"></i>
+    <li class="nav-item {% url 'plans' as plans_url %}{% if request.get_full_path == plans_url %}active{% endif %}">
+        <a class="nav-link" href="{{ plans_url }}">
+            <i class="fas fa-fw fa-ranking-star"></i>
+            <span>Plans</span></a>
+    </li>
+    <li class="nav-item {% url 'subscribers' as subscribers_url %}{% if request.get_full_path == subscribers_url %}active{% endif %}">
+        <a class="nav-link" href="{{ subscribers_url }}">
+            <i class="fas fa-fw fa-people-arrows"></i>
             <span>Subscribers</span></a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" href="javascript:void(0)">
-            <i class="fas fa-fw fa-people-group"></i>
-            <span>Affiliates</span></a>
-    </li>
     <hr class="sidebar-divider">
-    <div class="sidebar-heading">
-        Others
-    </div>
-    <li class="nav-item">
-        <a class="nav-link" href="javascript:void(0)">
-            <i class="fas fa-fw fa-cog"></i>
-            <span>Settings</span></a>
-    </li>
     <li class="nav-item">
         <a class="nav-link" href="#" data-toggle="modal" data-target="#logoutModal">
             <i class="fas fa-sign-out-alt fa-fw"></i>

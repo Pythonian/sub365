@@ -25,13 +25,33 @@
                     </button>
 
                     <ul class="navbar-nav ml-auto">
-                        <li class="nav-item">
-                            <span class="d-none d-lg-inline badge badge-success small">Registered on {{ request.user.date_joined|date:"j F, Y" }}</span>
-                        </li>
-                        
                         <!-- <li class="nav-item">
-                            <span class="d-none d-lg-inline text-gray-600 small">{% if request.user.is_serverowner %}{{ request.user.serverowner.username }}{% else %}{{ request.user.subscriber.username }}{% endif %}</span>
+                            <span class="d-none d-lg-inline badge badge-success small">Registered on {{ request.user.date_joined|date:"j F, Y" }}</span>
                         </li> -->
+                        <li class="nav-item">
+                            <span class="nav-link">
+                                <span class="d-none d-lg-inline badge badge-primary opacity-75 small py-2 px-2">Registered on
+                                    {{ request.user.date_joined|date:"j F, Y" }}</span>
+                                </span>
+                        </li>
+                        <div class="topbar-divider d-none d-sm-block"></div>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                {% if request.user.is_serverowner %}
+                                <img class="img-profile rounded-circle me-2" src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ request.user.serverowner.discord_id }}/{{ request.user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
+                                <span class="text-gray-600 small">
+                                    {{ request.user.serverowner.username|title }} <br>
+                                    {{ choice_server.name }}
+                                </span>
+
+                                {% else %}
+                                <img class="img-profile rounded-circle me-2" src="https://placehold.it/50x50">
+                                <span
+                                    class="d-none d-lg-inline text-gray-600 small">{{ request.user.subscriber.username|title }}</span>
+                                {% endif %}
+
+                            </a>
+                        </li>
                     </ul>
                 </nav>
 
@@ -42,36 +62,14 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy;{% now "Y" %} SUB365</span>
+                        <span>Copyright &copy;{% now "Y" %} SUB365.co</span>
                     </div>
                 </div>
             </footer>
         </div>
     </div>
 
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">x</span>
-                    </button>
-                </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
-                <div class="modal-footer">
-                    <form method="post" action="/accounts/logout/">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="/" />
-                        <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-fw fa-right-from-bracket"></i>
-                            Logout</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% include 'modals/_logout_modal.html' %}
 
     <a class="scroll-to-top rounded" href="#page-top">
         <i class="fas fa-angle-up"></i>

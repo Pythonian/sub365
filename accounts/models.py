@@ -16,10 +16,10 @@ class ServerOwner(models.Model):
     subdomain = models.CharField(max_length=20, unique=True)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    
+
     def __str__(self):
         return self.username
-    
+
 
 class Server(models.Model):
     owner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name='servers')
@@ -49,10 +49,14 @@ class StripePlan(models.Model):
     plan_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField()
     currency = models.CharField(max_length=3)
     interval = models.CharField(max_length=10)
     subscriber_count = models.IntegerField(default=0)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created']
 
     def __str__(self):
         return self.name
@@ -73,6 +77,6 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'Subscription #{self.id}'
-    
+
     def calculate_expiration_date(self):
         return self.subscription_date + timezone.timedelta(days=30)

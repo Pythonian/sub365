@@ -1,23 +1,26 @@
-from allauth.socialaccount.models import SocialAccount
-from django.contrib.auth import login
+from datetime import datetime, timedelta
+
+from django.conf import settings
 from django.contrib import messages
-from django.shortcuts import redirect, render, get_object_or_404
+from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+
 import requests
 import stripe
-from django.conf import settings
-from django.contrib.auth import login, get_backends
+from allauth.socialaccount.models import SocialAccount
 
-from .models import Subscription, User, ServerOwner, Server, StripePlan, Subscriber
-from .forms import PlanForm, ChooseServerSubdomainForm
+from .forms import ChooseServerSubdomainForm, PlanForm
+from .models import Server, ServerOwner, StripePlan, Subscriber, Subscription, User
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
-def landing_page(request):
-    template = 'landing.html'
+def index(request):
+    template = 'index.html'
     context = {}
     return render(request, template, context)
 
@@ -27,7 +30,7 @@ def discord_callback(request):
     code = request.GET.get('code')
     state = request.GET.get('state')
     subdomain = request.session.get('subdomain_redirect')
-    
+
     if code:
         # Prepare the payload for the token request
         redirect_uri = request.build_absolute_uri(reverse('discord_callback'))
@@ -50,19 +53,19 @@ def discord_callback(request):
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {access_token}',
             }
-    
+
             response = requests.get('https://discord.com/api/users/@me', headers=headers)
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
-            
+
                 if state == 'subscriber':
                     try:
                         social_account = SocialAccount.objects.get(provider='discord', uid=user_info['id'])
                         user = social_account.user
                         user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                         login(request, user, backend=user.backend)
-                        
+
                         return redirect('dashboard_view')
                     except (SocialAccount.DoesNotExist, IndexError):
                         # Create a new user and social account
@@ -80,11 +83,11 @@ def discord_callback(request):
                         server_owner = ServerOwner.objects.get(subdomain=subdomain)
                         subscriber.subscribed_via = server_owner
                         subscriber.save()
-                        
+
                     # Set the backend attribute on the user
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
-                    
+
                     return redirect('subscriber_dashboard')
                 else:
                     # state is serverowner
@@ -123,17 +126,17 @@ def discord_callback(request):
                         serverowner.avatar = user_info.get('avatar', '')
                         serverowner.email = user_info.get('email', '')
                         serverowner.save()
-                        
+
                         for server in owned_servers:
                             owner_server = Server.objects.create(owner=serverowner)
                             owner_server.server_id = server['id']
                             owner_server.name = server['name']
                             owner_server.save()
-                        
+
                     # Set the backend attribute on the user
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
-                    
+
                     if request.user.is_serverowner:
                         return redirect('choose_name')
                     else:
@@ -141,7 +144,7 @@ def discord_callback(request):
         else:
             return HttpResponse('Failed to obtain access token.')
 
-    return redirect('landing_page')
+    return redirect('index')
 
 
 @login_required
@@ -172,7 +175,7 @@ def dashboard_view(request):
     elif request.user.is_subscriber:
         return redirect('subscriber_dashboard')
     else:
-        return redirect('landing_page')
+        return redirect('index')
 
 
 def create_stripe_account(request):
@@ -180,15 +183,15 @@ def create_stripe_account(request):
     connected_account = stripe.Account.create(
         type='standard',
      )
-    
+
     # Retrieve the Stripe account ID
     stripe_account_id = connected_account.id
-    
+
     # Update the Stripe account ID for the current user
     serverowner = request.user.serverowner
     serverowner.stripe_account_id = stripe_account_id
     serverowner.save()
-    
+
     return redirect('collect_user_info')
 
 
@@ -196,71 +199,99 @@ def collect_user_info(request):
     serverowner = request.user.serverowner
     stripe_account_id = serverowner.stripe_account_id
 
-    # Generate an account link for the onboarding process    
+    # Generate an account link for the onboarding process
     account_link = stripe.AccountLink.create(
         account=stripe_account_id,
         refresh_url=request.build_absolute_uri(reverse('stripe_refresh')),
         return_url=request.build_absolute_uri(reverse('dashboard')),
         type='account_onboarding',
     )
-    
+
     # Redirect the user to the Stripe onboarding flow
     return redirect(account_link.url)
 
 from decimal import Decimal
 
+
 @login_required
 def dashboard(request):
     profile = get_object_or_404(ServerOwner, user=request.user)
 
+    # Retrieve the user's Stripe plans from the database
+    stripe_plans = StripePlan.objects.filter(user=profile).order_by('-subscriber_count')
+    # Get the count of plans created by the user
+    plan_count = stripe_plans.count()
+
+    # Get the count of subscribers for all plans created by the user
+    subscribers = Subscription.objects.filter(subscribed_via=profile)
+    subscriber_count = subscribers.count()
+
+    # Calculate the total earnings
+    total_earnings = Decimal(0)
+    for subscriber in subscribers:
+        total_earnings += subscriber.plan.amount
+
+    context = {
+        'profile': profile,
+        'stripe_plans': stripe_plans[:3],
+        'plan_count': plan_count,
+        'subscriber_count': subscriber_count,
+        'subscribers': subscribers[:3],
+        'total_earnings': total_earnings,
+    }
+    return render(request, 'serverowner/dashboard.html', context)
+
+
+@login_required
+def plans(request):
+    profile = get_object_or_404(ServerOwner, user=request.user)
+
     if request.method == 'POST':
         form = PlanForm(request.POST)
+
         if form.is_valid():
-            plan_name = form.cleaned_data['name']
-            plan_amount = form.cleaned_data['amount']
-            plan_currency = 'usd'
-            plan_interval = 'month'
-            
             try:
-                # Create the plan on Stripe
-                stripe_plan = stripe.Plan.create(
-                    product={
-                        'name': plan_name,
+                # Create a product on Stripe
+                product = stripe.Product.create(
+                    name=form.cleaned_data['name'],
+                    description=form.cleaned_data['description'],
+                    active=True,
+                )
+
+                # Create a price for the product
+                price = stripe.Price.create(
+                    product=product.id,
+                    unit_amount=int(form.cleaned_data['amount'] * 100),  # Convert amount to cents
+                    currency='usd',
+                    recurring={
+                        'interval': 'month',
                     },
-                    amount=plan_amount,
-                    currency=plan_currency,
-                    interval=plan_interval,
                 )
-                
-                # Save the plan details to the database
-                stripe_plan_obj = StripePlan.objects.create(
-                    user=request.user,
-                    plan_id=stripe_plan.id,
-                    name=plan_name,
-                    amount=plan_amount,
-                    currency=plan_currency,
-                    interval=plan_interval,
-                )
-                
-                # Redirect the user back to the dashboard with a success message
+
+                # Save the product and price details in your database
+                stripe_product = form.save(commit=False)
+                stripe_product.plan_id = price.id
+                stripe_product.user = request.user.serverowner
+                stripe_product.save()
+
                 messages.success(request, 'Plan successfully created.')
-                return redirect('dashboard')
+                return redirect('plans')
             except stripe.error.StripeError as e:
-                # Handle any errors that occur during plan creation
                 form.add_error(None, str(e))
+        else:
+            messages.warning(request, 'An error occured.')
     else:
         form = PlanForm()
 
     # Retrieve the user's Stripe plans from the database
-    stripe_plans = StripePlan.objects.filter(user=request.user.serverowner)
+    stripe_plans = StripePlan.objects.filter(user=profile)
     # Retrieve the user's Stripe account ID from the profile
-    profile = ServerOwner.objects.get(user=request.user)
     stripe_account_id = profile.stripe_account_id
     # Retrieve the Stripe plans from the Stripe API using the account ID
     stripe_plans_api = stripe.Plan.list(limit=100, stripe_account=stripe_account_id)
     # Create a dictionary to map the plan IDs to their respective objects
     stripe_plans_dict = {plan.id: plan for plan in stripe_plans_api.data}
-    
+
     # Iterate over the user's Stripe plans and update their objects with the API data
     for plan in stripe_plans:
         if plan.plan_id in stripe_plans_dict:
@@ -275,25 +306,29 @@ def dashboard(request):
     # Get the count of plans created by the user
     plan_count = stripe_plans.count()
 
-    # Get the count of subscribers for all plans created by the user
-    subscribers = Subscription.objects.filter(subscribed_via=request.user.serverowner)
-    subscriber_count = subscribers.count()
-
-    # Calculate the total earnings
-    total_earnings = Decimal(0)
-    for subscriber in subscribers:
-        total_earnings += subscriber.plan.amount
-
     context = {
         'profile': profile,
         'form': form,
         'stripe_plans': stripe_plans,
         'plan_count': plan_count,
-        'subscriber_count': subscriber_count,
-        'subscribers': subscribers,
-        'total_earnings': total_earnings,
     }
-    return render(request, 'serverowner/dashboard.html', context)
+    return render(request, 'serverowner/plans.html', context)
+
+
+@login_required
+def subscribers(request):
+    profile = get_object_or_404(ServerOwner, user=request.user)
+
+    # Get the count of subscribers for all plans created by the user
+    subscribers = Subscription.objects.filter(subscribed_via=profile)
+    subscriber_count = subscribers.count()
+
+    context = {
+        'profile': profile,
+        'subscriber_count': subscriber_count,
+        'subscribers': subscribers[:3],
+    }
+    return render(request, 'serverowner/subscribers.html', context)
 
 
 @login_required
@@ -321,7 +356,7 @@ def stripe_refresh(request):
 #             plan_amount = form.cleaned_data['amount']
 #             plan_currency = 'usd'
 #             plan_interval = 'month'
-            
+
 #             try:
 #                 # Create the plan on Stripe
 #                 stripe_plan = stripe.Plan.create(
@@ -332,7 +367,7 @@ def stripe_refresh(request):
 #                     currency=plan_currency,
 #                     interval=plan_interval,
 #                 )
-                
+
 #                 # Save the plan details to the database
 #                 stripe_plan_obj = StripePlan.objects.create(
 #                     user=request.user,
@@ -342,7 +377,7 @@ def stripe_refresh(request):
 #                     currency=plan_currency,
 #                     interval=plan_interval,
 #                 )
-                
+
 #                 # Redirect the user back to the dashboard with a success message
 #                 messages.success(request, 'Plan successfully created.')
 #                 return redirect('dashboard')
@@ -351,7 +386,7 @@ def stripe_refresh(request):
 #                 form.add_error(None, str(e))
 #     else:
 #         form = PlanForm()
-    
+
 #     return render(request, 'dashboard.html', {'form': form})
 
 
@@ -359,42 +394,45 @@ def stripe_refresh(request):
 def create_plan(request):
     if request.method == 'POST':
         form = PlanForm(request.POST)
-        
+
         if form.is_valid():
-            # Create a product on Stripe
-            product = stripe.Product.create(
-                name=form.cleaned_data['name'],
-                description=form.cleaned_data['description'],
-                active=True,
-            )
-            
-            # Create a price for the product
-            price = stripe.Price.create(
-                product=product.id,
-                unit_amount=int(form.cleaned_data['amount'] * 100),  # Convert amount to cents
-                currency='usd',
-                recurring={
-                    'interval': 'month',
-                },
-            )
-            
-            # Save the product and price details in your database
-            stripe_product = form.save(commit=False)
-            stripe_product.plan_id = price.id
-            stripe_product.user = request.user.serverowner
-            stripe_product.save()
-            
-            messages.success(request, 'Plan successfully created.')
-            return redirect('dashboard')
+            try:
+                # Create a product on Stripe
+                product = stripe.Product.create(
+                    name=form.cleaned_data['name'],
+                    description=form.cleaned_data['description'],
+                    active=True,
+                )
+
+                # Create a price for the product
+                price = stripe.Price.create(
+                    product=product.id,
+                    unit_amount=int(form.cleaned_data['amount'] * 100),  # Convert amount to cents
+                    currency='usd',
+                    recurring={
+                        'interval': 'month',
+                    },
+                )
+
+                # Save the product and price details in your database
+                stripe_product = form.save(commit=False)
+                stripe_product.plan_id = price.id
+                stripe_product.user = request.user.serverowner
+                stripe_product.save()
+
+                messages.success(request, 'Plan successfully created.')
+                return redirect('dashboard')
+            except stripe.error.StripeError as e:
+                form.add_error(None, str(e))
         else:
             messages.warning(request, 'An error occured.')
     else:
         form = PlanForm()
-    
+
     context = {
         'form': form,
     }
-    
+
     return render(request, 'serverowner/dashboard.html', context)
 
 @login_required
@@ -406,6 +444,7 @@ def delete_plan(request):
     return redirect('dashboard')
 
 
+
 # @login_required
 # def list_plans(request):
 #     user_profile = ServerOwner.objects.get(subdomain=subdomain)
@@ -413,8 +452,7 @@ def delete_plan(request):
 #     user = request.user
 #     stripe_plans = StripePlan.objects.filter(user=user)
 #     return render(request, 'plans.html', {'stripe_plans': stripe_plans, 'user_profile': user_profile})
-from django.utils import timezone
-from datetime import datetime, timedelta
+
 
 @login_required
 def subscribe_to_plan(request, plan_id):
@@ -466,7 +504,7 @@ def subscribe_to_plan(request, plan_id):
     # Increment the subscriber count for the plan
     plan.subscriber_count += 1
     plan.save()
-    
+
     # Redirect the user to the Stripe Checkout page
     return redirect(session.url)
 
@@ -491,54 +529,54 @@ def subscriber_dashboard(request):
         'server': server,
         'subscription': subscription,
     }
-    
+
     return render(request, 'subscriber_dashboard.html', context)
 
 
 # @login_required
 # def cancel_subscription(request):
 #     # subscriber = Subscriber.objects.get(user=request.user)
-    
+
 #     # Check if the subscriber has an active subscription
 #     if subscriber.subscriptions.filter(subscribed=True).exists():
 #         subscription = subscriber.subscriptions.get(subscribed=True)
-        
+
 #         # Cancel the subscription in Stripe
 #         stripe.Subscription.delete(subscription.stripe_subscription_id)
-        
+
 #         # Update the subscription status in your database
 #         subscription.subscribed = False
 #         subscription.save()
-        
+
 #         messages.success(request, 'Subscription cancelled successfully.')
 #     else:
 #         messages.warning(request, 'You do not have an active subscription.')
-    
+
 #     return redirect('subscriber_dashboard')
 
 @login_required
 def cancel_subscription(request, subscription_id):
     subscriber = Subscriber.objects.get(user=request.user)
-    
+
     # Check if the subscriber has an active subscription with the provided ID
     subscription = get_object_or_404(Subscription, id=subscription_id, subscriber=subscriber, subscribed=True)
-    
+
     # Cancel the subscription in Stripe
     stripe.Subscription.delete(subscription.stripe_subscription_id)
-    
+
     # Update the subscription status in your database
     subscription.subscribed = False
     subscription.save()
-    
+
     messages.success(request, 'Subscription cancelled successfully.')
-    
+
     return redirect('subscriber_dashboard')
 
 
 def subscribe_cancel(request):
     # Handle the subscription cancellation or failure
     # You can perform any necessary actions here
-    
+
     return render(request, 'serverowner/dashboard.html')
 
 

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}My Plans{% endblock title %}
+
+{% block content %}
+
+<div class="container-fluid px-5">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Subscription Plans Overview</h1>
+            <small>Manage the subscription plans for your server</small>
+        </div>
+        <a data-toggle="modal" data-target="#createPlanModal" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            Create New Plan
+        </a>
+    </div>
+
+    {% if stripe_plans %}
+    <h5 class="text-gray-800 mb-3">All Subscription Plans <span class="ms-2 small badge badge-primary opacity-75">{{ plan_count }}</span></h5>
+
+    <div class="row g-4 mb-5">
+        {% for plan in stripe_plans %}
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary py-3"></div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <p class="text-primary fw-bold">{{ plan.name }}</p>
+                        <p class="font-monospace">{{ plan.subscriber_count }}
+                            Subscriber{{ plan.subscriber_count|pluralize }}</p>
+                    </div>
+                    <h5 class="fw-bold mb-3">${{ plan.amount }}/mo</h5>
+                    <p>{{ plan.description }}</p>
+                    <a class="btn btn-sm btn-danger" title="Delete" data-toggle="modal"
+                        data-target="#deleteModal{{ plan.id }}">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                    <a class="btn btn-sm btn-success" title="Update" data-toggle="modal"
+                        data-target="#updateModal{{ plan.id }}">
+                        <i class="fas fa-pen-to-square"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% include 'modals/_delete_plan_modal.html' %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center pt-3 pb-5">
+        <span class="text-primary fa-stack fa-4x mb-3">
+            <i class="fas fa-cloud fa-stack-2x"></i>
+            <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
+        </span>
+        <h3 class="text-dark">Start selling Subscriptions with Stripe Products</h3>
+        <p class="mb-3">Your products are hosted on your stripe account <br> and we provide a seamless integration for
+            managing them here.</p>
+        <a data-toggle="modal" data-target="#createPlanModal"
+            class="text-decoration-none btn py-2 px-4 btn-primary shadow-sm rounded-5">
+            <small class="pb-5">Create a Product on Stripe</small>
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% include 'modals/_create_plan_modal.html' %}
+{% endblock content %}

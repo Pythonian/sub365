@@ -1,5 +1,5 @@
 {% extends "base_auth.html" %}
-{% load static socialaccount %}
+{% load static %}
 
 {% block title %}Welcome!{% endblock title %}
 
@@ -11,7 +11,7 @@
     <form method="post" action="/accounts/discord/login/">
         {% csrf_token %}
         <button class="btn btn-primary py-3 w-100" type="submit">
-            Sign in with Discord
+            <i class="fa-brands fa-discord"></i> Sign in with Discord
         </button>
     </form>
 </div>

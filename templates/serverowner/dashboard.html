@@ -7,48 +7,51 @@
 <div class="container-fluid px-5">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="h3 mb-0 text-gray-800">Welcome back, {{ profile.username }} <i class="fa-solid fa-smile text-primary"></i></h1>
+            <h1 class="h3 mb-0 text-gray-800">Welcome back!</h1>
             <small>Here is your dashboard overview</small>
         </div>
-        <p>Link: {{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}</p>
-        <!-- <button id="copy-button" class="btn btn-sm btn-success"
-            data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}">Copy Subscription Link</button> -->
+        <button id="copy-button" class="btn btn-sm btn-info"
+            data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
     </div>
     <div class="row mb-4">
-        {% include '_total_earnings.html' %}
-        {% include '_total_subscribers.html' %}
-        {% include '_total_plans.html' %}
-        {% include '_total_payments.html' %}
+        {% include 'serverowner/_total_earnings.html' %}
+        {% include 'serverowner/_total_subscribers.html' %}
+        {% include 'serverowner/_total_plans.html' %}
+        {% include 'serverowner/_total_payments.html' %}
     </div>
 
     {% if stripe_plans %}
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="text-gray-800">All Subscription Plans</h5>
-        <a data-toggle="modal" data-target="#createPlanModal" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            Create New Plan
-        </a>
-    </div>
-    
-    <div class="row g-4 mb-4">
+    <h5 class="text-gray-800 mb-3">Popular Plans</h5>
+
+    <div class="row g-4 mb-5">
         {% for plan in stripe_plans %}
         <div class="col-xl-4 col-lg-5">
-            <div class="card shadow mb-4">
+            <div class="card shadow h-100 pb-2">
                 <div class="card-header bg-primary py-3"></div>
                 <div class="card-body">
-                    <p class="text-primary fw-bold">{{ plan.name }}</p>
+                    <div class="d-flex justify-content-between">
+                        <p class="text-primary fw-bold">{{ plan.name }}</p>
+                        <p class="font-monospace">{{ plan.subscriber_count }} Subscriber{{ plan.subscriber_count|pluralize }}</p>
+                    </div>
                     <h5 class="fw-bold mb-3">${{ plan.amount }}/mo</h5>
-                    <p class="font-monospace">{{ plan.subscriber_count }} Subscriber{{ plan.subscriber_count|pluralize }}</p>
+                    <p>{{ plan.description }}</p>
                     <a class="btn btn-sm btn-danger" title="Delete" data-toggle="modal" data-target="#deleteModal{{ plan.id }}">
                         <i class="fas fa-trash"></i>
+                    </a>
+                    <a class="btn btn-sm btn-success" title="Update">
+                        <i class="fas fa-pen-to-square"></i>
+                    </a>
+                    <a class="btn btn-sm btn-dark" title="Update">
+                        <i class="fas fa-eye"></i>
                     </a>
                 </div>
             </div>
         </div>
-        {% include 'serverowner/_delete_plan_modal.html' %}
+        {% include 'modals/_delete_plan_modal.html' %}
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-center pt-3 pb-5"> 
+    <div class="text-center pt-3 pb-5">
         <span class="text-primary fa-stack fa-4x mb-3">
             <i class="fas fa-cloud fa-stack-2x"></i>
             <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
@@ -61,12 +64,14 @@
     </div>
     {% endif %}
 
+    {% if subscribers %}
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="text-gray-800">All Subscribers</h5>
+        <h5 class="text-gray-800">Recent Subscribers</h5>
     </div>
 
     {% include '_subscribers_row.html' %}
+    {% endif %}
 </div>
 
-{% include 'serverowner/_create_plan_modal.html' %}
+{% include 'modals/_create_plan_modal.html' %}
 {% endblock content %}

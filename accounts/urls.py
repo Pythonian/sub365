@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('plans/', views.plans, name='plans'),
+    path('subscribers/', views.subscribers, name='subscribers'),
     path('choosename/', views.choose_name, name='choose_name'),
     path('stripe-refresh/', views.stripe_refresh, name='stripe_refresh'),
     path('create_stripe_account/', views.create_stripe_account, name='create_stripe_account'),
@@ -18,5 +20,5 @@ urlpatterns = [
     path('<str:subdomain>/subscriptions/', views.subscriber_plans, name='subscriber_plans'),
     path('cancel_subscription/<int:subscription_id>/', views.cancel_subscription, name='cancel_subscription'),
     path('dashboard_view/', views.dashboard_view, name='dashboard_view'),
-    path('', views.landing_page, name='landing_page'),
+    path('', views.index, name='index'),
 ]

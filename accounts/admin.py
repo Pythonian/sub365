@@ -23,5 +23,6 @@ class SubscriberAdmin(admin.ModelAdmin):
 @admin.register(StripePlan)
 class StripePlanAdmin(admin.ModelAdmin):
     list_display = ['name', 'user', 'amount']
+    search_fields = ['user']
 
 admin.site.register([User, Subscription])
