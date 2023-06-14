@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
@@ -14,7 +13,7 @@ import requests
 import stripe
 from allauth.socialaccount.models import SocialAccount
 
-from .forms import ChooseServerSubdomainForm, PlanForm, UpdatePlanForm
+from .forms import ChooseServerSubdomainForm, PlanForm
 from .models import Server, ServerOwner, StripePlan, Subscriber, Subscription, User
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -169,7 +168,6 @@ def choose_name(request):
     return render(request, 'choose_name.html', context)
 
 
-@login_required
 def dashboard_view(request):
     if request.user.is_serverowner:
         return redirect('dashboard')
@@ -179,7 +177,6 @@ def dashboard_view(request):
         return redirect('index')
 
 
-@login_required
 def create_stripe_account(request):
     # Create a Stripe account for the user
     connected_account = stripe.Account.create(
@@ -197,7 +194,6 @@ def create_stripe_account(request):
     return redirect('collect_user_info')
 
 
-@login_required
 def collect_user_info(request):
     serverowner = request.user.serverowner
     stripe_account_id = serverowner.stripe_account_id
@@ -212,6 +208,8 @@ def collect_user_info(request):
 
     # Redirect the user to the Stripe onboarding flow
     return redirect(account_link.url)
+
+from decimal import Decimal
 
 
 @login_required
@@ -262,7 +260,7 @@ def plans(request):
                 # Create a price for the product
                 price = stripe.Price.create(
                     product=product.id,
-                    unit_amount=int(form.cleaned_data['amount'] * 100),
+                    unit_amount=int(form.cleaned_data['amount'] * 100),  # Convert amount to cents
                     currency='usd',
                     recurring={
                         'interval': 'month',
@@ -286,6 +284,24 @@ def plans(request):
 
     # Retrieve the user's Stripe plans from the database
     stripe_plans = StripePlan.objects.filter(user=profile)
+    # Retrieve the user's Stripe account ID from the profile
+    # stripe_account_id = profile.stripe_account_id
+    # Retrieve the Stripe plans from the Stripe API using the account ID
+    # stripe_plans_api = stripe.Product.list(limit=100, stripe_account=stripe_account_id)
+    # Create a dictionary to map the plan IDs to their respective objects
+    # stripe_plans_dict = {plan.id: plan for plan in stripe_plans_api.data}
+
+    # Iterate over the user's Stripe plans and update their objects with the API data
+    # for plan in stripe_plans:
+    #     if plan.plan_id in stripe_plans_dict:
+    #         plan_object = stripe_plans_dict[plan.plan_id]
+    #         product_object = stripe.Product.retrieve(plan_object.product)
+    #         plan.name = product_object.name
+    #         plan.amount = plan_object.amount
+    #         plan.currency = plan_object.currency
+    #         plan.interval = plan_object.interval
+    #         plan.save()
+
     # Get the count of plans created by the user
     plan_count = stripe_plans.count()
 
@@ -296,59 +312,6 @@ def plans(request):
         'plan_count': plan_count,
     }
     return render(request, 'serverowner/plans.html', context)
-
-
-@login_required
-def plan_detail(request, plan_id):
-    plan = get_object_or_404(StripePlan, id=plan_id, user=request.user.serverowner)
-
-    if request.method == 'POST':
-        update_form = UpdatePlanForm(request.POST, instance=plan)
-
-        if update_form.is_valid():
-            try:
-                # Update the product on Stripe
-                stripe.Product.modify(
-                    plan.plan_id,
-                    name=update_form.cleaned_data['name'],
-                    description=update_form.cleaned_data['description'],
-                )
-                # Get the existing price
-                price = stripe.Price.retrieve(plan.plan_id)
-                # Update the price on Stripe
-                stripe.Price.modify(
-                    price.id,
-                    unit_amount=int(update_form.cleaned_data['amount'] * 100),
-                    currency='usd',
-                    recurring={
-                        'interval': 'month',
-                    },
-                )
-                # Update the product details in the database
-                update_form.save()
-                messages.success(request, 'Plan successfully updated.')
-                return redirect('plans')
-            except stripe.error.StripeError as e:
-                update_form.add_error(None, str(e))
-        else:
-            messages.warning(request, 'An error occurred.')
-    else:
-        update_form = UpdatePlanForm(instance=plan)
-
-    context = {
-        'update_form': update_form,
-        'plan': plan,
-    }
-    return render(request, 'serverowner/plan_detail.html', context)
-
-
-@login_required
-def delete_plan(request):
-    if request.method == 'POST':
-        plan_id = request.POST.get('plan_id')
-        plan = get_object_or_404(StripePlan, id=plan_id, user=request.user.serverowner)
-        plan.delete()
-    return redirect('dashboard')
 
 
 @login_required
@@ -427,6 +390,24 @@ def create_plan(request):
     }
 
     return render(request, 'serverowner/dashboard.html', context)
+
+@login_required
+def delete_plan(request):
+    if request.method == 'POST':
+        plan_id = request.POST.get('plan_id')
+        plan = get_object_or_404(StripePlan, id=plan_id, user=request.user.serverowner)
+        plan.delete()
+    return redirect('dashboard')
+
+
+
+# @login_required
+# def list_plans(request):
+#     user_profile = ServerOwner.objects.get(subdomain=subdomain)
+#     # stripe_plans = user_profile.plans.all()
+#     user = request.user
+#     stripe_plans = StripePlan.objects.filter(user=user)
+#     return render(request, 'plans.html', {'stripe_plans': stripe_plans, 'user_profile': user_profile})
 
 
 @login_required

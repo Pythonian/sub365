@@ -5,73 +5,89 @@
 {% block content %}
 
 <div class="container-fluid px-5">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-0 text-gray-800">Welcome back!</h1>
-            <small>Here is your dashboard overview</small>
-        </div>
-        <button id="copy-button" class="btn btn-sm btn-info"
-            data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
-    </div>
-    <div class="row mb-4">
-        {% include 'serverowner/_total_earnings.html' %}
-        {% include 'serverowner/_total_subscribers.html' %}
-        {% include 'serverowner/_total_plans.html' %}
-        {% include 'serverowner/_total_payments.html' %}
-    </div>
-
     {% if stripe_plans %}
-    <h5 class="text-gray-800 mb-3">Popular Plans</h5>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="mb-0 text-secondary">Welcome back!</h3>
+                <small>Here is your dashboard overview</small>
+            </div>
+            <button id="copy-button" class="btn btn-sm btn-info" data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ user.serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
+        </div>
+        <div class="row mb-4">
+            {% include 'serverowner/_total_earnings.html' %}
+            {% include 'serverowner/_total_subscribers.html' %}
+            {% include 'serverowner/_total_plans.html' %}
+            {% include 'serverowner/_total_payments.html' %}
+        </div>
 
-    <div class="row g-4 mb-5">
-        {% for plan in stripe_plans %}
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow h-100 pb-2">
-                <div class="card-header bg-primary py-3"></div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <p class="text-primary fw-bold">{{ plan.name }}</p>
-                        <p class="font-monospace">{{ plan.subscriber_count }} Subscriber{{ plan.subscriber_count|pluralize }}</p>
+        <h5 class="text-secondary mb-3">Popular Plans</h5>
+        <div class="row g-4 mb-5">
+            {% for plan in stripe_plans %}
+            <div class="col-xl-4 col-lg-5">
+                {% include 'serverowner/_plan_card.html' %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if subscribers %}
+            <h5 class="text-secondary mb-3">Recent Subscribers</h5>
+            <div class="row g-4 mb-5">
+                {% for subscriber in subscribers %}
+                <div class="col-xl-4 col-lg-5">
+                    {% include 'serverowner/_subscriber_card.html' %}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="row mb-4 mt-5">
+            <h1 class="h3 mb-1 text-dark">Complete setting up your dashboard</h1>
+            <p class="small m-0">You will be able to activate your dashboard after this.</p>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body pb-1">
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex">
+                                <i class="fas fa-list-check lh-base fa-2x me-3 text-primary d-none d-md-block"></i>
+                                <div>
+                                    <h5 class="m-0 mb-1 p-0">Setup your subscriptions for your Server</h5>
+                                    <p class="text-secondary small">You'll need to setup your products on Stripe to activate your
+                                        dashboard</p>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{% url 'plans' %}" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5">
+                                    <i class="fa-solid fa-plus me-1"></i> Create a Subscription Plan
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <h5 class="fw-bold mb-3">${{ plan.amount }}/mo</h5>
-                    <p>{{ plan.description }}</p>
-                    <a class="btn btn-sm btn-danger" title="Delete" data-toggle="modal" data-target="#deleteModal{{ plan.id }}">
-                        <i class="fas fa-trash"></i>
-                    </a>
-                    <a class="btn btn-sm btn-success" title="Update">
-                        <i class="fas fa-pen-to-square"></i>
-                    </a>
-                    <a class="btn btn-sm btn-dark" title="Update">
-                        <i class="fas fa-eye"></i>
-                    </a>
+                </div>
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body pb-1">
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex">
+                                <i class="fas fa-list-check lh-base fa-2x me-3 text-primary d-none d-md-block"></i>
+                                <div>
+                                    <h5 class="m-0 mb-1 p-0">Get a Subscriber</h5>
+                                    <p class="text-secondary small">Subscribers pay you money for access to your servers and its perks.
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <button id="copy-button" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5"
+                                    data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i
+                                        class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        {% include 'modals/_delete_plan_modal.html' %}
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="text-center pt-3 pb-5">
-        <span class="text-primary fa-stack fa-4x mb-3">
-            <i class="fas fa-cloud fa-stack-2x"></i>
-            <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
-        </span>
-        <h3 class="text-dark">Start selling Subscriptions with Stripe Products</h3>
-        <p class="mb-3">Your products are hosted on your stripe account <br> and we provide a seamless integration for managing them here.</p>
-        <a data-toggle="modal" data-target="#createPlanModal" class="text-decoration-none btn py-2 px-4 btn-primary shadow-sm rounded-5">
-            <small class="pb-5">Create a Product on Stripe</small>
-        </a>
-    </div>
-    {% endif %}
-
-    {% if subscribers %}
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="text-gray-800">Recent Subscribers</h5>
-    </div>
-
-    {% include '_subscribers_row.html' %}
     {% endif %}
 </div>
 
-{% include 'modals/_create_plan_modal.html' %}
 {% endblock content %}

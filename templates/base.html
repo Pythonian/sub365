@@ -25,9 +25,6 @@
                     </button>
 
                     <ul class="navbar-nav ml-auto">
-                        <!-- <li class="nav-item">
-                            <span class="d-none d-lg-inline badge badge-success small">Registered on {{ request.user.date_joined|date:"j F, Y" }}</span>
-                        </li> -->
                         <li class="nav-item">
                             <span class="nav-link">
                                 <span class="d-none d-lg-inline badge badge-primary opacity-75 small py-2 px-2">Registered on
@@ -36,7 +33,7 @@
                         </li>
                         <div class="topbar-divider d-none d-sm-block"></div>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <span class="nav-link">
                                 {% if request.user.is_serverowner %}
                                 <img class="img-profile rounded-circle me-2" src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ request.user.serverowner.discord_id }}/{{ request.user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
@@ -50,7 +47,7 @@
                                     class="d-none d-lg-inline text-gray-600 small">{{ request.user.subscriber.username|title }}</span>
                                 {% endif %}
 
-                            </a>
+                            </span>
                         </li>
                     </ul>
                 </nav>
@@ -94,6 +91,28 @@
                     // Log error to console if copying to clipboard fails
                     console.error('Failed to copy subscription link:', error);
                 });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('form').submit(function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var url = form.attr('action');
+
+                $.ajax({
+                    type: 'POST',
+                    url: url,
+                    data: form.serialize(),
+                    dataType: 'json',
+                    success: function (response) {
+                        window.location.href = response.redirect_url;
+                    },
+                    error: function () {
+                        alert('An error occurred.');
+                    }
+                });
+            });
         });
     </script>
 

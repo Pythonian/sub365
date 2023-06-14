@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Plan: {{ plan.name }}{% endblock title %}
+
+{% block content %}
+
+<div class="container-fluid px-lg-5">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <a href="{% url 'plans' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Plans</a>
+            <h3 class="mb-0 text-secondary">Plan: {{ plan.name }}</h3>
+        </div>
+        <a data-toggle="modal" data-target="#updatePlan{{ plan.id }}" class="btn btn-sm btn-primary shadow-sm">
+            Update Plan
+        </a>
+    </div>
+    <div class="row mb-4">
+        {% include 'serverowner/_plan_total_amount.html' %}
+        {% include 'serverowner/_plan_total_subscribers.html' %}
+        {% include 'serverowner/_plan_active_subscribers.html' %}
+    </div>
+
+    <h5 class="text-secondary mb-3">Subscription History <span class="ms-2 small badge badge-primary opacity-75">{{ plan_count }}</span></h5>
+
+
+</div>
+{% include 'modals/_update_plan_modal.html' %}
+{% endblock content %}

@@ -22,3 +22,5 @@ View subscriber detail and transaction history
 Add max_length to plan description
 Change how the empty state of the Plans template works
 django messages/alert toast
+enable serverowners to choose the interval: monthly, 3-months or 12-months
+earnings are being calculated incorrectly for deleted users

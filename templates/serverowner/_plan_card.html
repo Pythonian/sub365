@@ -1,0 +1,16 @@
+<div class="card shadow h-100 pb-2">
+    <div class="card-header bg-primary py-3"></div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between">
+            <p class="text-primary fw-bold">{{ plan.name }}</p>
+            <p class="font-monospace">{{ plan.subscriber_count }} Subscriber{{ plan.subscriber_count|pluralize }}</p>
+        </div>
+        <h5 class="fw-bold mb-3">${{ plan.amount }}<small>/mo</small></h5>
+        <p>{{ plan.description }}</p>
+        <a class="btn btn-sm btn-primary" href="{% url 'plan' plan.id %}">
+            <i class="fas fa-eye"></i> View Plan
+        </a>
+    </div>
+</div>
+{% include 'modals/_delete_plan_modal.html' %}
+{% include 'modals/_update_plan_modal.html' %}

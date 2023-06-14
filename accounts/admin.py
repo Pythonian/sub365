@@ -22,7 +22,7 @@ class SubscriberAdmin(admin.ModelAdmin):
 
 @admin.register(StripePlan)
 class StripePlanAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'amount']
+    list_display = ['name', 'user', 'amount', 'subscriber_count']
     search_fields = ['user']
 
 admin.site.register([User, Subscription])

@@ -11,6 +11,7 @@ urlpatterns = [
     path('create_stripe_account/', views.create_stripe_account, name='create_stripe_account'),
     path('collect_user_info/', views.collect_user_info, name='collect_user_info'),
     path('create_plan/', views.create_plan, name='create_plan'),
+    path('plan/<int:plan_id>/', views.plan_detail, name='plan'),
     path('delete_plan/', views.delete_plan, name='delete_plan'),
     # path('<str:subdomain>/subscriptions/', views.list_plans, name='list_plans'),
     path('plans/subscribe/<int:plan_id>/', views.subscribe_to_plan, name='subscribe_to_plan'),

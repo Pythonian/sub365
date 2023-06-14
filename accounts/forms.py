@@ -19,7 +19,7 @@ class ChooseServerSubdomainForm(forms.Form):
         if ServerOwner.objects.filter(subdomain=subdomain).exists():
             raise forms.ValidationError('This subdomain has already been chosen.')
         return subdomain
-   
+
     def clean_server(self):
         server = self.cleaned_data.get('server')
         subdomain = self.cleaned_data.get('subdomain')
@@ -40,11 +40,12 @@ class ChooseServerSubdomainForm(forms.Form):
         server.save()
 
 
-# class PlanForm(forms.Form):
-#     name = forms.CharField(label='Plan Name', max_length=100)
-#     amount = forms.DecimalField(label='Amount')
-
 class PlanForm(forms.ModelForm):
+    class Meta:
+        model = StripePlan
+        fields = ['name', 'amount', 'description']
+
+class UpdatePlanForm(forms.ModelForm):
     class Meta:
         model = StripePlan
         fields = ['name', 'amount', 'description']
