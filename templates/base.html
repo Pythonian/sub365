@@ -87,19 +87,38 @@
     <script src="{% static 'scripts/dashboard.min.js' %}"></script>
 
     <script>
-        const copyButton = document.getElementById('copy-button');
+        document.getElementById("copy-button").addEventListener("click", function () {
+                var subscriptionLink = this.getAttribute("data-subscription-link");
 
-        copyButton.addEventListener('click', () => {
-            const subscriptionLink = copyButton.getAttribute('data-subscription-link');
-            navigator.clipboard.writeText(subscriptionLink)
-                .then(() => {
-                    alert('Subscription link copied!');
-                })
-                .catch((error) => {
-                    // Log error to console if copying to clipboard fails
-                    console.error('Failed to copy subscription link:', error);
-                });
-        });
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(subscriptionLink)
+                        .then(function () {
+                            alert("Subscription link copied to clipboard!");
+                        })
+                        .catch(function (error) {
+                            console.error("Failed to copy subscription link:", error);
+                        });
+                } else {
+                    // Fallback for browsers that don't support the Clipboard API
+                    var textarea = document.createElement("textarea");
+                    textarea.value = subscriptionLink;
+                    textarea.style.position = "fixed";  // Ensure the textarea is visible
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+
+                    try {
+                        var successful = document.execCommand("copy");
+                        var msg = successful ? "Subscription link copied to clipboard!" : "Failed to copy subscription link.";
+                        alert(msg);
+                    } catch (error) {
+                        console.error("Failed to copy subscription link:", error);
+                    }
+
+                    document.body.removeChild(textarea);
+                }
+            });
+
     </script>
 
 </body>
