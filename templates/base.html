@@ -19,7 +19,7 @@
         <div id="content-wrapper" class="d-flex flex-column">
             <div id="content">
 
-                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow px-5">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar static-top shadow px-5">
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                         <i class="fa fa-bars"></i>
                     </button>
@@ -52,7 +52,19 @@
                     </ul>
                 </nav>
 
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} rounded-0 alert-dismissible fade show"
+                    role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <div class="container-fluid px-lg-5 mt-4">
                 {% block content %}{% endblock content %}
+                </div>
             </div>
 
             <!-- Footer -->
@@ -67,10 +79,6 @@
     </div>
 
     {% include 'modals/_logout_modal.html' %}
-
-    <a class="scroll-to-top rounded" href="#page-top">
-        <i class="fas fa-angle-up"></i>
-    </a>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"
         integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="
@@ -91,28 +99,6 @@
                     // Log error to console if copying to clipboard fails
                     console.error('Failed to copy subscription link:', error);
                 });
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
-            $('form').submit(function (e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-
-                $.ajax({
-                    type: 'POST',
-                    url: url,
-                    data: form.serialize(),
-                    dataType: 'json',
-                    success: function (response) {
-                        window.location.href = response.redirect_url;
-                    },
-                    error: function () {
-                        alert('An error occurred.');
-                    }
-                });
-            });
         });
     </script>
 

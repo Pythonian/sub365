@@ -1,7 +1,7 @@
-from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 class User(AbstractUser):
     is_serverowner = models.BooleanField(default=False)
@@ -46,10 +46,11 @@ class Subscriber(models.Model):
 
 class StripePlan(models.Model):
     user = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name='plans')
-    plan_id = models.CharField(max_length=100)
+    product_id = models.CharField(max_length=100)
+    price_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
-    description = models.TextField()
+    description = models.TextField(max_length=300)
     currency = models.CharField(max_length=3)
     interval = models.CharField(max_length=10)
     subscriber_count = models.IntegerField(default=0)
@@ -63,6 +64,11 @@ class StripePlan(models.Model):
 
 
 class Subscription(models.Model):
+    class SubscriptionStatus(models.TextChoices):
+        ACTIVE = 'A', _('Active')
+        INACTIVE = 'I', _('Inactive')
+        CANCELLED = 'C', _('Cancelled')
+
     subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='subscriptions')
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
@@ -70,6 +76,8 @@ class Subscription(models.Model):
     expiration_date = models.DateTimeField()
     subscribed = models.BooleanField(default=True)
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
+    status = models.CharField(
+        max_length=1, choices=SubscriptionStatus.choices, default=SubscriptionStatus.ACTIVE)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<div class="container-fluid px-5">
     {% if stripe_plans %}
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <div>
@@ -33,7 +32,7 @@
             <h5 class="text-secondary mb-3">Recent Subscribers</h5>
             <div class="row g-4 mb-5">
                 {% for subscriber in subscribers %}
-                <div class="col-xl-4 col-lg-5">
+                <div class="col-lg-4">
                     {% include 'serverowner/_subscriber_card.html' %}
                 </div>
                 {% endfor %}
@@ -88,6 +87,5 @@
             </div>
         </div>
     {% endif %}
-</div>
 
 {% endblock content %}

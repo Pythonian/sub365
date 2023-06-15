@@ -44,8 +44,3 @@ class PlanForm(forms.ModelForm):
     class Meta:
         model = StripePlan
         fields = ['name', 'amount', 'description']
-
-class UpdatePlanForm(forms.ModelForm):
-    class Meta:
-        model = StripePlan
-        fields = ['name', 'amount', 'description']

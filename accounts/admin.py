@@ -25,4 +25,11 @@ class StripePlanAdmin(admin.ModelAdmin):
     list_display = ['name', 'user', 'amount', 'subscriber_count']
     search_fields = ['user']
 
-admin.site.register([User, Subscription])
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ['subscriber', 'subscribed_via', 'plan', 'subscription_date', 'expiration_date', 'status']
+    search_fields = ['subscriber', 'subscribed_via', 'plan']
+    list_filter = ['status', 'subscription_date', 'expiration_date']
+
+admin.site.register([User])

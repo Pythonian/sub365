@@ -14,7 +14,7 @@ import requests
 import stripe
 from allauth.socialaccount.models import SocialAccount
 
-from .forms import ChooseServerSubdomainForm, PlanForm, UpdatePlanForm
+from .forms import ChooseServerSubdomainForm, PlanForm
 from .models import Server, ServerOwner, StripePlan, Subscriber, Subscription, User
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -215,6 +215,24 @@ def collect_user_info(request):
 
 
 @login_required
+def stripe_refresh(request):
+    # Get the logged-in user's profile
+    profile = ServerOwner.objects.get(user=request.user)
+
+    # Retrieve the Stripe account ID from the request or the Stripe API response
+    stripe_account_id = request.GET.get('account_id')
+
+    # Update the profile's stripe_account_id field
+    profile.stripe_account_id = stripe_account_id
+    profile.save()
+
+    # Redirect the user to the onboarding process
+    return redirect('collect_user_info')
+
+
+################# SERVER OWNERS #################
+
+@login_required
 def dashboard(request):
     profile = get_object_or_404(ServerOwner, user=request.user)
 
@@ -271,7 +289,8 @@ def plans(request):
 
                 # Save the product and price details in your database
                 stripe_product = form.save(commit=False)
-                stripe_product.plan_id = price.id
+                stripe_product.price_id = price.id
+                stripe_product.product_id = product.id
                 stripe_product.user = request.user.serverowner
                 stripe_product.save()
 
@@ -279,6 +298,7 @@ def plans(request):
                 return redirect('plans')
             except stripe.error.StripeError as e:
                 form.add_error(None, str(e))
+                messages.warning(request, f'{e}')
         else:
             messages.warning(request, 'An error occured.')
     else:
@@ -299,45 +319,24 @@ def plans(request):
 
 
 @login_required
-def plan_detail(request, plan_id):
-    plan = get_object_or_404(StripePlan, id=plan_id, user=request.user.serverowner)
+def plan_detail(request, product_id):
+    plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
 
-    if request.method == 'POST':
-        update_form = UpdatePlanForm(request.POST, instance=plan)
+    subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
+    active_subscribers = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
+    subscriber_count = subscribers.count()
 
-        if update_form.is_valid():
-            try:
-                # Update the product on Stripe
-                stripe.Product.modify(
-                    plan.plan_id,
-                    name=update_form.cleaned_data['name'],
-                    description=update_form.cleaned_data['description'],
-                )
-                # Get the existing price
-                price = stripe.Price.retrieve(plan.plan_id)
-                # Update the price on Stripe
-                stripe.Price.modify(
-                    price.id,
-                    unit_amount=int(update_form.cleaned_data['amount'] * 100),
-                    currency='usd',
-                    recurring={
-                        'interval': 'month',
-                    },
-                )
-                # Update the product details in the database
-                update_form.save()
-                messages.success(request, 'Plan successfully updated.')
-                return redirect('plans')
-            except stripe.error.StripeError as e:
-                update_form.add_error(None, str(e))
-        else:
-            messages.warning(request, 'An error occurred.')
-    else:
-        update_form = UpdatePlanForm(instance=plan)
+    # Calculate the total earnings
+    total_earnings = Decimal(0)
+    for subscriber in subscribers:
+        total_earnings += subscriber.plan.amount
 
     context = {
-        'update_form': update_form,
         'plan': plan,
+        'subscribers': subscribers,
+        'subscriber_count': subscriber_count,
+        'active_subscribers': active_subscribers,
+        'total_earnings': total_earnings,
     }
     return render(request, 'serverowner/plan_detail.html', context)
 
@@ -345,10 +344,12 @@ def plan_detail(request, plan_id):
 @login_required
 def delete_plan(request):
     if request.method == 'POST':
-        plan_id = request.POST.get('plan_id')
-        plan = get_object_or_404(StripePlan, id=plan_id, user=request.user.serverowner)
+        product_id = request.POST.get('product_id')
+        plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
+        #TODO delete Product on stripe
         plan.delete()
-    return redirect('dashboard')
+        messages.success(request, 'Your plan has been successfully deleted.')
+    return redirect('plans')
 
 
 @login_required
@@ -362,76 +363,16 @@ def subscribers(request):
     context = {
         'profile': profile,
         'subscriber_count': subscriber_count,
-        'subscribers': subscribers[:3],
+        'subscribers': subscribers,
     }
     return render(request, 'serverowner/subscribers.html', context)
 
 
-@login_required
-def stripe_refresh(request):
-    # Get the logged-in user's profile
-    profile = ServerOwner.objects.get(user=request.user)
-
-    # Retrieve the Stripe account ID from the request or the Stripe API response
-    stripe_account_id = request.GET.get('account_id')
-
-    # Update the profile's stripe_account_id field
-    profile.stripe_account_id = stripe_account_id
-    profile.save()
-
-    # Redirect the user to the onboarding process
-    return redirect('collect_user_info')
-
+################# SUBSCRIBERS #################
 
 @login_required
-def create_plan(request):
-    if request.method == 'POST':
-        form = PlanForm(request.POST)
-
-        if form.is_valid():
-            try:
-                # Create a product on Stripe
-                product = stripe.Product.create(
-                    name=form.cleaned_data['name'],
-                    description=form.cleaned_data['description'],
-                    active=True,
-                )
-
-                # Create a price for the product
-                price = stripe.Price.create(
-                    product=product.id,
-                    unit_amount=int(form.cleaned_data['amount'] * 100),  # Convert amount to cents
-                    currency='usd',
-                    recurring={
-                        'interval': 'month',
-                    },
-                )
-
-                # Save the product and price details in your database
-                stripe_product = form.save(commit=False)
-                stripe_product.plan_id = price.id
-                stripe_product.user = request.user.serverowner
-                stripe_product.save()
-
-                messages.success(request, 'Plan successfully created.')
-                return redirect('dashboard')
-            except stripe.error.StripeError as e:
-                form.add_error(None, str(e))
-        else:
-            messages.warning(request, 'An error occured.')
-    else:
-        form = PlanForm()
-
-    context = {
-        'form': form,
-    }
-
-    return render(request, 'serverowner/dashboard.html', context)
-
-
-@login_required
-def subscribe_to_plan(request, plan_id):
-    plan = get_object_or_404(StripePlan, id=plan_id)
+def subscribe_to_plan(request, product_id):
+    plan = get_object_or_404(StripePlan, id=product_id)
     subscriber = Subscriber.objects.get(user=request.user)
 
     # Create a Stripe Checkout Session
@@ -441,7 +382,7 @@ def subscribe_to_plan(request, plan_id):
         # payment_method_types=['card'],
         line_items=[
             {
-                'price': plan.plan_id,
+                'price': plan.price_id,
                 'quantity': 1,
             }
         ],
@@ -456,7 +397,7 @@ def subscribe_to_plan(request, plan_id):
     #     customer=subscriber.stripe_account_id,
     #     items=[
     #         {
-    #             'price': plan.plan_id,
+    #             'price': plan.price_id,
     #             'quantity': 1,
     #         }
     #     ],

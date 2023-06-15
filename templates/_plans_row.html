@@ -17,7 +17,7 @@
                         <thead>
                             <tr class="ligth">
                                 <th>Plan Name</th>
-                                <th>Plan ID</th>
+                                <th>Subscribers</th>
                                 <th>Amount</th>
                                 <th>Currency</th>
                                 <th>Interval</th>
@@ -28,7 +28,7 @@
                             {% for plan in stripe_plans %}
                             <tr>
                                 <td>{{ plan.name }}</td>
-                                <td>{{ plan.plan_id }}</td>
+                                <td>{{ plan.subscriber_count }}</td>
                                 <td>{{ plan.amount }}</td>
                                 <td>USD</td>
                                 <td>monthly</td>
@@ -63,17 +63,17 @@
                                                     data-dismiss="modal">Cancel</button>
                                                 <form method="POST" action="{% url 'delete_plan' %}">
                                                     {% csrf_token %}
-                                                    <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                                    <input type="hidden" name="product_id" value="{{ plan.id }}">
                                                     <button type="submit" class="btn btn-danger">Delete</button>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                {% else %} 
+                                {% else %}
                                 <td>
                                     <div class="flex align-items-center list-user-action">
-                                        <a class="btn btn-sm btn-success" href="{% url 'subscribe_to_plan' plan_id=plan.id %}" title="Subscribe">
+                                        <a class="btn btn-sm btn-success" href="{% url 'subscribe_to_plan' product_id=plan.id %}" title="Subscribe">
                                             Subscribe <i class="fas fa-thumbs-up"></i>
                                         </a>
                                     </div>

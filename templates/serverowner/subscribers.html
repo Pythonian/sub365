@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<div class="container-fluid px-lg-5">
     {% if subscribers %}
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <div>
@@ -17,7 +16,14 @@
         <h5 class="text-gray-800">All Subscribers <span class="ms-2 small badge badge-primary opacity-75">{{ subscriber_count }}</span></h5>
     </div>
 
-    {% include '_subscribers_row.html' %}
+    <div class="row g-4">
+        {% for subscriber in subscribers %}
+        <div class="col-lg-4">
+            {% include 'serverowner/_subscriber_card.html' %}
+        </div>
+        {% endfor %}
+    </div>
+
     {% else %}
     <div class="text-center py-5">
         <span class="text-primary fa-stack fa-4x mb-3">
@@ -30,6 +36,6 @@
             data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
     </div>
     {% endif %}
-</div>
+
 
 {% endblock content %}

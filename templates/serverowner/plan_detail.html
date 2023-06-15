@@ -4,25 +4,74 @@
 
 {% block content %}
 
-<div class="container-fluid px-lg-5">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <div>
             <a href="{% url 'plans' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Plans</a>
-            <h3 class="mb-0 text-secondary">Plan: {{ plan.name }}</h3>
+            <h3 class="mb-0 text-secondary">Plan: {{ plan.name }} <span class="text-primary h6">(${{ plan.amount }}<small>/mo</small>)</span></h3>
         </div>
-        <a data-toggle="modal" data-target="#updatePlan{{ plan.id }}" class="btn btn-sm btn-primary shadow-sm">
-            Update Plan
-        </a>
+        <div>
+            <a data-toggle="modal" data-target="#deletePlan{{ plan.id }}" class="btn btn-sm btn-danger shadow-sm">
+                Delete Plan
+            </a>
+        </div>
     </div>
+
+    {% if subscribers %}
     <div class="row mb-4">
         {% include 'serverowner/_plan_total_amount.html' %}
         {% include 'serverowner/_plan_total_subscribers.html' %}
         {% include 'serverowner/_plan_active_subscribers.html' %}
     </div>
 
-    <h5 class="text-secondary mb-3">Subscription History <span class="ms-2 small badge badge-primary opacity-75">{{ plan_count }}</span></h5>
+    <h5 class="text-secondary mb-3">Subscribers</h5>
+    <div class="row">
+        <div class="col-sm-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-primary"></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Subscription Date</th>
+                                    <th>Expiration Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subscriber in subscribers %}
+                                <tr>
+                                    <td>{{ subscriber.subscriber.username }}</td>
+                                    <td>{{ subscriber.subscriber.email }}</td>
+                                    <td>{{ subscriber.subscription_date|date:"F j, Y" }}</td>
+                                    <td>{{ subscriber.expiration_date|date:"F j, Y" }}</td>
+                                    <td><span class="badge text-bg-{% if subscriber.status == 'A' %}success{% else %}danger{% endif %}">{{ subscriber.get_status_display }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <span class="text-primary fa-stack fa-4x mb-3">
+            <i class="fas fa-circle fa-stack-2x"></i>
+            <i class="fas fa-face-frown fa-stack-1x fa-inverse"></i>
+        </span>
+        <h3 class="text-dark">You have no Subscriber for this Plan yet.</h3>
+        <p class="mb-5">Don't worry, you can start getting subscribers by sharing your subscription link.<br> Simply copy
+            your unique subscription link below.</p>
+        <button id="copy-button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"
+            data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i
+                class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
+    </div>
+    {% endif %}
 
+{% include 'modals/_delete_plan_modal.html' %}
 
-</div>
-{% include 'modals/_update_plan_modal.html' %}
 {% endblock content %}
