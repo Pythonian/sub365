@@ -5,20 +5,17 @@
     - Cancelled subscription
     - Reminder of next due subscription date
 - Bug: Two owners of servers can still register a server
-- Use HTMX to dynamically check for used subdomain name
 - Admin interface overhaul
 - Rewrite some URL patterns
 - Check if earnings count stays if after someone subscribes, you delete plans
+- earnings are being calculated incorrectly for deleted users
 - Site responsiveness
 - Error pages
 - Setup for production environment
 - Github worflow
 - Makefile
-- Reduce API calls by saving to database
-Edit plan
+- Finesse the bootstrap alert messages / remember base_auth alerts
 View subscriber detail and transaction history
 Validate max_length in plan description (dj-mastery)
-django messages/alert toast
 enable serverowners to choose the interval: monthly, 3-months or 12-months
-earnings are being calculated incorrectly for deleted users
 Paginate Plan subscribers list

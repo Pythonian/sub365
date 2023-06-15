@@ -5,11 +5,6 @@
 
 {% block content %}
 
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Welcome, {{ request.user.subscriber.username }}</h1>
-    </div>
-
     {% if subscription %}
        <div class="row">
             <div class="col-sm-12 mb-4">
@@ -50,52 +45,40 @@
             </div>
         </div>
     {% else %}
-    <div class="row">
-        <div class="col-sm-12 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Subscription Details for Server: {{ server }}</h6>
-
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr class="ligth">
-                                    <th>Plan Name</th>
-                                    <th>Amount</th>
-                                    <th>Interval</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for plan in plans %}
-                                <tr>
-                                    <td>{{ plan.name }}</td>
-                                    <td>${{ plan.amount }}</td>
-                                    <td>monthly</td>
-                                    <td>
-                                        <div class="flex align-items-center list-user-action">
-                                            <a class="btn btn-sm btn-success"
-                                                href="{% url 'subscribe_to_plan' product_id=plan.id %}" title="Subscribe">
-                                                Subscribe
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6">No Plans Found</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+    <div class="row mb-4 mt-5">
+        <h1 class="h3 mb-1 text-dark">Welcome, {{ user.subscriber.username }}. Choose a subscription plan below</h1>
+        <p class="small m-0">You will need to subscribe to a plan to be granted access to <span class="text-primary">{{ server }}</span> by the Server owner.</p>
+    </div>
+    <div class="row g-4 mb-5">
+        {% for plan in plans %}
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow h-100 pb-2">
+                <div class="card-header bg-primary py-3"></div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-primary fw-bold">{{ plan.name }}</span>
+                        <span class="font-monospace">{{ plan.subscriber_count }}
+                            Subscriber{{ plan.subscriber_count|pluralize }}</span>
                     </div>
+                    <h5 class="fw-bold my-3">${{ plan.amount }}<small>/mo</small></h5>
+                    <p>{{ plan.description }}</p>
+                    <a class="btn btn-sm btn-success" href="{% url 'subscribe_to_plan' product_id=plan.id %}">
+                        <i class="far fa-credit-card me-1"></i> Subscribe
+                    </a>
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <span class="text-primary fa-stack fa-4x mb-3">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-ban fa-stack-1x fa-inverse"></i>
+            </span>
+            <h3 class="text-dark">No subscription plan found.</h3>
+            <p class="mb-5">Hmmm! Seems there are no Plans attached to the server you want to subscribe to yet.</p>
+        </div>
+        {% endfor %}
     </div>
     {% endif %}
-</div>
 
 {% endblock %}

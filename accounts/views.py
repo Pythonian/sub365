@@ -16,6 +16,7 @@ from allauth.socialaccount.models import SocialAccount
 
 from .forms import ChooseServerSubdomainForm, PlanForm
 from .models import Server, ServerOwner, StripePlan, Subscriber, Subscription, User
+from .utils import mk_paginator
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -308,6 +309,7 @@ def plans(request):
     stripe_plans = StripePlan.objects.filter(user=profile)
     # Get the count of plans created by the user
     plan_count = stripe_plans.count()
+    stripe_plans = mk_paginator(request, stripe_plans, 9)
 
     context = {
         'profile': profile,
@@ -371,6 +373,31 @@ def subscribers(request):
 ################# SUBSCRIBERS #################
 
 @login_required
+def subscriber_dashboard(request):
+    subscriber = Subscriber.objects.get(user=request.user)
+    server_owner = subscriber.subscribed_via
+    server = Server.objects.get(owner=server_owner, choice_server=True)
+
+    # Retrieve the plans related to the ServerOwner
+    plans = StripePlan.objects.filter(user=server_owner.user.serverowner)
+
+    try:
+        subscription = Subscription.objects.filter(subscriber=subscriber, subscribed=True).latest()
+    except Subscription.DoesNotExist:
+        subscription = None
+
+    context = {
+        'plans': plans,
+        'subscriber': subscriber,
+        'server_owner': server_owner,
+        'server': server,
+        'subscription': subscription,
+    }
+
+    return render(request, 'subscriber/dashboard.html', context)
+
+
+@login_required
 def subscribe_to_plan(request, product_id):
     plan = get_object_or_404(StripePlan, id=product_id)
     subscriber = Subscriber.objects.get(user=request.user)
@@ -423,31 +450,6 @@ def subscribe_to_plan(request, product_id):
 
     # Redirect the user to the Stripe Checkout page
     return redirect(session.url)
-
-
-@login_required
-def subscriber_dashboard(request):
-    subscriber = Subscriber.objects.get(user=request.user)
-    server_owner = subscriber.subscribed_via
-    server = Server.objects.get(owner=server_owner, choice_server=True)
-
-    # Retrieve the plans related to the ServerOwner
-    plans = StripePlan.objects.filter(user=server_owner.user.serverowner)
-
-    try:
-        subscription = Subscription.objects.filter(subscriber=subscriber, subscribed=True).latest()
-    except Subscription.DoesNotExist:
-        subscription = None
-
-    context = {
-        'plans': plans,
-        'subscriber': subscriber,
-        'server_owner': server_owner,
-        'server': server,
-        'subscription': subscription,
-    }
-
-    return render(request, 'subscriber_dashboard.html', context)
 
 
 # @login_required

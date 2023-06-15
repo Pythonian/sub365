@@ -42,9 +42,11 @@
                                 </span>
 
                                 {% else %}
-                                <img class="img-profile rounded-circle me-2" src="https://placehold.it/50x50">
-                                <span
-                                    class="d-none d-lg-inline text-gray-600 small">{{ request.user.subscriber.username|title }}</span>
+                                <img class="img-profile rounded-circle me-2" src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ request.user.subscriber.discord_id }}/{{ request.user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
+                                <span class="text-gray-600 small">
+                                    {{ request.user.subscriber.username|title }}<br>
+                                    Subscriber
+                                </span>
                                 {% endif %}
 
                             </span>
