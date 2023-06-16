@@ -4,10 +4,18 @@ from .models import ServerOwner, Server, StripePlan
 
 
 class ChooseServerSubdomainForm(forms.Form):
+    """
+    Form for choosing a server and subdomain.
+    """
+    
     subdomain = forms.CharField(max_length=20)
     server = forms.ModelChoiceField(queryset=Server.objects.none())
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the form with the user and populate the server choices with
+        servers of the current user.
+        """
         user = kwargs.pop('user', None)
         super(ChooseServerSubdomainForm, self).__init__(*args, **kwargs)
         if user:
@@ -15,12 +23,18 @@ class ChooseServerSubdomainForm(forms.Form):
             self.fields['server'].empty_label = 'Choose a server'
 
     def clean_subdomain(self):
+        """
+        Validate that the subdomain is unique.
+        """
         subdomain = self.cleaned_data.get('subdomain')
         if ServerOwner.objects.filter(subdomain=subdomain).exists():
             raise forms.ValidationError('This subdomain has already been chosen.')
         return subdomain
 
     def clean_server(self):
+        """
+        Validate that the server is not already chosen by another user.
+        """
         server = self.cleaned_data.get('server')
         subdomain = self.cleaned_data.get('subdomain')
 
@@ -31,6 +45,9 @@ class ChooseServerSubdomainForm(forms.Form):
         return server
 
     def save(self, user):
+        """
+        Save the chosen subdomain and mark the server as chosen.
+        """
         subdomain = self.cleaned_data['subdomain']
         server = self.cleaned_data['server']
         profile = ServerOwner.objects.get(user=user)
@@ -41,6 +58,10 @@ class ChooseServerSubdomainForm(forms.Form):
 
 
 class PlanForm(forms.ModelForm):
+    """
+    Form for creating a Stripe plan.
+    """
+
     class Meta:
         model = StripePlan
         fields = ['name', 'amount', 'description']

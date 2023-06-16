@@ -1,7 +1,18 @@
+from django.urls import reverse
+
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
 
 class MySocialAccountAdapter(DefaultSocialAccountAdapter):
+    """
+    Custom social account adapter for handling login redirect URLs.
+    """
     def get_login_redirect_url(self, request):
-        #TODO Use reverse('discord_callback')
-        return '/accounts/discord/login/callback/'
+        """
+        Return the redirect URL for successful social account login.
+
+        :param request: The current request object.
+        :return: The redirect URL.
+        """
+        # Use reverse to dynamically generate the redirect URL based on the URL pattern name
+        return reverse('discord_callback')

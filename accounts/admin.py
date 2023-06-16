@@ -1,5 +1,6 @@
 from django.contrib import admin
-
+from allauth.account.models import EmailAddress
+from django.contrib.auth.models import Group
 from .models import User, ServerOwner, Server, StripePlan, Subscriber, Subscription
 
 
@@ -23,7 +24,7 @@ class SubscriberAdmin(admin.ModelAdmin):
 @admin.register(StripePlan)
 class StripePlanAdmin(admin.ModelAdmin):
     list_display = ['name', 'user', 'amount', 'subscriber_count']
-    search_fields = ['user']
+    search_fields = ['user__username']
 
 
 @admin.register(Subscription)
@@ -32,4 +33,10 @@ class SubscriptionAdmin(admin.ModelAdmin):
     search_fields = ['subscriber', 'subscribed_via', 'plan']
     list_filter = ['status', 'subscription_date', 'expiration_date']
 
-admin.site.register([User])
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.unregister(EmailAddress)
+admin.site.unregister(Group)
