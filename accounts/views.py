@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
-
+import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_backends, login
@@ -19,10 +19,12 @@ from .forms import ChooseServerSubdomainForm, PlanForm
 from .models import Server, ServerOwner, StripePlan, Subscriber, Subscription, User
 from .utils import mk_paginator
 
+logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def index(request):
+    """Render the Landing page."""
     template = "index.html"
     context = {}
     return render(request, template, context)
@@ -99,10 +101,12 @@ def discord_callback(request):
                             for server in server_list:
                                 server_id = server["id"]
                                 server_name = server["name"]
-                                permissions = server["permissions"]
-                                # Check if user owns the server (ADMINISTRATOR permission)
-                                if permissions & 0x00000008 == 0x00000008:
-                                    owned_servers.append({"id": server_id, "name": server_name})
+                                server_icon = server.get("icon", "")
+                                server_owner = server["owner"]
+                                # Check if user owns the server
+                                if server_owner:
+                                    owned_servers.append(
+                                        {"id": server_id, "name": server_name, "icon": server_icon})
                     else:
                         return HttpResponse("Failed to retrieve user's server list.")  # TODO Change this
 
@@ -126,6 +130,7 @@ def discord_callback(request):
                             owner_server = Server.objects.create(owner=serverowner)
                             owner_server.server_id = server["id"]
                             owner_server.name = server["name"]
+                            owner_server.icon = server["icon"]
                             owner_server.save()
 
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
@@ -144,7 +149,7 @@ def discord_callback(request):
 
 
 def subscribe_redirect(request):
-    # Redirect the user to Discord authentication
+    """Redirect the user to Discord authentication."""
     subdomain = request.GET.get("subdomain")
     request.session["subdomain_redirect"] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
@@ -155,6 +160,7 @@ def subscribe_redirect(request):
 
 @login_required
 def choose_name(request):
+    """Handle choosing a server and subdomain name."""
     if request.user.serverowner.subdomain:
         return redirect("dashboard")
     if request.method == "POST":
@@ -163,19 +169,21 @@ def choose_name(request):
             form.save(user=request.user)
             return redirect("create_stripe_account")
         else:
-            messages.warning(request, "An error occurred.")
+            messages.warning(request, "An error occurred while saving the form.")
     else:
         form = ChooseServerSubdomainForm(user=request.user)
 
+    template = "choose_name.html"
     context = {
         "form": form,
     }
 
-    return render(request, "choose_name.html", context)
+    return render(request, template, context)
 
 
 @login_required
 def dashboard_view(request):
+    """Redirect the user to the appropriate dashboard."""
     if request.user.is_serverowner:
         return redirect("dashboard")
     elif request.user.is_subscriber:
@@ -186,7 +194,7 @@ def dashboard_view(request):
 
 @login_required
 def create_stripe_account(request):
-    # Create a Stripe account for the user
+    """Create a Stripe account for the user."""
     connected_account = stripe.Account.create(
         type="standard",
     )
@@ -204,6 +212,7 @@ def create_stripe_account(request):
 
 @login_required
 def collect_user_info(request):
+    """Collect additional user info for Stripe onboarding."""
     serverowner = request.user.serverowner
     stripe_account_id = serverowner.stripe_account_id
 
@@ -221,6 +230,7 @@ def collect_user_info(request):
 
 @login_required
 def stripe_refresh(request):
+    """Handle refreshing the Stripe account information."""
     # Get the logged-in user's profile
     profile = ServerOwner.objects.get(user=request.user)
 
@@ -237,6 +247,9 @@ def stripe_refresh(request):
 
 @login_required
 def dashboard(request):
+    """Display the dashboard for a server owner."""
+
+    # Retrieve the server owner's profile
     profile = get_object_or_404(ServerOwner, user=request.user)
 
     # Retrieve the user's Stripe plans from the database
@@ -253,6 +266,7 @@ def dashboard(request):
     for subscriber in subscribers:
         total_earnings += subscriber.plan.amount
 
+    template = "serverowner/dashboard.html"
     context = {
         "profile": profile,
         "stripe_plans": stripe_plans[:3],
@@ -261,11 +275,12 @@ def dashboard(request):
         "subscribers": subscribers[:3],
         "total_earnings": total_earnings,
     }
-    return render(request, "serverowner/dashboard.html", context)
+    return render(request, template, context)
 
 
 @login_required
 def plans(request):
+    """Display the server owner's plans and handle plan creation."""
     profile = get_object_or_404(ServerOwner, user=request.user)
 
     if request.method == "POST":
@@ -300,10 +315,10 @@ def plans(request):
                 messages.success(request, "Plan successfully created.")
                 return redirect("plans")
             except stripe.error.StripeError as e:
-                form.add_error(None, str(e))
-                messages.warning(request, f"{e}")
+                logger.exception("An error occurred during a Stripe API call: %s", str(e))
+                messages.error(request, "An error occurred while processing your request. Please try again later.")
         else:
-            messages.warning(request, "An error occured.")
+            messages.warning(request, "An error occured while creating your Plan.")
     else:
         form = PlanForm()
 
@@ -313,17 +328,19 @@ def plans(request):
     plan_count = stripe_plans.count()
     stripe_plans = mk_paginator(request, stripe_plans, 9)
 
+    template = "serverowner/plans.html"
     context = {
         "profile": profile,
         "form": form,
         "stripe_plans": stripe_plans,
         "plan_count": plan_count,
     }
-    return render(request, "serverowner/plans.html", context)
+    return render(request, template, context)
 
 
 @login_required
 def plan_detail(request, product_id):
+    """Display detailed information about a specific plan."""
     plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
 
     subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
@@ -335,6 +352,7 @@ def plan_detail(request, product_id):
     for subscriber in subscribers:
         total_earnings += subscriber.plan.amount
 
+    template = "serverowner/plan_detail.html"
     context = {
         "plan": plan,
         "subscribers": subscribers,
@@ -342,50 +360,79 @@ def plan_detail(request, product_id):
         "active_subscribers": active_subscribers,
         "total_earnings": total_earnings,
     }
-    return render(request, "serverowner/plan_detail.html", context)
+    return render(request, template, context)
 
 
 @login_required
 def delete_plan(request):
+    """Delete a plan."""
+
     if request.method == "POST":
         product_id = request.POST.get("product_id")
         plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
-        # TODO delete Product on stripe
-        plan.delete()
-        messages.success(request, "Your plan has been successfully deleted.")
+
+        try:
+            # Retrieve the product ID from the plan's StripeProduct object
+            product_id = plan.product_id
+
+            # Delete the product on Stripe
+            stripe.Product.delete(product_id)
+
+            # Delete the plan from the database
+            plan.delete()
+
+            messages.success(request, "Your plan has been successfully deleted.")
+        except stripe.error.StripeError as e:
+            logger.exception("An error occurred during a Stripe API call: %s", str(e))
+            messages.error(request, "An error occurred while processing your request. Please try again later.")
+
     return redirect("plans")
 
 
 @login_required
 def subscribers(request):
+    """Display the subscribers of a user's plans."""
+    # Retrieve the user's server owner profile
     profile = get_object_or_404(ServerOwner, user=request.user)
 
-    # Get the count of subscribers for all plans created by the user
+    # Retrieve the subscribers for all plans created by the user
     subscribers = Subscription.objects.filter(subscribed_via=profile)
+
+    # Get the count of subscribers
     subscriber_count = subscribers.count()
 
+    template = "serverowner/subscribers.html"
     context = {
         "profile": profile,
         "subscriber_count": subscriber_count,
         "subscribers": subscribers,
     }
-    return render(request, "serverowner/subscribers.html", context)
+    return render(request, template, context)
 
 
 @login_required
 def subscriber_dashboard(request):
-    subscriber = Subscriber.objects.get(user=request.user)
+    """Display the subscriber's dashboard."""
+
+    # Retrieve the subscriber based on the logged-in user
+    subscriber = get_object_or_404(Subscriber, user=request.user)
+
+    # Retrieve the server owner associated with the subscriber
     server_owner = subscriber.subscribed_via
-    server = Server.objects.get(owner=server_owner, choice_server=True)
+
+    # Retrieve the server owned by the server owner with choice_server set to True
+    server = get_object_or_404(Server, owner=server_owner, choice_server=True)
 
     # Retrieve the plans related to the ServerOwner
     plans = StripePlan.objects.filter(user=server_owner.user.serverowner)
 
     try:
+        # Retrieve the latest active subscription for the subscriber
         subscription = Subscription.objects.filter(subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
     except Subscription.DoesNotExist:
         subscription = None
 
+    template = "subscriber/dashboard.html"
     context = {
         "plans": plans,
         "subscriber": subscriber,
@@ -394,30 +441,50 @@ def subscriber_dashboard(request):
         "subscription": subscription,
     }
 
-    return render(request, "subscriber/dashboard.html", context)
+    return render(request, template, context)
 
 
 @login_required
 @require_POST
 def subscribe_to_plan(request, product_id):
+    """
+    View function for subscribing to a plan.
+
+    This view handles the process of creating a Stripe Checkout session and
+    initiating the subscription to a specific plan.
+
+    Args:
+        request: The HTTP request object.
+        product_id (int): The ID of the plan to subscribe to.
+
+    Returns:
+        HttpResponseRedirect: Redirects the user to the Stripe Checkout page.
+
+    Raises:
+        Http404: If the plan with the given product_id does not exist.
+    """
     plan = get_object_or_404(StripePlan, id=product_id)
     subscriber = Subscriber.objects.get(user=request.user)
 
-    session = stripe.checkout.Session.create(
-        success_url=request.build_absolute_uri(reverse("subscription_success")) + f"?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
-        line_items=[
-            {
-                "price": plan.price_id,
-                "quantity": 1,
-            }
-        ],
-        mode="subscription",
-        customer_email=subscriber.email,
-        client_reference_id=subscriber.id, #TODO remove?
-    )
+    try:
+        session = stripe.checkout.Session.create(
+            success_url=request.build_absolute_uri(reverse("subscription_success")) + f"?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
+            line_items=[
+                {
+                    "price": plan.price_id,
+                    "quantity": 1,
+                }
+            ],
+            mode="subscription",
+            customer_email=subscriber.email,
+            client_reference_id=subscriber.id, #TODO remove this?
+        )
+    except stripe.error.StripeError as e:
+        logger.exception("An error occurred during a Stripe API call: %s", str(e))
+        messages.error(request, "An error occurred while processing your request. Please try again later.")
+        return redirect("subscriber_dashboard")
 
-    # Calculate the expiration date
     expiration_date = datetime.now() + timedelta(days=30) #TODO get date from stripe
 
     # Create a new Subscription object
@@ -431,7 +498,7 @@ def subscribe_to_plan(request, product_id):
     )
 
     # Increment the subscriber count for the plan
-    #TODO When a user cancels payment, this still gets incremented
+    #TODO When a user cancels payment, this still gets incremented and it should not be so
     plan.subscriber_count += 1
     plan.save()
 
@@ -440,7 +507,24 @@ def subscribe_to_plan(request, product_id):
 
 
 def subscription_success(request):
+    """
+    View function for handling the success of a subscription.
+
+    This view retrieves the session ID from the request's GET parameters,
+    retrieves the relevant subscription session from Stripe, updates the
+    subscriber's information, and marks the subscription as active.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        HttpResponse: Renders the success template with the relevant context.
+
+    Raises:
+        Http404: If the session ID is not provided or the session retrieval fails.
+    """
     subscriber = Subscriber.objects.get(user=request.user)
+    subscription = None
 
     try:
         session_id = request.GET.get('session_id')
@@ -455,28 +539,20 @@ def subscription_success(request):
         else:
             raise Http404()
     except stripe.error.StripeError as e:
-        messages.error(request, 'Failed to retrieve subscription information from Stripe.')
+        logger.exception("An error occurred during a Stripe API call: %s", str(e))
+        messages.error(request, "An error occurred while processing your request. Please try again later.")
 
-    server = Server.objects.get(owner=subscriber.subscribed_via, choice_server=True)
-    subscription = get_object_or_404(Subscription, subscriber=subscriber, subscription_id=session_id) #TODO remove
-
+    template = "subscriber/success.html"
     context = {
-        "plans": plans,
-        "subscriber": subscriber,
-        "server": server,
         "subscription": subscription,
     }
 
-    return render(request, "subscriber/success.html", context)
+    return render(request, template, context)
 
 
-def error_500(request):
-    return render(request, '500.html', status=500)
-
-
-def error_404(request, exception):
-    return render(request, '404.html', status=404)
-
+##################################################
+#                   ERROR PAGES                  #
+##################################################
 
 def error_400(request, exception):
     return render(request, '400.html', status=400)
@@ -488,3 +564,11 @@ def error_403(request, exception):
 
 def error_405(request, exception):
     return render(request, "405.html")
+
+
+def error_404(request, exception):
+    return render(request, '404.html', status=404)
+
+
+def error_500(request):
+    return render(request, '500.html', status=500)

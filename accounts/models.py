@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+
 
 class User(AbstractUser):
     """
@@ -21,12 +21,21 @@ class ServerOwner(models.Model):
     discord_id = models.CharField(max_length=255, unique=True)
     username = models.CharField(max_length=255, unique=True)
     avatar = models.CharField(max_length=255, blank=True, null=True)
-    subdomain = models.CharField(max_length=20, unique=True)
+    subdomain = models.CharField(max_length=20)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.username
+
+    def get_choice_server(self):
+        """
+        Retrieve the choice server marked as True for the ServerOwner.
+
+        Returns:
+            Server: The choice server of the ServerOwner marked as True.
+        """
+        return self.servers.filter(choice_server=True).first()
 
 
 class Server(models.Model):
@@ -37,6 +46,7 @@ class Server(models.Model):
     owner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name='servers')
     server_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=255, blank=True, null=True)
     choice_server = models.BooleanField(default=False)
 
     def __str__(self):
@@ -89,8 +99,8 @@ class Subscription(models.Model):
     """
 
     class SubscriptionStatus(models.TextChoices):
-        ACTIVE = 'A', _('Active')
-        INACTIVE = 'I', _('Inactive')
+        ACTIVE = 'A', 'Active'
+        INACTIVE = 'I', 'Inactive'
 
     subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='subscriptions')
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)

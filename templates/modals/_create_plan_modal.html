@@ -12,11 +12,11 @@
             <div class="modal-body">
                 <form method="post" action=".">
                     {% csrf_token %}
-                    <label class="form-label" for="id_name">Enter Plan Name:</label>
+                    <label class="form-label" for="id_name">Plan Name:</label>
                     {% render_field form.name class="form-control mb-3" %}
-                    <label class="form-label" for="id_amount">Enter Amount (USD) Per Month:</label>
+                    <label class="form-label" for="id_amount">Plan Amount:</label>
                     {% render_field form.amount class="form-control mb-3" %}
-                    <label for="id_description" class="form-label">Description:</label>
+                    <label for="id_description" class="form-label">Plan Description:</label>
                     {% render_field form.description class="form-control mb-3" rows="3" %}
                     <button type="submit" class="btn btn-primary">Create</button>
                 </form>
