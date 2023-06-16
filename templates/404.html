@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found{% endblock title %}
+
+{% block content %}
+
+<div class="row d-flex align-items-center py-5">
+    <div class="col-12">
+        <div class="text-center">
+            <h1 class="text-dark mt-4 fw-bold display-1"><i class="fa-solid fa-4"></i><i
+                    class="fa-solid fa-0 px-1"></i><i class="fa-solid fa-4"></i></h1>
+            <h5 class="text-primary mb-3">We are Sorry, Page Not Found.</h5>
+            <p class="mb-5">The page you are looking for might have been removed,<br> had its name changed or is
+                temporarily unavailable.</p>
+            <a href="{% url 'dashboard_view' %}" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

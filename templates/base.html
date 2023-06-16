@@ -55,13 +55,14 @@
                 </nav>
 
                 {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} rounded-0 alert-dismissible fade show"
-                    role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endfor %}
+                    {% for message in messages %}
+                    <div class="container mt-2 px-lg-5">
+                        <div class="alert alert-{{ message.tags }} rounded-0 alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                    {% endfor %}
                 {% endif %}
 
                 <div class="container-fluid px-lg-5 mt-4">
@@ -90,36 +91,36 @@
 
     <script>
         document.getElementById("copy-button").addEventListener("click", function () {
-                var subscriptionLink = this.getAttribute("data-subscription-link");
+            var subscriptionLink = this.getAttribute("data-subscription-link");
 
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(subscriptionLink)
-                        .then(function () {
-                            alert("Subscription link copied to clipboard!");
-                        })
-                        .catch(function (error) {
-                            console.error("Failed to copy subscription link:", error);
-                        });
-                } else {
-                    // Fallback for browsers that don't support the Clipboard API
-                    var textarea = document.createElement("textarea");
-                    textarea.value = subscriptionLink;
-                    textarea.style.position = "fixed";  // Ensure the textarea is visible
-                    document.body.appendChild(textarea);
-                    textarea.focus();
-                    textarea.select();
-
-                    try {
-                        var successful = document.execCommand("copy");
-                        var msg = successful ? "Subscription link copied to clipboard!" : "Failed to copy subscription link.";
-                        alert(msg);
-                    } catch (error) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(subscriptionLink)
+                    .then(function () {
+                        alert("Subscription link copied to clipboard!");
+                    })
+                    .catch(function (error) {
                         console.error("Failed to copy subscription link:", error);
-                    }
+                    });
+            } else {
+                // Fallback for browsers that don't support the Clipboard API
+                var textarea = document.createElement("textarea");
+                textarea.value = subscriptionLink;
+                textarea.style.position = "fixed";  // Ensure the textarea is visible
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
 
-                    document.body.removeChild(textarea);
+                try {
+                    var successful = document.execCommand("copy");
+                    var msg = successful ? "Subscription link copied to clipboard!" : "Failed to copy subscription link.";
+                    alert(msg);
+                } catch (error) {
+                    console.error("Failed to copy subscription link:", error);
                 }
-            });
+
+                document.body.removeChild(textarea);
+            }
+        });
 
     </script>
 

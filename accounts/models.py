@@ -67,20 +67,19 @@ class Subscription(models.Model):
     class SubscriptionStatus(models.TextChoices):
         ACTIVE = 'A', _('Active')
         INACTIVE = 'I', _('Inactive')
-        CANCELLED = 'C', _('Cancelled')
 
     subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='subscriptions')
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
     subscription_date = models.DateTimeField(default=timezone.now)
     expiration_date = models.DateTimeField()
-    subscribed = models.BooleanField(default=True)
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
     status = models.CharField(
-        max_length=1, choices=SubscriptionStatus.choices, default=SubscriptionStatus.ACTIVE)
+        max_length=1, choices=SubscriptionStatus.choices, default=SubscriptionStatus.INACTIVE)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        ordering = ['-created']
         get_latest_by = ['-created']
 
     def __str__(self):

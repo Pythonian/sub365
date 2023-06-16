@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Successful{% endblock title %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-sm-12 mb-4">
+        <div class="mb-3">
+            <a href="{% url 'subscriber_dashboard' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Dashboard</a>
+        </div>
+
+        <div class="card invoice">
+            <div class="card-header p-4 p-md-5 border-bottom-0 bg-primary text-white-50">
+                <div class="row justify-content-between align-items-center">
+                    <div class="col-12 col-lg-auto mb-5 mb-lg-0 text-center text-lg-start">
+                        <div class="h2 text-white mb-0  text-lg-start">SUB365.co</div>
+                        Discord Server Management
+                    </div>
+                    <div class="col-12 col-lg-auto text-center text-lg-end">
+                        <div class="h3 text-white">Invoice</div>
+                        #{{ subscription.id }}
+                        <br />
+                        {{ subscription.created|date:"F j, Y"}}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="border-bottom">
+                            <tr class="small text-uppercase text-muted">
+                                <th scope="col">Plan</th>
+                                <th class="text-end" scope="col">Subscription Date</th>
+                                <th class="text-end" scope="col">Expiration Date</th>
+                                <th class="text-end" scope="col">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-bottom">
+                                <td>
+                                    <div class="fw-bold">{{ subscription.plan.name }}</div>
+                                    <div class="small text-muted d-none d-md-block">{{ subscription.plan.description }}
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">{{ subscription.subscription_date|date:"j F, Y" }}</td>
+                                <td class="text-end fw-bold">{{ subscription.expiration_date|date:"j F, Y" }}</td>
+                                <td class="text-end fw-bold">${{ subscription.plan.amount }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-end pb-0" colspan="3">
+                                    <div class="text-uppercase small fw-700 text-muted">Total Amount:</div>
+                                </td>
+                                <td class="text-end pb-0">
+                                    <div class="h5 fw-700 text-success">${{ subscription.plan.amount }}</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer p-4 p-lg-5 border-top-0">
+                <div class="row">
+                    <div class="col-md-6 col-lg-3 mb-4 mb-lg-0">
+                        <div class="small text-muted text-uppercase fw-bold mb-2">To</div>
+                        <div class="h6 mb-1">{{ subscriber.username|title }}</div>
+                        <div class="small">{{ subscriber.email }}</div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-4 mb-lg-0">
+                        <div class="small text-muted text-uppercase fw-bold mb-2">From</div>
+                        <div class="h6 mb-0">{{ subscription.subscribed_via.username|title }}</div>
+                        <div class="small">{{ subscription.subscribed_via.email }}</div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="small text-muted text-uppercase fw-bold mb-2">Note</div>
+                        <div class="small mb-0">This is your payment invoice generated from stripe. Please contact the server owner if you have any dispute about this.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
