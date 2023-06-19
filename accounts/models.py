@@ -1,6 +1,10 @@
 from django.db import models
+from django.db.models import Sum
+from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from decimal import Decimal, ROUND_DOWN
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class User(AbstractUser):
@@ -36,6 +40,86 @@ class ServerOwner(models.Model):
             Server: The choice server of the ServerOwner marked as True.
         """
         return self.servers.filter(choice_server=True).first()
+
+    def get_stripe_plans(self):
+        """
+        Retrieve the server owner's Stripe plans from the database.
+
+        Returns:
+            QuerySet: QuerySet of StripePlan objects belonging to the server owner.
+        """
+        return self.plans.all()
+
+    def get_plan_count(self):
+        """
+        Get the total count of plans created by the server owner.
+
+        Returns:
+            int: The total count of plans created by the server owner.
+        """
+        return self.plans.count()
+
+    def get_popular_plans(self, limit=3):
+        """
+        Get the popular plans created by the ServerOwner based on number of subscribers.
+
+        Returns:
+            QuerySet: QuerySet of StripePlan objects ordered by subscriber count in descending order.
+        """
+        return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE).order_by('-subscriber_count')[:limit]
+
+    def get_subscribed_users(self):
+        """
+        Retrieve the subscribers who subscribed to any of the plans created by the ServerOwner.
+
+        Returns:
+            QuerySet: QuerySet of Subscriber objects who subscribed via the ServerOwner.
+        """
+        return Subscriber.objects.filter(subscribed_via=self)
+
+    def get_latest_subscriptions(self, limit=3):
+        """
+        Retrieve the latest subscriptions for the ServerOwner.
+
+        Args:
+            limit (int): The maximum number of subscriptions to retrieve. Default is 3.
+
+        Returns:
+            QuerySet: QuerySet of Subscription objects ordered by creation date (latest first).
+        """
+        return Subscription.objects.filter(subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE)[:limit]
+
+    def get_total_subscriptions(self):
+        """
+        Get the total number of subscriptions created for the ServerOwner.
+
+        Returns:
+            int: The total number of subscriptions.
+        """
+        return Subscription.objects.filter(subscribed_via=self).count()
+
+    def get_total_subscribers(self):
+        """
+        Get the total number of subscribers who subscribed via the ServerOwner.
+
+        Returns:
+            int: The total number of subscribers.
+        """
+        return self.get_subscribed_users().count()
+
+    def get_total_earnings(self):
+        """
+        Calculate the total earnings of the ServerOwner based on subscriptions.
+
+        Returns:
+            Decimal: The total earnings amount formatted with two decimal places.
+        """
+        total_earnings = Subscription.objects.filter(subscribed_via=self).aggregate(total=Sum('plan__amount')).get('total')
+        if total_earnings is not None:
+            total_earnings = Decimal(total_earnings).quantize(Decimal('0.00'), rounding=ROUND_DOWN)
+        else:
+            total_earnings = Decimal(0)
+        return total_earnings
 
 
 class Server(models.Model):
@@ -75,15 +159,21 @@ class StripePlan(models.Model):
     Model for Stripe plans.
     """
 
+    class PlanStatus(models.TextChoices):
+        ACTIVE = 'A', 'Active'
+        INACTIVE = 'I', 'Inactive'
+
     user = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name='plans')
     product_id = models.CharField(max_length=100)
     price_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
-    description = models.TextField(max_length=300)
-    currency = models.CharField(max_length=3)
-    interval = models.CharField(max_length=10)
+    description = models.TextField(max_length=100, help_text='100 characters')
+    currency = models.CharField(max_length=3, default='usd')
+    interval_count = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
     subscriber_count = models.IntegerField(default=0)
+    status = models.CharField(
+        max_length=1, choices=PlanStatus.choices, default=PlanStatus.ACTIVE)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

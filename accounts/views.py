@@ -169,7 +169,7 @@ def choose_name(request):
             form.save(user=request.user)
             return redirect("create_stripe_account")
         else:
-            messages.warning(request, "An error occurred while saving the form.")
+            messages.error(request, "An error occurred while saving the form.")
     else:
         form = ChooseServerSubdomainForm(user=request.user)
 
@@ -245,49 +245,37 @@ def stripe_refresh(request):
     return redirect("collect_user_info")
 
 
+##################################################
+#                   SERVER OWNER                 #
+##################################################
+
 @login_required
 def dashboard(request):
-    """Display the dashboard for a server owner."""
+    """
+    Display the dashboard for a server owner.
+    """
 
-    # Retrieve the server owner's profile
-    profile = get_object_or_404(ServerOwner, user=request.user)
-
-    # Retrieve the user's Stripe plans from the database
-    stripe_plans = StripePlan.objects.filter(user=profile).order_by("-subscriber_count")
-    # Get the count of plans created by the user
-    plan_count = stripe_plans.count()
-
-    # Get the count of subscribers for all plans created by the user
-    subscribers = Subscription.objects.filter(subscribed_via=profile)
-    subscriber_count = subscribers.count()
-
-    # Calculate the total earnings
-    total_earnings = Decimal(0)
-    for subscriber in subscribers:
-        total_earnings += subscriber.plan.amount
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     template = "serverowner/dashboard.html"
     context = {
-        "profile": profile,
-        "stripe_plans": stripe_plans[:3],
-        "plan_count": plan_count,
-        "subscriber_count": subscriber_count,
-        "subscribers": subscribers[:3],
-        "total_earnings": total_earnings,
+        "serverowner": serverowner,
     }
+
     return render(request, template, context)
 
 
 @login_required
 def plans(request):
     """Display the server owner's plans and handle plan creation."""
-    profile = get_object_or_404(ServerOwner, user=request.user)
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     if request.method == "POST":
         form = PlanForm(request.POST)
 
         if form.is_valid():
             try:
+                interval_count = form.cleaned_data["interval_count"]
                 # Create a product on Stripe
                 product = stripe.Product.create(
                     name=form.cleaned_data["name"],
@@ -302,6 +290,7 @@ def plans(request):
                     currency="usd",
                     recurring={
                         "interval": "month",
+                        "interval_count": interval_count,
                     },
                 )
 
@@ -312,28 +301,25 @@ def plans(request):
                 stripe_product.user = request.user.serverowner
                 stripe_product.save()
 
-                messages.success(request, "Plan successfully created.")
+                messages.success(request, "Your Subscription Plan has been successfully created.")
                 return redirect("plans")
             except stripe.error.StripeError as e:
                 logger.exception("An error occurred during a Stripe API call: %s", str(e))
                 messages.error(request, "An error occurred while processing your request. Please try again later.")
         else:
-            messages.warning(request, "An error occured while creating your Plan.")
+            messages.error(request, "An error occured while creating your Plan.")
     else:
         form = PlanForm()
 
-    # Retrieve the user's Stripe plans from the database
-    stripe_plans = StripePlan.objects.filter(user=profile)
-    # Get the count of plans created by the user
-    plan_count = stripe_plans.count()
+    # Retrieve the user's Stripe plans from the database and paginate
+    stripe_plans = serverowner.get_stripe_plans()
     stripe_plans = mk_paginator(request, stripe_plans, 9)
 
     template = "serverowner/plans.html"
     context = {
-        "profile": profile,
+        "serverowner": serverowner,
         "form": form,
         "stripe_plans": stripe_plans,
-        "plan_count": plan_count,
     }
     return render(request, template, context)
 
@@ -348,6 +334,7 @@ def plan_detail(request, product_id):
     subscriber_count = subscribers.count()
 
     # Calculate the total earnings
+    # TODO: Use model methods
     total_earnings = Decimal(0)
     for subscriber in subscribers:
         total_earnings += subscriber.plan.amount
@@ -364,8 +351,9 @@ def plan_detail(request, product_id):
 
 
 @login_required
-def delete_plan(request):
-    """Delete a plan."""
+@require_POST
+def deactivate_plan(request):
+    """Deactivate a plan."""
 
     if request.method == "POST":
         product_id = request.POST.get("product_id")
@@ -375,40 +363,60 @@ def delete_plan(request):
             # Retrieve the product ID from the plan's StripeProduct object
             product_id = plan.product_id
 
-            # Delete the product on Stripe
-            stripe.Product.delete(product_id)
+            # Deactivate the product on Stripe
+            stripe.Product.modify(
+                product_id,
+                active=False
+            )
 
-            # Delete the plan from the database
-            plan.delete()
+            # Deactivate the prices associated with the product
+            prices = stripe.Price.list(
+                product=product_id,
+                active=True,
+                limit=100
+            )
+            for price in prices:
+                stripe.Price.modify(
+                    price.id,
+                    active=False
+                )
 
-            messages.success(request, "Your plan has been successfully deleted.")
+            # Update the plan status in the database
+            plan.status = StripePlan.PlanStatus.INACTIVE
+            plan.save()
+
+            messages.success(request, "Your plan has been successfully deactivated.")
         except stripe.error.StripeError as e:
             logger.exception("An error occurred during a Stripe API call: %s", str(e))
             messages.error(request, "An error occurred while processing your request. Please try again later.")
 
-    return redirect("plans")
+    return redirect('plans')
 
 
 @login_required
 def subscribers(request):
     """Display the subscribers of a user's plans."""
     # Retrieve the user's server owner profile
-    profile = get_object_or_404(ServerOwner, user=request.user)
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     # Retrieve the subscribers for all plans created by the user
-    subscribers = Subscription.objects.filter(subscribed_via=profile)
+    subscribers = Subscription.objects.filter(subscribed_via=serverowner)
 
     # Get the count of subscribers
     subscriber_count = subscribers.count()
 
     template = "serverowner/subscribers.html"
     context = {
-        "profile": profile,
+        "serverowner": serverowner,
         "subscriber_count": subscriber_count,
         "subscribers": subscribers,
     }
     return render(request, template, context)
 
+
+##################################################
+#                   SUBSCRIBERS                  #
+##################################################
 
 @login_required
 def subscriber_dashboard(request):
@@ -420,25 +428,25 @@ def subscriber_dashboard(request):
     # Retrieve the server owner associated with the subscriber
     server_owner = subscriber.subscribed_via
 
-    # Retrieve the server owned by the server owner with choice_server set to True
-    server = get_object_or_404(Server, owner=server_owner, choice_server=True)
-
     # Retrieve the plans related to the ServerOwner
-    plans = StripePlan.objects.filter(user=server_owner.user.serverowner)
+    plans = StripePlan.objects.filter(user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE)
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        subscription = Subscription.objects.filter(subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
+        latest_subscription = Subscription.objects.filter(subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
     except Subscription.DoesNotExist:
-        subscription = None
+        latest_subscription = None
+
+    # Retrieve all the subscriptions done by the subscriber
+    subscriptions = Subscription.objects.filter(subscriber=subscriber)
 
     template = "subscriber/dashboard.html"
     context = {
         "plans": plans,
         "subscriber": subscriber,
         "server_owner": server_owner,
-        "server": server,
-        "subscription": subscription,
+        "subscription": latest_subscription,
+        "subscriptions": subscriptions,
     }
 
     return render(request, template, context)

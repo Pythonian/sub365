@@ -15,16 +15,16 @@
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                 <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                <span>${{ subscriber.plan.amount }}/month</span>
+                <span>${{ subscriber.plan.amount }} /{{ subscriber.plan.interval_count }} month{{ subscriber.plan.interval_count|pluralize }}</span>
             </li>
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
-                <p class="p-0 m-0 text-muted fs-6">SUBSCRIBED ON</p>
+                <p class="p-0 m-0 text-muted fs-6">SUBSCRIPTION DATE:</p>
                 <span>{{ subscriber.subscription_date|date:"F j, Y" }}</span>
             </li>
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
-                <p class="p-0 m-0 text-muted fs-6">EXPIRES</p>
+                <p class="p-0 m-0 text-muted fs-6">EXPIRATION DATE:</p>
                 <span>{{ subscriber.expiration_date|date:"F j, Y" }}</span>
             </li>
             <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">

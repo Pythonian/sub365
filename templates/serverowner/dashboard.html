@@ -4,13 +4,13 @@
 
 {% block content %}
 
-    {% if stripe_plans %}
+    {% if serverowner.get_plan_count %}
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <div>
                 <h3 class="mb-0 text-secondary">Welcome back!</h3>
                 <small>Here is your dashboard overview</small>
             </div>
-            <button id="copy-button" class="btn btn-sm btn-info" data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ user.serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
+            <button id="copy-button" class="btn btn-sm btn-primary" data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
         </div>
         <div class="row mb-4">
             {% include 'serverowner/_total_earnings.html' %}
@@ -21,17 +21,17 @@
 
         <h5 class="text-secondary mb-3">Popular Plans</h5>
         <div class="row g-4 mb-5">
-            {% for plan in stripe_plans %}
+            {% for plan in serverowner.get_popular_plans %}
             <div class="col-xl-4 col-lg-5">
                 {% include 'serverowner/_plan_card.html' %}
             </div>
             {% endfor %}
         </div>
 
-        {% if subscribers %}
-            <h5 class="text-secondary mb-3">Recent Subscribers</h5>
+        {% if serverowner.get_latest_subscriptions %}
+            <h5 class="text-secondary mb-3">Latest Subscriptions</h5>
             <div class="row g-4 mb-5">
-                {% for subscriber in subscribers %}
+                {% for subscriber in serverowner.get_latest_subscriptions.all %}
                 <div class="col-lg-4">
                     {% include 'serverowner/_subscriber_card.html' %}
                 </div>
@@ -78,7 +78,7 @@
                             </div>
                             <div>
                                 <button id="copy-button" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5"
-                                    data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i
+                                    data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ serverowner.subdomain }}"><i
                                         class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
                             </div>
                         </div>

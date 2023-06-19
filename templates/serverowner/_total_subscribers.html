@@ -1,5 +1,5 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
-{% block data_title %}Subscribers{% endblock data_title %}
-{% block data_value %}{{ subscriber_count }}{% endblock data_value %}
+{% block data_title %}Total Subscribers{% endblock data_title %}
+{% block data_value %}{{ serverowner.get_total_subscribers }}{% endblock data_value %}
 {% block data_icon %}fa-people-arrows{% endblock data_icon %}

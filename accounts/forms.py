@@ -7,7 +7,7 @@ class ChooseServerSubdomainForm(forms.Form):
     """
     Form for choosing a server and subdomain.
     """
-    
+
     subdomain = forms.CharField(max_length=20)
     server = forms.ModelChoiceField(queryset=Server.objects.none())
 
@@ -62,6 +62,8 @@ class PlanForm(forms.ModelForm):
     Form for creating a Stripe plan.
     """
 
+    interval_count = forms.IntegerField(min_value=1, max_value=12)
+
     class Meta:
         model = StripePlan
-        fields = ['name', 'amount', 'description']
+        fields = ['name', 'amount', 'interval_count', 'description']

@@ -12,13 +12,18 @@
             <div class="modal-body">
                 <form method="post" action=".">
                     {% csrf_token %}
-                    <label class="form-label" for="id_name">Plan Name:</label>
+                    <label class="form-label" for="{{ form.name.id_for_label }}">Plan Name:</label>
                     {% render_field form.name class="form-control mb-3" %}
-                    <label class="form-label" for="id_amount">Plan Amount:</label>
-                    {% render_field form.amount class="form-control mb-3" %}
-                    <label for="id_description" class="form-label">Plan Description:</label>
-                    {% render_field form.description class="form-control mb-3" rows="3" %}
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <label class="form-label" for="{{ form.amount.id_for_label }}">Plan Amount:</label>
+                    {% render_field form.amount class="form-control mb-3" placeholder="Enter an amount in dollars" %}
+                    <label class="form-label" for="{{ form.interval_count.id_for_label }}">Plan Duration in Months:</label>
+                    {% render_field form.interval_count class="form-control mb-3" placeholder="Enter a value between 1 to 12" %}
+                    <label class="form-label" for="{{ form.description.id_for_label }}">Plan Description:</label>
+                    {% render_field form.description class="form-control mb-3" rows="3" placeholder="Describe your plan in 100 characters" %}
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-dark" type="button" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-fw fa-plus"></i> Create Plan</button>
+                    </div>
                 </form>
             </div>
         </div>

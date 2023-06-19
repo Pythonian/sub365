@@ -1,5 +1,5 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
-{% block data_title %}Plans{% endblock data_title %}
-{% block data_value %}{{ plan_count }}{% endblock data_value %}
+{% block data_title %}All Plans{% endblock data_title %}
+{% block data_value %}{{ serverowner.get_plan_count }}{% endblock data_value %}
 {% block data_icon %}fa-ranking-star{% endblock data_icon %}

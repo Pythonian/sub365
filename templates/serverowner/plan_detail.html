@@ -7,13 +7,15 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <div>
             <a href="{% url 'plans' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Plans</a>
-            <h3 class="mb-0 text-secondary">Plan: {{ plan.name }} <span class="text-primary h6">(${{ plan.amount }}<small>/mo</small>)</span></h3>
+            <h3 class="mb-0 text-secondary">Plan: {{ plan.name }} <span class="text-primary h6">(${{ plan.amount }} <small>/{{ plan.interval_count }} month{{ plan.interval_count|pluralize }}</small>)</span></h3>
         </div>
+        {% if plan.status == 'A' %}
         <div>
-            <a data-toggle="modal" data-target="#deletePlan{{ plan.id }}" class="btn btn-sm btn-danger shadow-sm">
-                Delete Plan
+            <a data-toggle="modal" data-target="#deactivatePlan{{ plan.id }}" class="btn btn-sm btn-danger shadow-sm">
+                Deactivate Plan
             </a>
         </div>
+        {% endif %}
     </div>
 
     {% if subscribers %}
@@ -58,20 +60,31 @@
         </div>
     </div>
     {% else %}
-    <div class="text-center py-5">
-        <span class="text-primary fa-stack fa-4x mb-3">
-            <i class="fas fa-circle fa-stack-2x"></i>
-            <i class="fas fa-face-frown fa-stack-1x fa-inverse"></i>
-        </span>
-        <h3 class="text-dark">You have no Subscriber for this Plan yet.</h3>
-        <p class="mb-5">Don't worry, you can start getting subscribers by sharing your subscription link.<br> Simply copy
-            your unique subscription link below.</p>
-        <button id="copy-button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"
-            data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i
-                class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
-    </div>
+        {% if plan.status == 'I' %}
+        <div class="text-center py-5">
+            <span class="text-danger fa-stack fa-4x mb-3">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-ban fa-stack-1x fa-inverse"></i>
+            </span>
+            <h3 class="text-dark">Plan Deactivated</h3>
+            <p class="mb-5">You have deactivated this subscription plan, and there are no subscription history.</p>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <span class="text-primary fa-stack fa-4x mb-3">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-face-frown fa-stack-1x fa-inverse"></i>
+            </span>
+            <h3 class="text-dark">You have no Subscriber for this Plan yet.</h3>
+            <p class="mb-5">Don't worry, you can start getting subscribers by sharing your subscription link.<br> Simply copy
+                your unique subscription link below.</p>
+            <button id="copy-button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"
+                data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ request.user.serverowner.subdomain }}"><i
+                    class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
+        </div>
+        {% endif %}
     {% endif %}
 
-{% include 'modals/_delete_plan_modal.html' %}
+{% include 'modals/_deactivate_plan_modal.html' %}
 
 {% endblock content %}

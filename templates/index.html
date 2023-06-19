@@ -1,19 +1,133 @@
-{% extends "base_auth.html" %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Welcome! | Sub365.co</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+        integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="{% static 'styles/dashboard.min.css' %}" rel="stylesheet">
+</head>
 
-{% block title %}Welcome!{% endblock title %}
+<body>
+    <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow py-lg-3">
+        <div class="container">
+            <a href="/" class="navbar-brand">
+                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggler"
+                aria-controls="navbarToggler" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarToggler">
+                <div class="d-flex ms-lg-auto mb-3 mb-lg-0">
+                    <form method="post" action="/accounts/discord/login/">
+                    {% csrf_token %}
+                    <button class="btn btn-primary border rounded-3 text-white" type="submit">
+                        <i class="fa-brands fa-discord"></i> Sign in with Discord
+                    </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
 
-{% block content %}
+    <section class="bg-primary mb-0 pt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mb-5 mx-auto text-center text-white">
+                    <h1 class="mb-3">Revolutionalize Your Discord <br> Community Management</h1>
+                    <p class="lead">Effortlessly manage your server's subscriptions with our comprehensive solution.</p>
+                </div>
+                <div class="overflow-hidden text-center" style="max-height: 40vh;">
+                    <div class="container px-5">
+                        <img src="{% static 'img/dashboard.png' %}" class="img-fluid border rounded-3 shadow-lg mb-4" alt="Example image" width="700" height="500" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<div class="mx-auto bg-white justify-content-center p-5 text-center" style="width: 450px;">
-    <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
-    <h6 class="my-4 text-dark">Manage the subscriptions to your discord servers seamlessly.</h6>
-    <form method="post" action="/accounts/discord/login/">
-        {% csrf_token %}
-        <button class="btn btn-primary py-3 w-100" type="submit">
-            <i class="fa-brands fa-discord"></i> Sign in with Discord
-        </button>
-    </form>
-</div>
+    <section class="bg-light py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mx-auto my-5 text-center">
+                    <h2 class="text-dark mb-3">Our Service Simplifies Discord <br> Community Management</h2>
+                    <p class="text-dark">Here is how it works:</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-sm-4">
+                    <div class="card bg-primary text-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5 class="mt-5">Create an account and connect your Discord server</h5>
+                                <i class="fa-solid fa-1 fa-3x text-white"></i>
+                            </div>
+                            <p class="card-text mb-3">Server owner purchases the software and provides the necessary details. A unique website link to their homepage is generated</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card bg-primary text-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5 class="mt-5">Invite subscribers to join your server</h5>
+                                <i class="fa-solid fa-2 fa-3x text-white"></i>
+                            </div>
+                            <p class="card-text mb-3">Subscribers join the server owner's Discord server by using a Discord command or by following the owner's unique link.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card bg-primary text-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5 class="mt-5">Manage your subscriptions and community growth</h5>
+                                <i class="fa-solid fa-3 fa-3x text-white"></i>
+                            </div>
+                            <p class="card-text mb-3">Subscribers sign up for the server owner's Discord server using a Discord command or by following the owner's unique
+                            link</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-{% endblock %}
+    <div class="container">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
+            <p class="col-md-4 mb-0 text-body-secondary">&copy;{% now "Y" %} &bull; All rights reserved</p>
+
+            <a href="/"
+                class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+            </a>
+
+            <ul class="nav col-md-4 justify-content-end">
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">About</a></li>
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Feedback</a></li>
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Privacy Policy</a></li>
+            </ul>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"
+        integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'scripts/dashboard.min.js' %}"></script>
+    <script>
+        window.onload = (event) => {
+            let myAlert = document.querySelector('.toast');
+            let bsAlert = new bootstrap.Toast(myAlert);
+            bsAlert.show();
+        }
+    </script>
+</body>
+
+</html>

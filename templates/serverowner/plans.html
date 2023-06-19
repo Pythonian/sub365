@@ -11,11 +11,11 @@
             <small>Manage the subscription plans for your server</small>
         </div>
         <a data-toggle="modal" data-target="#createPlanModal" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            Create New Plan
+            <i class="fas fa-fw fa-plus"></i> New Plan
         </a>
     </div>
 
-    <h5 class="text-gray-800 mb-3">All Subscription Plans <span class="ms-2 small badge badge-primary opacity-75">{{ plan_count }}</span></h5>
+    <h5 class="text-gray-800 mb-3">All Subscription Plans <span class="ms-2 small badge badge-primary opacity-75">{{ serverowner.get_plan_count }}</span></h5>
 
     <div class="row g-4 mb-5">
         {% for plan in stripe_plans %}

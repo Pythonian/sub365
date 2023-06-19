@@ -6,21 +6,20 @@
 
     {% if subscription %}
        <div class="row">
-            <div class="col-sm-12 mb-4">
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-primary">Subscription Details for Server: {{ server }}</h6>
-                        <a class="btn btn-sm btn-danger" href="" title="Subscribe">
-                            Cancel Subscription
-                        </a>
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-transparent d-flex justify-content-between">
+                        <span class="text-primary fw-bold">Subscription Details</span>
+                        <a href="" class="btn btn-info btn-sm"><i class="fas fa-circle-arrow-up me-1"></i> Upgrade Plan</a>
                     </div>
-                    <div class="card-body p-0">
+                    <div class="card-body p-0 px-2">
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-borderless">
                                 <thead>
-                                    <tr class="ligth">
+                                    <tr>
                                         <th>Plan Name</th>
                                         <th>Amount</th>
+                                        <th>Server</th>
                                         <th>Subscribed via</th>
                                         <th>Subscription date</th>
                                         <th>Expiry date</th>
@@ -31,6 +30,7 @@
                                     <tr>
                                         <td>{{ subscription.plan.name }}</td>
                                         <td>${{ subscription.plan.amount }} / monthly</td>
+                                        <td>{{ subscription.subscribed_via.get_choice_server }}</td>
                                         <td>{{ subscription.subscribed_via }}</td>
                                         <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
                                         <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
@@ -45,8 +45,8 @@
         </div>
     {% else %}
     <div class="row mb-4 mt-5">
-        <h1 class="h3 mb-1 text-dark">Welcome, {{ user.subscriber.username }}. Choose a subscription plan below</h1>
-        <p class="small m-0">You will need to subscribe to a plan to be granted access to <span class="text-primary">{{ server }}</span> by the Server owner.</p>
+        <h1 class="h3 mb-1 text-dark">Welcome, {{ subscriber.username }}. Choose a subscription plan below</h1>
+        <p class="small m-0">You will need to subscribe to a plan to be granted access to <span class="text-primary">{{ server_owner.get_choice_server }}</span> by the Server owner.</p>
     </div>
     <div class="row g-4 mb-5">
         {% for plan in plans %}
@@ -59,15 +59,12 @@
                         <span class="font-monospace">{{ plan.subscriber_count }}
                             Subscriber{{ plan.subscriber_count|pluralize }}</span>
                     </div>
-                    <h5 class="fw-bold my-3">${{ plan.amount }}<small>/mo</small></h5>
+                    <h5 class="fw-bold my-3">${{ plan.amount }}<small> /{{ plan.interval_count }} month{{ plan.interval_count|pluralize }}</small></h5>
                     <p>{{ plan.description }}</p>
                     <form action="{% url 'subscribe_to_plan' product_id=plan.id %}" method="post">
                         {% csrf_token %}
                         <button class="btn btn-sm btn-primary" type="submit"><i class="far fa-credit-card me-1"></i> Subscribe</button>
                     </form>
-                    <!-- <a class="btn btn-sm btn-primary" href="{# url 'subscribe_to_plan' product_id=plan.id #}">
-                        <i class="far fa-credit-card me-1"></i> Subscribe
-                    </a> -->
                 </div>
             </div>
         </div>
@@ -78,7 +75,7 @@
                 <i class="fas fa-ban fa-stack-1x fa-inverse"></i>
             </span>
             <h3 class="text-dark">No subscription plan found.</h3>
-            <p class="mb-5">There are no Plans attached to this server <span class="text-primary text-decoration-underline">{{ server }}</span> yet.</p>
+            <p class="mb-5">There are no Plans attached to this server <span class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
         </div>
         {% endfor %}
     </div>
