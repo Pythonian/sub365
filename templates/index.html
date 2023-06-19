@@ -7,17 +7,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Welcome! | Sub365.co</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
-        integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="{% static 'styles/dashboard.min.css' %}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body>
+    {% if messages %}
+    {% for message in messages %}
+    <div class="position-fixed top-0 start-50 translate-middle-x p-3">
+        <div class="toast align-items-center text-white bg-{{ message.tags }} border-0" data-bs-delay="10000" role="alert"
+            aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">{{ message }}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
     <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow py-lg-3">
         <div class="container">
             <a href="/" class="navbar-brand">
-                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+                <strong>SUB365.co</strong>
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggler"
                 aria-controls="navbarToggler" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,7 +40,7 @@
                     <form method="post" action="/accounts/discord/login/">
                     {% csrf_token %}
                     <button class="btn btn-primary border rounded-3 text-white" type="submit">
-                        <i class="fa-brands fa-discord"></i> Sign in with Discord
+                        <i class="fa-brands fa-discord me-1"></i> Sign in with Discord
                     </button>
                     </form>
                 </div>
@@ -60,12 +72,12 @@
                     <p class="text-dark">Here is how it works:</p>
                 </div>
             </div>
-            <div class="row g-4">
+            <div class="row g-4 mx-lg-5">
                 <div class="col-sm-4">
-                    <div class="card bg-primary text-light">
+                    <div class="card bg-primary text-light h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-3">
-                                <h5 class="mt-5">Create an account and connect your Discord server</h5>
+                                <h5 class="mt-5 pe-2">Connect your account with Discord</h5>
                                 <i class="fa-solid fa-1 fa-3x text-white"></i>
                             </div>
                             <p class="card-text mb-3">Server owner purchases the software and provides the necessary details. A unique website link to their homepage is generated</p>
@@ -73,10 +85,10 @@
                     </div>
                 </div>
                 <div class="col-sm-4">
-                    <div class="card bg-primary text-light">
+                    <div class="card bg-primary text-light h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-3">
-                                <h5 class="mt-5">Invite subscribers to join your server</h5>
+                                <h5 class="mt-5 pe-2">Invite subscribers to join your server</h5>
                                 <i class="fa-solid fa-2 fa-3x text-white"></i>
                             </div>
                             <p class="card-text mb-3">Subscribers join the server owner's Discord server by using a Discord command or by following the owner's unique link.</p>
@@ -84,10 +96,10 @@
                     </div>
                 </div>
                 <div class="col-sm-4">
-                    <div class="card bg-primary text-light">
+                    <div class="card bg-primary text-light h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-3">
-                                <h5 class="mt-5">Manage your subscriptions and community growth</h5>
+                                <h5 class="mt-5 pe-2">Manage your subscriptions</h5>
                                 <i class="fa-solid fa-3 fa-3x text-white"></i>
                             </div>
                             <p class="card-text mb-3">Subscribers sign up for the server owner's Discord server using a Discord command or by following the owner's unique
@@ -101,14 +113,14 @@
 
     <div class="container">
         <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
-            <p class="col-md-4 mb-0 text-body-secondary">&copy;{% now "Y" %} &bull; All rights reserved</p>
+            <p class="col-md-4 mb-0 text-body-secondary ps-0">&copy;{% now "Y" %} &bull; All rights reserved</p>
 
             <a href="/"
                 class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
                 <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
             </a>
 
-            <ul class="nav col-md-4 justify-content-end">
+            <ul class="nav col-md-4 justify-content-end pe-0">
                 <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">About</a></li>
                 <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Feedback</a></li>
                 <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Privacy Policy</a></li>
@@ -116,11 +128,8 @@
         </footer>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"
-        integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'scripts/dashboard.min.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.onload = (event) => {
             let myAlert = document.querySelector('.toast');
