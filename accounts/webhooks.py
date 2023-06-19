@@ -1,7 +1,10 @@
 from django.http import HttpResponse
+from django.conf import settings
 import json
 import stripe
 from django.views.decorators.csrf import csrf_exempt
+
+from .models import StripePlan, Subscription
 
 
 @csrf_exempt
@@ -11,14 +14,18 @@ def stripe_webhook(request):
     """
 
     payload = request.body
+    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
     event = None
 
     try:
-        event = stripe.Event.construct_from(
-            json.loads(payload), stripe.api_key
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
     except ValueError as e:
         # Invalid payload
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
         return HttpResponse(status=400)
 
     # Handle the event

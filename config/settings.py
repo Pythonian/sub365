@@ -80,9 +80,6 @@ else:
             'PASSWORD': config('DB_PASSWORD'),
             'HOST': config('DB_HOST'),
             'PORT': config('DB_PORT'),
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-            }
         }
     }
 
@@ -157,6 +154,7 @@ LOGOUT_REDIRECT_URL = '/'
 
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET')
 
 DISCORD_CLIENT_ID = config('DISCORD_CLIENT_ID')
 DISCORD_CLIENT_SECRET = config('DISCORD_CLIENT_SECRET')
