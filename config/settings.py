@@ -64,25 +64,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': config('DB_ENGINE'),
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': config('DB_ENGINE'),
-            'NAME': config('DB_NAME'),
-            'USER': config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST': config('DB_HOST'),
-            'PORT': config('DB_PORT'),
-        }
-    }
-
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -163,16 +154,12 @@ AUTH_USER_MODEL = 'accounts.User'
 
 DEFAULT_FROM_EMAIL = config('DEFAULT_EMAIL')
 
-if not DEBUG:
-    EMAIL_BACKEND =  config('EMAIL_BACKEND')
-    EMAIL_HOST = config('EMAIL_HOST')
-    EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-    EMAIL_PORT = config('EMAIL_PORT', cast=int)
-    EMAIL_USE_TLS = True
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
+EMAIL_BACKEND =  config('EMAIL_BACKEND')
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+EMAIL_PORT = config('EMAIL_PORT', cast=int)
+EMAIL_USE_TLS = True
 
 if DEBUG:
     CORS_REPLACE_HTTPS_REFERER = False
