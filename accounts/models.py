@@ -168,7 +168,7 @@ class StripePlan(models.Model):
     price_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
-    description = models.TextField(max_length=100, help_text='100 characters')
+    description = models.TextField(max_length=300, help_text='300 characters')
     currency = models.CharField(max_length=3, default='usd')
     interval_count = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
     subscriber_count = models.IntegerField(default=0)

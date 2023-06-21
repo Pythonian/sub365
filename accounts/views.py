@@ -514,6 +514,7 @@ def subscribe_to_plan(request, product_id):
     return redirect(session.url)
 
 
+@login_required
 def subscription_success(request):
     """
     View function for handling the success of a subscription.
