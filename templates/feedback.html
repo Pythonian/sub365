@@ -1,0 +1,80 @@
+{% extends "base_core.html" %}
+{% load widget_tweaks i18n %}
+
+{% block title %}Feedback{% endblock %}
+
+{% block discord_auth %}
+<div class="collapse navbar-collapse" id="navbarToggler">
+    <div class="d-flex ms-lg-auto mb-3 mb-lg-0 mt-lg-0 mt-3">
+        <a class="btn btn-primary border rounded-3 text-white" href="{% url 'dashboard_view' %}">
+            <i class="fa-solid fa-tachometer-alt me-1"></i> My Dashboard
+        </a>
+    </div>
+</div>
+{% endblock discord_auth %}
+
+{% block content %}
+
+<section class="py-lg-5 bg-white">
+    <div class="container my-4">
+        <div class="row d-flex align-items-center">
+            <div class="col-lg-6 mx-auto">
+                <div class="card border shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-4 mt-3">
+                            <div>
+                                <h4 class="mb-1 text-primary">{% trans 'Feedback' %}</h4>
+                                <p class="text-body-secondary">{% trans 'We value your feedback on ways on how we can improve this application. Please use the form below.' %}</p>
+                            </div>
+                        </div>
+                        <form method="post" action="">
+                            {% csrf_token %}
+
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {% for error in form.non_field_errors %}
+                                <p {% if forloop.last %}class="mb-0" {% endif %}><i class="fa-solid fa-warning me-1"></i> {{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            {% if messages %}
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} border border-{{ message.tags }} border-5 border-top-0 border-end-0 border-bottom-0 alert-dismissible fade show"
+                                role="alert">
+                                <i class="fa-solid fa-check-circle me-1"></i> {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+
+                            <div class="row g-2">
+                                {% for field in form %}
+                                <div class="col-lg-12">
+                                    <div class="form-group mb-1">
+                                        {{ field.label_tag }}
+                                        {% render_field field class="form-control" %}
+                                        {% for error in field.errors %}
+                                        <div class="invalid-feedback fw-bold">
+                                            {{ error }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="my-3">
+                                <button id="login" type="submit"
+                                    class="btn btn-primary btn-lg rounded w-100">{% trans 'Send Feedback' %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock content %}
