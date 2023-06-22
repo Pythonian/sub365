@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.discord',
     'accounts.apps.AccountsConfig',
     'feedback.apps.FeedbackConfig',
-    'ckeditor',
     'widget_tweaks',
     'storages',
 ]
@@ -206,15 +205,3 @@ if not DEBUG:
         # django.contrib.auth) you may enable sending PII data.
         send_default_pii=True
     )
-
-CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'Custom',
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Link', 'Unlink'],
-            ['RemoveFormat', 'Source']
-        ]
-    }
-}
