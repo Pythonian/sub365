@@ -78,6 +78,12 @@
             <p class="mb-5">There are no Plans attached to this server <span class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
         </div>
         {% endfor %}
+        <div class="d-flex justify-content-between mt-5">
+            <p class="text-body-secondary">Showing <span>{{ plans.start_index }}-{{ plans.end_index }}</span> of
+                <span>{{ plans.paginator.count }}</span>
+                plan{{ plans.paginator.count|pluralize }}</p>
+            <div>{% include '_pagination.html' with page_obj=plans %}</div>
+        </div>
     </div>
     {% endif %}
 

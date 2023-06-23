@@ -163,6 +163,7 @@ def choose_name(request):
     """Handle choosing a server and subdomain name."""
     if request.user.serverowner.subdomain:
         return redirect("dashboard")
+    #TODO handle User.serverowner.RelatedObjectDoesNotExist
     if request.method == "POST":
         form = ChooseServerSubdomainForm(request.POST, user=request.user)
         if form.is_valid():
@@ -253,6 +254,11 @@ def stripe_refresh(request):
 def dashboard(request):
     """
     Display the dashboard for a server owner.
+
+    Templates: ``serverowner/dashboard.html``
+    Context:
+        serverowner
+            ServerOwner object
     """
 
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -267,7 +273,18 @@ def dashboard(request):
 
 @login_required
 def plans(request):
-    """Display the server owner's plans and handle plan creation."""
+    """
+    Display the server owner's plans and handle plan creation.
+
+    Templates: ``serverowner/plans.html``
+    Context:
+        serverowner
+            ServerOwner object
+        form
+            StripePlanForm object
+        stripe_plans
+            List of StripePlan objects
+    """
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     if request.method == "POST":
@@ -430,6 +447,7 @@ def subscriber_dashboard(request):
 
     # Retrieve the plans related to the ServerOwner
     plans = StripePlan.objects.filter(user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE)
+    plans = mk_paginator(request, plans, 9)
 
     try:
         # Retrieve the latest active subscription for the subscriber
@@ -478,6 +496,7 @@ def subscribe_to_plan(request, product_id):
         session = stripe.checkout.Session.create(
             success_url=request.build_absolute_uri(reverse("subscription_success")) + f"?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
+            payment_method_types=['us_bank_account'],
             line_items=[
                 {
                     "price": plan.price_id,

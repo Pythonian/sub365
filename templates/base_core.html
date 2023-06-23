@@ -35,18 +35,22 @@
                 aria-controls="navbarToggler" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            {% block discord_auth %}
             <div class="collapse navbar-collapse" id="navbarToggler">
-                <div class="d-flex ms-lg-auto mb-3 mb-lg-0 mt-3">
+                <div class="d-flex ms-lg-auto mb-3 mb-lg-0 mt-3 mt-lg-0">
+                    {% if request.user.is_authenticated %}
+                    <a class="btn btn-primary border rounded-3 text-white" href="{% url 'dashboard_view' %}">
+                        <i class="fa-solid fa-tachometer-alt me-1"></i> My Dashboard
+                    </a>
+                    {% else %}
                     <form method="post" action="/accounts/discord/login/">
-                    {% csrf_token %}
-                    <button class="btn btn-primary border rounded-3 text-white" type="submit">
-                        <i class="fa-brands fa-discord me-1"></i> Sign in with Discord
-                    </button>
+                        {% csrf_token %}
+                        <button class="btn btn-primary border rounded-3 text-white" type="submit">
+                            <i class="fa-brands fa-discord me-1"></i> Sign in with Discord
+                        </button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
-            {% endblock discord_auth %}
         </div>
     </header>
     {% endblock header %}
