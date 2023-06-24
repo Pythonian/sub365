@@ -108,7 +108,10 @@ def discord_callback(request):
                                     owned_servers.append(
                                         {"id": server_id, "name": server_name, "icon": server_icon})
                     else:
-                        return HttpResponse("Failed to retrieve user's server list.")  # TODO Change this
+                        # Redirect user and show a message to create a server
+                        messages.info(request,
+                            "You do not have any servers. Please create a server on Discord before continuing.")
+                        return redirect("index")
 
                     try:
                         social_account = SocialAccount.objects.get(provider="discord", uid=user_info["id"])
@@ -143,7 +146,8 @@ def discord_callback(request):
         else:
             return HttpResponse("Failed to obtain access token.")  # TODO Change this
 
-    # TODO what happens if code wasnt generated?
+    # Redirect user and show a message if 'code' was not generated
+    messages.error(request, "Failed to generate the authorization code. Please try again.")
     return redirect("index")
 
 

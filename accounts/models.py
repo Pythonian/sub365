@@ -221,6 +221,7 @@ class Subscription(models.Model):
     customer_id = models.CharField(max_length=200, blank=True, null=True)
     status = models.CharField(
         max_length=1, choices=SubscriptionStatus.choices, default=SubscriptionStatus.INACTIVE)
+    value = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(1)])
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
