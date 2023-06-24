@@ -1,0 +1,5 @@
+{% extends "serverowner/_base_dashboard_data.html" %}
+
+{% block data_title %}Subscriber{% endblock data_title %}
+{% block data_value %}{{ subscriber.username|title }}{% endblock data_value %}
+{% block data_icon %}fa-user{% endblock data_icon %}

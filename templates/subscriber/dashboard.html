@@ -5,12 +5,23 @@
 {% block content %}
 
     {% if subscription %}
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="mb-0 text-secondary">Welcome back!</h3>
+                <small>Here is your dashboard overview</small>
+            </div>
+        </div>
+        <div class="row mb-4">
+            {% include 'subscriber/_payment_due.html' %}
+            {% include 'subscriber/_current_bill.html' %}
+            {% include 'subscriber/_current_plan.html' %}
+        </div>
+
        <div class="row">
             <div class="col-12 mb-4">
                 <div class="card">
                     <div class="card-header bg-transparent d-flex justify-content-between">
-                        <span class="text-primary fw-bold">Subscription Details</span>
-                        <a href="" class="btn btn-info btn-sm"><i class="fas fa-circle-arrow-up me-1"></i> Upgrade Plan</a>
+                        <span class="text-primary fw-bold">Subscription History</span>
                     </div>
                     <div class="card-body p-0 px-2">
                         <div class="table-responsive">
@@ -27,15 +38,17 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {% for subscription in subscriptions %}
                                     <tr>
                                         <td>{{ subscription.plan.name }}</td>
-                                        <td>${{ subscription.plan.amount }} / monthly</td>
+                                        <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }} month{{ subscription.plan.interval_count|pluralize }}</td>
                                         <td>{{ subscription.subscribed_via.get_choice_server }}</td>
                                         <td>{{ subscription.subscribed_via }}</td>
                                         <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
                                         <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
-                                        <td><span class="badge badge-success">Active</span></td>
+                                        <td><span class="badge badge-{% if subscription.status == 'A' %}success{% else %}danger{% endif %}">{{ subscription.get_status_display }}</span></td>
                                     </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
@@ -78,12 +91,48 @@
             <p class="mb-5">There are no Plans attached to this server <span class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
         </div>
         {% endfor %}
-        <div class="d-flex justify-content-between mt-5">
-            <p class="text-body-secondary">Showing <span>{{ plans.start_index }}-{{ plans.end_index }}</span> of
-                <span>{{ plans.paginator.count }}</span>
-                plan{{ plans.paginator.count|pluralize }}</p>
-            <div>{% include '_pagination.html' with page_obj=plans %}</div>
+        {% if subscriber.get_subscriptions %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-transparent d-flex justify-content-between">
+                    <span class="text-primary fw-bold">Subscription History</span>
+                </div>
+                <div class="card-body p-0 px-2">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>Plan Name</th>
+                                    <th>Amount</th>
+                                    <th>Server</th>
+                                    <th>Subscribed via</th>
+                                    <th>Subscription date</th>
+                                    <th>Expiry date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subscription in subscriptions %}
+                                <tr>
+                                    <td>{{ subscription.plan.name }}</td>
+                                    <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
+                                        month{{ subscription.plan.interval_count|pluralize }}</td>
+                                    <td>{{ subscription.subscribed_via.get_choice_server }}</td>
+                                    <td>{{ subscription.subscribed_via }}</td>
+                                    <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
+                                    <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
+                                    <td><span
+                                            class="badge badge-{% if subscription.status == 'A' %}success{% else %}danger{% endif %}">{{ subscription.get_status_display }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
+        {% endif %}
     </div>
     {% endif %}
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 import logging
 from django.conf import settings
@@ -136,7 +136,6 @@ def discord_callback(request):
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
 
-                    # TODO comment out this code???
                     if request.user.is_serverowner:
                         return redirect("choose_name")
                     else:
@@ -417,17 +416,33 @@ def subscribers(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     # Retrieve the subscribers for all plans created by the user
-    subscribers = Subscription.objects.filter(subscribed_via=serverowner)
-
-    # Get the count of subscribers
-    subscriber_count = subscribers.count()
+    subscribers = Subscriber.objects.filter(subscribed_via=serverowner)
+    subscribers = mk_paginator(request, subscribers, 9)
 
     template = "serverowner/subscribers.html"
     context = {
         "serverowner": serverowner,
-        "subscriber_count": subscriber_count,
         "subscribers": subscribers,
     }
+    return render(request, template, context)
+
+
+@login_required
+def subscriber_detail(request, id):
+    subscriber = get_object_or_404(Subscriber, id=id)
+    try:
+        # Retrieve the latest active subscription for the subscriber
+        subscription = Subscription.objects.filter(
+            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
+    except Subscription.DoesNotExist:
+        subscription = None
+
+    template = "serverowner/subscriber_detail.html"
+    context = {
+        "subscriber": subscriber,
+        "subscription": subscription,
+    }
+
     return render(request, template, context)
 
 
@@ -473,22 +488,6 @@ def subscriber_dashboard(request):
 @login_required
 @require_POST
 def subscribe_to_plan(request, product_id):
-    """
-    View function for subscribing to a plan.
-
-    This view handles the process of creating a Stripe Checkout session and
-    initiating the subscription to a specific plan.
-
-    Args:
-        request: The HTTP request object.
-        product_id (int): The ID of the plan to subscribe to.
-
-    Returns:
-        HttpResponseRedirect: Redirects the user to the Stripe Checkout page.
-
-    Raises:
-        Http404: If the plan with the given product_id does not exist.
-    """
     plan = get_object_or_404(StripePlan, id=product_id)
     subscriber = Subscriber.objects.get(user=request.user)
 
@@ -505,14 +504,11 @@ def subscribe_to_plan(request, product_id):
             ],
             mode="subscription",
             customer_email=subscriber.email,
-            client_reference_id=subscriber.id, #TODO remove this?
         )
     except stripe.error.StripeError as e:
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
         messages.error(request, "An error occurred while processing your request. Please try again later.")
         return redirect("subscriber_dashboard")
-
-    expiration_date = datetime.now() + timedelta(days=30) #TODO get date from stripe
 
     # Create a new Subscription object
     subscription = Subscription.objects.create(
@@ -520,12 +516,10 @@ def subscribe_to_plan(request, product_id):
         subscribed_via=plan.user,
         plan=plan,
         subscription_date=timezone.now(),
-        expiration_date=expiration_date,
-        subscription_id=session.id,
+        session_id=session.id,
     )
 
     # Increment the subscriber count for the plan
-    #TODO When a user cancels payment, this still gets incremented and it should not be so
     plan.subscriber_count += 1
     plan.save()
 
@@ -535,33 +529,25 @@ def subscribe_to_plan(request, product_id):
 
 @login_required
 def subscription_success(request):
-    """
-    View function for handling the success of a subscription.
-
-    This view retrieves the session ID from the request's GET parameters,
-    retrieves the relevant subscription session from Stripe, updates the
-    subscriber's information, and marks the subscription as active.
-
-    Args:
-        request: The HTTP request object.
-
-    Returns:
-        HttpResponse: Renders the success template with the relevant context.
-
-    Raises:
-        Http404: If the session ID is not provided or the session retrieval fails.
-    """
     subscriber = Subscriber.objects.get(user=request.user)
     subscription = None
 
     try:
         session_id = request.GET.get('session_id')
         if session_id:
-            new_subscription_session = stripe.checkout.Session.retrieve(session_id)
-            customer = stripe.Customer.retrieve(new_subscription_session.customer)
-            subscriber.stripe_account_id = customer.id
-            subscriber.save()
-            subscription = get_object_or_404(Subscription, subscriber=subscriber, subscription_id=session_id)
+            session_info = stripe.checkout.Session.retrieve(session_id)
+
+            subscription_id = session_info.subscription
+            subscription_info = stripe.Subscription.retrieve(subscription_id)
+
+            subscription = get_object_or_404(Subscription, subscriber=subscriber, session_id=session_id)
+
+            # Update subscription details
+            subscription.subscription_id = subscription_id
+            current_period_end = subscription_info.current_period_end
+            expiration_date = datetime.fromtimestamp(current_period_end)
+            subscription.expiration_date = expiration_date
+            subscription.customer_id = session_info.customer
             subscription.status = Subscription.SubscriptionStatus.ACTIVE
             subscription.save()
         else:

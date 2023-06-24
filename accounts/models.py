@@ -149,9 +149,20 @@ class Subscriber(models.Model):
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.SET_NULL, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created']
 
     def __str__(self):
         return self.username
+
+    def has_active_subscription(self):
+        return self.subscriptions.filter(status=Subscription.SubscriptionStatus.ACTIVE, expiration_date__gt=timezone.now()).exists()
+
+    def get_subscriptions(self):
+        return self.subscriptions.all()
 
 
 class StripePlan(models.Model):
@@ -192,12 +203,22 @@ class Subscription(models.Model):
         ACTIVE = 'A', 'Active'
         INACTIVE = 'I', 'Inactive'
 
+    # class SubscriptionStatus(models.TextChoices):
+    #     INCOMPLETE = 'I', 'Incomplete'
+    #     TRIALING = 'T', 'Trialing'
+    #     ACTIVE = 'A', 'Active'
+    #     PAST_DUE = 'P', 'Past Due'
+    #     CANCELED = 'C', 'Canceled'
+    #     UNPAID = 'U', 'Unpaid'
+
     subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='subscriptions')
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
     subscription_date = models.DateTimeField(default=timezone.now)
-    expiration_date = models.DateTimeField()
+    expiration_date = models.DateTimeField(blank=True, null=True)
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
+    session_id = models.CharField(max_length=200, blank=True, null=True)
+    customer_id = models.CharField(max_length=200, blank=True, null=True)
     status = models.CharField(
         max_length=1, choices=SubscriptionStatus.choices, default=SubscriptionStatus.INACTIVE)
     created = models.DateTimeField(auto_now_add=True)
@@ -208,10 +229,3 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'Subscription #{self.id}'
-
-    def calculate_expiration_date(self):
-        """
-        Calculate the expiration date of the subscription.
-        """
-        #TODO Use stripe expiration date instead
-        return self.subscription_date + timezone.timedelta(days=30)

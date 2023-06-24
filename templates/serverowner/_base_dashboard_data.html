@@ -4,9 +4,10 @@
             <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                        {% block data_title %}{% endblock data_title %}    
+                        {% block data_title %}{% endblock data_title %}
                     </div>
                     <div class="h5 mb-0 font-weight-bold text-gray-800">{% block data_value %}{% endblock data_value %}</div>
+                    <span class="text-danger small">{% block extra_value %}{% endblock extra_value %}</span>
                 </div>
                 <div class="col-auto">
                     <i class="fa-solid {% block data_icon %}{% endblock data_icon %} fa-2x text-primary"></i>

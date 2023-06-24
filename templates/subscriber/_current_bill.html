@@ -1,0 +1,5 @@
+{% extends "serverowner/_base_dashboard_data.html" %}
+
+{% block data_title %}Current Bill Amount{% endblock data_title %}
+{% block data_value %}${{ subscription.plan.amount }} <small>/{{ subscription.plan.interval_count }} month{{ subscription.plan.interval_count|pluralize }}</small>{% endblock data_value %}
+{% block data_icon %}fa-receipt{% endblock data_icon %}

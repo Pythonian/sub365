@@ -1,0 +1,5 @@
+{% extends "serverowner/_base_dashboard_data.html" %}
+
+{% block data_title %}Current Plan{% endblock data_title %}
+{% block data_value %}{{ subscription.plan.name }}{% endblock data_value %}
+{% block data_icon %}fa-ranking-star{% endblock data_icon %}

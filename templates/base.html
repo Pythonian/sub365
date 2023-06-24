@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{% block title %}{% endblock title %} | Sub365.co</title>
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
         integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg=="
@@ -71,10 +72,10 @@
             </div>
 
             <!-- Footer -->
-            <footer class="sticky-footer pb-1 pt-4 bg-white">
-                <div class="container">
+            <footer class="sticky-footer pb-3 pt-4 bg-white">
+                <div class="container-fluid px-lg-5">
                     <div class="d-flex justify-content-between align-item-center">
-                        <span>&copy;{% now "Y" %} &bull; SUB365.co</span>
+                        <img src="{% static 'img/sub365-logo.svg' %}" alt="">
                         <ul class="list-inline">
                             <li class="list-inline-item"><a href="/about/">About Us</a></li>
                             <li class="list-inline-item"><a href="/feedback/">Feeback</a></li>

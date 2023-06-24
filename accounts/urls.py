@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import webhooks
 
 urlpatterns = [
     path('subscribe/', views.subscribe_redirect, name='subscribe_redirect'),
@@ -14,8 +15,10 @@ urlpatterns = [
     path('plan/<int:product_id>/', views.plan_detail, name='plan'),
     path('deactivate_plan/', views.deactivate_plan, name='deactivate_plan'),
     path('subscribers/', views.subscribers, name='subscribers'),
+    path('mysubscriber/<int:id>/', views.subscriber_detail, name='subscriber_detail'),
     path('subscriber/', views.subscriber_dashboard, name='subscriber_dashboard'),
     path('subscribe/<int:product_id>/', views.subscribe_to_plan, name='subscribe_to_plan'),
     path('subscription/success/', views.subscription_success, name='subscription_success'),
+    # path('webhook/', webhooks.stripe_webhook, name='stripe_webhook'),
     path('', views.index, name='index'),
 ]

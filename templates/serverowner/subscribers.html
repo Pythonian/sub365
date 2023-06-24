@@ -15,15 +15,53 @@
     </div>
 
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="text-gray-800">All Subscribers <span class="ms-2 small badge badge-primary opacity-75">{{ subscriber_count }}</span></h5>
+        <h5 class="text-gray-800">All Subscribers</h5>
     </div>
 
     <div class="row g-4 mb-5">
         {% for subscriber in subscribers %}
-        <div class="col-lg-4">
-            {% include 'serverowner/_subscriber_card.html' %}
+        <div class="col-lg-4 col-sm-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary py-3"></div>
+                <div class="card-body pb-2">
+                    <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">USER:</p>
+                            <span>{{ subscriber.username }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">EMAIL:</p>
+                            <span>{{ subscriber.email }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">DATE JOINED:</p>
+                            <span>{{ subscriber.created|date:"F j, Y" }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">LAST SUBSCRIPTION</p>
+                            <span>{% if subscriber.has_active_subscription %}Active{% else %}Inactive{% endif %}</span>
+                        </li>
+                        <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                            <p></p>
+                            <a href="{% url 'subscriber_detail' subscriber.id %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-hourglass fa-fw"></i> View History
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
         {% endfor %}
+        <div class="d-flex justify-content-between mt-5">
+            <p class="text-body-secondary">Showing <span>{{ subscribers.start_index }}-{{ subscribers.end_index }}</span> of
+                <span>{{ subscribers.paginator.count }}</span>
+                subscriber{{ subscribers.paginator.count|pluralize }}</p>
+            <div>{% include '_pagination.html' with page_obj=subscribers %}</div>
+        </div>
     </div>
 
     {% else %}
