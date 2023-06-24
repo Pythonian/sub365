@@ -350,11 +350,10 @@ def plan_detail(request, product_id):
     plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
 
     subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
-    active_subscribers = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
-    subscriber_count = subscribers.count()
+    active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
+    subscriptions_count = subscribers.count()
 
     # Calculate the total earnings
-    # TODO: Use model methods
     total_earnings = Decimal(0)
     for subscriber in subscribers:
         total_earnings += subscriber.plan.amount
@@ -363,8 +362,8 @@ def plan_detail(request, product_id):
     context = {
         "plan": plan,
         "subscribers": subscribers,
-        "subscriber_count": subscriber_count,
-        "active_subscribers": active_subscribers,
+        "subscriptions_count": subscriptions_count,
+        "active_subscriptions": active_subscriptions,
         "total_earnings": total_earnings,
     }
     return render(request, template, context)
@@ -465,12 +464,14 @@ def subscriber_dashboard(request):
     server_owner = subscriber.subscribed_via
 
     # Retrieve the plans related to the ServerOwner
-    plans = StripePlan.objects.filter(user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE)
+    plans = StripePlan.objects.filter(user=server_owner.user.serverowner,
+                                      status=StripePlan.PlanStatus.ACTIVE)
     plans = mk_paginator(request, plans, 9)
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        latest_subscription = Subscription.objects.filter(subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
+        latest_subscription = Subscription.objects.filter(
+            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
     except Subscription.DoesNotExist:
         latest_subscription = None
 
@@ -497,7 +498,7 @@ def subscribe_to_plan(request, product_id):
 
     try:
         session = stripe.checkout.Session.create(
-            success_url=request.build_absolute_uri(reverse("subscription_success")) + f"?session_id={{CHECKOUT_SESSION_ID}}",
+            success_url=request.build_absolute_uri(reverse("subscription_success")) + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
             cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
             payment_method_types=['us_bank_account'],
             line_items=[
@@ -509,23 +510,11 @@ def subscribe_to_plan(request, product_id):
             mode="subscription",
             customer_email=subscriber.email,
         )
+
     except stripe.error.StripeError as e:
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
         messages.error(request, "An error occurred while processing your request. Please try again later.")
         return redirect("subscriber_dashboard")
-
-    # Create a new Subscription object
-    subscription = Subscription.objects.create(
-        subscriber=subscriber,
-        subscribed_via=plan.user,
-        plan=plan,
-        subscription_date=timezone.now(),
-        session_id=session.id,
-    )
-
-    # Increment the subscriber count for the plan
-    plan.subscriber_count += 1
-    plan.save()
 
     # Redirect the user to the Stripe Checkout page
     return redirect(session.url)
@@ -538,22 +527,33 @@ def subscription_success(request):
 
     try:
         session_id = request.GET.get('session_id')
+        plan_id = request.GET.get('subscribed_plan')
+        plan = get_object_or_404(StripePlan, id=plan_id)
         if session_id:
             session_info = stripe.checkout.Session.retrieve(session_id)
 
             subscription_id = session_info.subscription
             subscription_info = stripe.Subscription.retrieve(subscription_id)
 
-            subscription = get_object_or_404(Subscription, subscriber=subscriber, session_id=session_id)
-
-            # Update subscription details
-            subscription.subscription_id = subscription_id
             current_period_end = subscription_info.current_period_end
             expiration_date = datetime.fromtimestamp(current_period_end)
-            subscription.expiration_date = expiration_date
-            subscription.customer_id = session_info.customer
-            subscription.status = Subscription.SubscriptionStatus.ACTIVE
-            subscription.save()
+
+            subscription = Subscription.objects.create(
+                subscriber=subscriber,
+                subscribed_via=subscriber.subscribed_via,
+                plan=plan,
+                subscription_date=timezone.now(),
+                expiration_date=expiration_date,
+                subscription_id=subscription_id,
+                session_id=session_id,
+                customer_id=session_info.customer,
+                status=Subscription.SubscriptionStatus.ACTIVE,
+            )
+
+            # Increment the subscriber count for the plan
+            plan.subscriber_count += 1
+            plan.save()
+
         else:
             raise Http404()
     except stripe.error.StripeError as e:

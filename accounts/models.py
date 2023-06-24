@@ -214,7 +214,7 @@ class Subscription(models.Model):
     subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name='subscriptions')
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
-    subscription_date = models.DateTimeField(default=timezone.now)
+    subscription_date = models.DateTimeField()
     expiration_date = models.DateTimeField(blank=True, null=True)
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
     session_id = models.CharField(max_length=200, blank=True, null=True)
