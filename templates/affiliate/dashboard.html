@@ -10,7 +10,7 @@
         <small>Here is your dashboard overview</small>
     </div>
     {% if affiliate.affiliate_link %}
-    <button id="copy-button" class="btn btn-sm btn-primary" data-affiliate-link=""><i class="far fa-clipboard me-1"></i> Copy Affiliate Link</button>
+    <button id="copy-button" class="btn btn-sm btn-primary" data-affiliate-link="{{ affiliate.affiliate_link }}"><i class="far fa-clipboard me-1"></i> Copy Affiliate Link</button>
     {% else %}
     <button class="btn btn-primary btn-sm" disabled><i class="fas fa-spinner me-1"></i> Generating affiliate link</button>
     {% endif %}
@@ -20,3 +20,41 @@
 </div>
 
 {% endblock %}
+
+{% block clipboard %}
+<script>
+
+    document.getElementById("copy-button").addEventListener("click", function () {
+        var affiliateLink = this.getAttribute("data-affiliate-link");
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(affiliateLink)
+                .then(function () {
+                    alert("Affiliate link copied to clipboard!");
+                })
+                .catch(function (error) {
+                    console.error("Failed to copy affiliate link:", error);
+                });
+        } else {
+            // Fallback for browsers that don't support the Clipboard API
+            var textarea = document.createElement("textarea");
+            textarea.value = affiliateLink;
+            textarea.style.position = "fixed";  // Ensure the textarea is visible
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                var successful = document.execCommand("copy");
+                var msg = successful ? "Affiliate link copied to clipboard!" : "Failed to copy affiliate link.";
+                alert(msg);
+            } catch (error) {
+                console.error("Failed to copy affiliate link:", error);
+            }
+
+            document.body.removeChild(textarea);
+        }
+    });
+
+</script>
+{% endblock clipboard %}

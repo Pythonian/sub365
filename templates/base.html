@@ -95,6 +95,7 @@
     <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'scripts/dashboard.min.js' %}"></script>
 
+    {% block clipboard %}
     <script>
 
         document.getElementById("copy-button").addEventListener("click", function () {
@@ -130,6 +131,7 @@
         });
 
     </script>
+    {% endblock clipboard %}
 
 </body>
 
