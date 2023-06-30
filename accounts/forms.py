@@ -10,6 +10,7 @@ class ChooseServerSubdomainForm(forms.Form):
 
     subdomain = forms.CharField(max_length=20)
     server = forms.ModelChoiceField(queryset=Server.objects.none())
+    affiliate_commission = forms.IntegerField()
 
     def __init__(self, *args, **kwargs):
         """
@@ -50,8 +51,10 @@ class ChooseServerSubdomainForm(forms.Form):
         """
         subdomain = self.cleaned_data['subdomain']
         server = self.cleaned_data['server']
+        affiliate_commission = self.cleaned_data['affiliate_commission']
         profile = ServerOwner.objects.get(user=user)
         profile.subdomain = subdomain
+        profile.affiliate_commission = affiliate_commission
         profile.save()
         server.choice_server = True
         server.save()

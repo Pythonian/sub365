@@ -16,7 +16,7 @@ import stripe
 from allauth.socialaccount.models import SocialAccount
 
 from .forms import ChooseServerSubdomainForm, PlanForm
-from .models import Server, ServerOwner, StripePlan, Subscriber, Subscription, User
+from .models import Affiliate, Server, ServerOwner, StripePlan, Subscriber, Subscription, User
 from .utils import mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -258,10 +258,27 @@ def dashboard(request):
     """
     Display the dashboard for a server owner.
 
-    Templates: ``serverowner/dashboard.html``
+    This view retrieves the server owner associated with the logged-in user
+    and renders the server owner's dashboard.
+    The dashboard provides an overview of the server owner's information and relevant data.
+
+    Template:
+        - ``serverowner/dashboard.html``
+
     Context:
-        serverowner
-            ServerOwner object
+        serverowner (ServerOwner):
+            The ServerOwner object representing the logged-in user.
+
+    Args:
+        request (HttpRequest):
+            The HTTP request object representing the current request.
+
+    Returns:
+        HttpResponse: The rendered dashboard template with the server owner's information.
+
+    Raises:
+        Http404: If the server owner is not found.
+
     """
 
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -449,13 +466,39 @@ def subscriber_detail(request, id):
     return render(request, template, context)
 
 
+@login_required
+def affiliates(request):
+    # Retrieve the user's server owner profile
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
+
+    template = 'serverowner/affiliates.html'
+    context = {
+        "serverowner": serverowner,
+    }
+
+    return render(request, template, context)
+
+
 ##################################################
 #                   SUBSCRIBERS                  #
 ##################################################
 
 @login_required
 def subscriber_dashboard(request):
-    """Display the subscriber's dashboard."""
+    """
+    Display the subscriber's dashboard.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        HttpResponse: The rendered dashboard template with the subscriber's information and relevant data.
+
+    Raises:
+        Http404: If the subscriber or server owner is not found.
+        Subscription.DoesNotExist: If the latest active subscription is not found.
+
+    """
 
     # Retrieve the subscriber based on the logged-in user
     subscriber = get_object_or_404(Subscriber, user=request.user)
@@ -493,8 +536,22 @@ def subscriber_dashboard(request):
 @login_required
 @require_POST
 def subscribe_to_plan(request, product_id):
+    """
+    Subscribe to a plan by creating a Stripe Checkout session.
+
+    Args:
+        request: The HTTP request object.
+        product_id (int): The ID of the StripePlan to subscribe to.
+
+    Returns:
+        HttpResponseRedirect: Redirects the user to the Stripe Checkout page.
+
+    Raises:
+        Http404: If the StripePlan with the specified ID is not found.
+
+    """
     plan = get_object_or_404(StripePlan, id=product_id)
-    subscriber = Subscriber.objects.get(user=request.user)
+    subscriber = get_object_or_404(Subscriber, user=request.user)
 
     try:
         session = stripe.checkout.Session.create(
@@ -516,13 +573,31 @@ def subscribe_to_plan(request, product_id):
         messages.error(request, "An error occurred while processing your request. Please try again later.")
         return redirect("subscriber_dashboard")
 
-    # Redirect the user to the Stripe Checkout page
     return redirect(session.url)
 
 
 @login_required
 def subscription_success(request):
-    subscriber = Subscriber.objects.get(user=request.user)
+    """
+    Handle the success callback from a Stripe subscription session.
+
+    This view retrieves the necessary information from the request's
+    GET parameters to process a successful subscription.
+    It creates a new Subscription object for the subscriber, updates the
+    relevant details, and increments the subscriber count for the plan.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        HttpResponse: The rendered success template with the subscription information.
+
+    Raises:
+        Http404: If the session ID is missing or invalid.
+        stripe.error.StripeError: If an error occurs during a Stripe API call.
+
+    """
+    subscriber = get_object_or_404(Subscriber, user=request.user)
     subscription = None
 
     try:
@@ -567,6 +642,51 @@ def subscription_success(request):
 
     return render(request, template, context)
 
+
+@login_required
+@require_POST
+def upgrade_to_affiliate(request):
+    subscriber = get_object_or_404(Subscriber, user=request.user)
+
+    # Create an affiliate object for the subscriber
+    affiliate = Affiliate.objects.create(
+        subscriber=subscriber,
+        serverowner=subscriber.subscribed_via,
+        discord_id=subscriber.discord_id,
+        server_id=subscriber.subscribed_via.get_choice_server().server_id)
+
+    # Update the user's role to be an affiliate
+    subscriber.user.is_affiliate = True
+    subscriber.user.save()
+
+    messages.success(request, "You have upgraded to being an Affiliate.")
+    return redirect('affiliate_dashboard')
+
+
+##################################################
+#                   AFFILIATES                   #
+##################################################
+
+@login_required
+def affiliate_dashboard(request):
+
+    affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+
+    template = 'affiliate/dashboard.html'
+    context = {
+        "affiliate": affiliate,
+    }
+
+    return render(request, template, context)
+
+
+@login_required
+def affiliate_invitations(request):
+
+    template = 'affiliate/invitations.html'
+    context = {}
+
+    return render(request, template, context)
 
 ##################################################
 #                   ERROR PAGES                  #

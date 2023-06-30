@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard{% endblock title %}
+
+{% block content %}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="mb-0 text-secondary">Welcome back!</h3>
+        <small>Here is your dashboard overview</small>
+    </div>
+    {% if affiliate.affiliate_link %}
+    <button id="copy-button" class="btn btn-sm btn-primary" data-affiliate-link=""><i class="far fa-clipboard me-1"></i> Copy Affiliate Link</button>
+    {% else %}
+    <button class="btn btn-primary btn-sm" disabled><i class="fas fa-spinner me-1"></i> Generating affiliate link</button>
+    {% endif %}
+</div>
+<div class="row mb-4">
+    {# include 'subscriber/_payment_due.html' #}
+</div>
+
+{% endblock %}

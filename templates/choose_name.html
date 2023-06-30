@@ -33,6 +33,15 @@
                 {% render_field form.server class="form-control" %}
             </div>
 
+            <div class="form-group">
+                {% for error in form.affiliate_commission.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endfor %}
+                {% render_field form.affiliate_commission class="form-control" placeholder="Enter Affiliate Commission" %}
+            </div>
+
             <button class="btn btn-primary py-3 w-100" type="submit">
                 Connect with Stripe
             </button>

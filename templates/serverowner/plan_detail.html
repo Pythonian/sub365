@@ -26,38 +26,43 @@
     </div>
 
     <h5 class="text-secondary mb-3">Subscription History</h5>
-    <div class="row">
-        <div class="col-sm-12 mb-4">
+    <div class="row g-4 mb-5">
+        {% for subscriber in subscribers %}
+        <div class="col-lg-4 col-sm-6">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-primary"></div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Email</th>
-                                    <th>Subscription Date</th>
-                                    <th>Expiration Date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for subscriber in subscribers %}
-                                <tr>
-                                    <td>{{ subscriber.subscriber.username }}</td>
-                                    <td>{{ subscriber.subscriber.email }}</td>
-                                    <td>{{ subscriber.subscription_date|date:"F j, Y" }}</td>
-                                    <td>{{ subscriber.expiration_date|date:"F j, Y" }}</td>
-                                    <td><span class="badge text-bg-{% if subscriber.status == 'A' %}success{% else %}danger{% endif %}">{{ subscriber.get_status_display }}</span></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="card-header bg-primary py-3"></div>
+                <div class="card-body pb-2">
+                    <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">USER:</p>
+                            <span>{{ subscriber.subscriber.username }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">EMAIL:</p>
+                            <span>{{ subscriber.subscriber.email }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">SUBSCRIPTION DATE:</p>
+                            <span>{{ subscriber.subscription_date|date:"F j, Y" }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">EXPIRATION DATE:</p>
+                            <span>{{ subscriber.expiration_date|date:"F j, Y" }}</span>
+                        </li>
+                        <li
+                            class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                            <p class="p-0 m-0 text-muted fs-6">STATUS:</p>
+                            <span class="badge text-bg-{% if subscriber.status == 'A' %}success{% else %}danger{% endif %}">{{ subscriber.get_status_display }}</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
+        {% endfor %}
     </div>
     {% else %}
         {% if plan.status == 'I' %}

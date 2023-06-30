@@ -29,24 +29,24 @@
                         <li class="nav-item">
                             <span class="nav-link">
                                 <span class="d-none d-lg-inline badge badge-primary small py-2 px-2">Registered on
-                                    {{ request.user.date_joined|date:"j F, Y" }}</span>
+                                    {{ user.date_joined|date:"j F, Y" }}</span>
                                 </span>
                         </li>
                         <div class="topbar-divider d-none d-sm-block"></div>
                         <li class="nav-item">
                             <span class="nav-link">
-                                {% if request.user.is_serverowner %}
-                                <img class="img-profile rounded-circle me-2" src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ request.user.serverowner.discord_id }}/{{ request.user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
+                                {% if user.is_serverowner %}
+                                <img class="img-profile rounded-circle me-2" src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ user.serverowner.discord_id }}/{{ user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
-                                    {{ request.user.serverowner.username|title }} <br>
+                                    {{ user.serverowner.username|title }} <br>
                                     {{ choice_server.name }}
                                 </span>
 
                                 {% else %}
-                                <img class="img-profile rounded-circle me-2" src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ request.user.subscriber.discord_id }}/{{ request.user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
+                                <img class="img-profile rounded-circle me-2" src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ user.subscriber.discord_id }}/{{ user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
-                                    {{ request.user.subscriber.username|title }}<br>
-                                    Subscriber
+                                    {{ user.subscriber.username|title }}<br>
+                                    {% if user.is_affiliate %}Affiliate{% else %}Subscriber{% endif %}
                                 </span>
                                 {% endif %}
 

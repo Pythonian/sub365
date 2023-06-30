@@ -14,6 +14,7 @@ class User(AbstractUser):
 
     is_serverowner = models.BooleanField(default=False)
     is_subscriber = models.BooleanField(default=False)
+    is_affiliate = models.BooleanField(default=False)
 
 
 class ServerOwner(models.Model):
@@ -28,6 +29,8 @@ class ServerOwner(models.Model):
     subdomain = models.CharField(max_length=20)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
+    affiliate_commission = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(100)])
 
     def __str__(self):
         return self.username
@@ -76,6 +79,24 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Subscriber objects who subscribed via the ServerOwner.
         """
         return Subscriber.objects.filter(subscribed_via=self)
+
+    def get_affiliate_users(self):
+        """
+        Retrieve the subscribers who upgraded to affiliates and associated with the ServerOwner.
+
+        Returns:
+            QuerySet: QuerySet of Affiliate objects who upgraded.
+        """
+        return Affiliate.objects.filter(serverowner=self)
+
+    def get_total_affiliates(self):
+        """
+        Get the total number of affiliates associated with the ServerOwner.
+
+        Returns:
+            int: The total number of affiliates.
+        """
+        return Affiliate.objects.filter(serverowner=self).count()
 
     def get_latest_subscriptions(self, limit=3):
         """
@@ -159,10 +180,26 @@ class Subscriber(models.Model):
         return self.username
 
     def has_active_subscription(self):
-        return self.subscriptions.filter(status=Subscription.SubscriptionStatus.ACTIVE, expiration_date__gt=timezone.now()).exists()
+        return self.subscriptions.filter(
+            status=Subscription.SubscriptionStatus.ACTIVE,
+            expiration_date__gt=timezone.now()).exists()
 
     def get_subscriptions(self):
         return self.subscriptions.all()
+
+
+class Affiliate(models.Model):
+    subscriber = models.OneToOneField(Subscriber, on_delete=models.CASCADE)
+    affiliate_link = models.CharField(max_length=255, unique=True, blank=True, null=True)
+    discord_id = models.CharField(max_length=255, unique=True)
+    server_id = models.CharField(max_length=255, unique=True)
+    serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
+    total_invites = models.PositiveIntegerField(default=0)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.subscriber.username
 
 
 class StripePlan(models.Model):
