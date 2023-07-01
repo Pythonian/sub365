@@ -202,6 +202,21 @@ class Affiliate(models.Model):
         return self.subscriber.username
 
 
+class AffiliateInvitee(models.Model):
+    """Model table for an Invited user by an Affiliate"""
+    
+    inviter = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
+    discord_id = models.CharField(max_length=255, unique=True)
+    invitee_id = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.invitee_id
+
+
 class StripePlan(models.Model):
     """
     Model for Stripe plans.

@@ -41,7 +41,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Affiliate)
 class AffiliateAdmin(admin.ModelAdmin):
-    list_display = ['subscriber', 'discord_id', 'affiliate_link', 'server_id', 'created']
+    list_display = ['subscriber', 'discord_id', 'affiliate_link', 'created']
 
 admin.site.unregister(EmailAddress)
 admin.site.unregister(Group)
