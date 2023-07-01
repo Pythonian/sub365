@@ -200,13 +200,13 @@ class Affiliate(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.subscriber.username
+        return self.discord_id
 
 
 class AffiliateInvitee(models.Model):
     """Model table for an Invited user by an Affiliate"""
 
-    inviter = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
+    affiliate = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
     discord_id = models.CharField(max_length=255, unique=True)
     paid = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
