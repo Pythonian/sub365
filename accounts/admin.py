@@ -1,47 +1,55 @@
 from django.contrib import admin
-from allauth.account.models import EmailAddress
 from django.contrib.auth.models import Group
-from .models import User, ServerOwner, Server, StripePlan, Subscriber, Subscription, Affiliate
+
+from allauth.account.models import EmailAddress
+
+from .models import Affiliate, AffiliateInvitee, Server, ServerOwner, StripePlan, Subscriber, Subscription, User
 
 
 @admin.register(Server)
 class ServerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'owner', 'server_id', 'choice_server']
-    list_filter = ['choice_server']
+    list_display = ["name", "owner", "server_id", "choice_server"]
+    list_filter = ["choice_server"]
 
 
 @admin.register(ServerOwner)
 class ServerOwnerAdmin(admin.ModelAdmin):
-    list_display = ['username', 'subdomain', 'email']
-    search_fields = ['username', 'subdomain', 'email']
+    list_display = ["username", "subdomain", "email"]
+    search_fields = ["username", "subdomain", "email"]
 
 
 @admin.register(Subscriber)
 class SubscriberAdmin(admin.ModelAdmin):
-    list_display = ['username', 'email', 'subscribed_via']
+    list_display = ["username", "email", "subscribed_via"]
 
 
 @admin.register(StripePlan)
 class StripePlanAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'amount', 'subscriber_count']
-    search_fields = ['user__username']
+    list_display = ["name", "user", "amount", "subscriber_count"]
+    search_fields = ["user__username"]
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ['subscriber', 'subscribed_via', 'plan', 'subscription_date', 'expiration_date', 'status']
-    search_fields = ['subscriber', 'subscribed_via', 'plan']
-    list_filter = ['status', 'subscription_date', 'expiration_date']
+    list_display = ["subscriber", "subscribed_via", "plan", "subscription_date", "expiration_date", "status"]
+    search_fields = ["subscriber", "subscribed_via", "plan"]
+    list_filter = ["status", "subscription_date", "expiration_date"]
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["username", "is_serverowner", "is_affiliate", "is_subscriber", "is_superuser", "is_active"]
 
 
 @admin.register(Affiliate)
 class AffiliateAdmin(admin.ModelAdmin):
-    list_display = ['subscriber', 'discord_id', 'affiliate_link', 'created']
+    list_display = ["subscriber", "discord_id", "affiliate_link", "created"]
+
+
+@admin.register(AffiliateInvitee)
+class AffiliateInviteeAdmin(admin.ModelAdmin):
+    pass
+
 
 admin.site.unregister(EmailAddress)
 admin.site.unregister(Group)

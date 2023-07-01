@@ -14,5 +14,4 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
         :param request: The current request object.
         :return: The redirect URL.
         """
-        # Use reverse to dynamically generate the redirect URL based on the URL pattern name
         return reverse('discord_callback')
