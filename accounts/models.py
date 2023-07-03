@@ -227,7 +227,7 @@ class AffiliateInvitee(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.discord_id
+        return self.invitee_discord_id
 
 
 class StripePlan(models.Model):
