@@ -298,9 +298,12 @@ def dashboard(request):
 
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
+    discord_client_id = settings.DISCORD_CLIENT_ID
+
     template = "serverowner/dashboard.html"
     context = {
         "serverowner": serverowner,
+        "discord_client_id": discord_client_id,
     }
 
     return render(request, template, context)
@@ -537,8 +540,6 @@ def subscriber_dashboard(request):
     # Retrieve all the subscriptions done by the subscriber
     subscriptions = Subscription.objects.filter(subscriber=subscriber)
 
-    discord_client_id = settings.DISCORD_CLIENT_ID
-
     template = "subscriber/dashboard.html"
     context = {
         "plans": plans,
@@ -546,7 +547,6 @@ def subscriber_dashboard(request):
         "server_owner": server_owner,
         "subscription": latest_subscription,
         "subscriptions": subscriptions,
-        "discord_client_id": discord_client_id,
     }
 
     return render(request, template, context)
