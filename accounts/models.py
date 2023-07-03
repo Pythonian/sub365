@@ -205,7 +205,7 @@ class Affiliate(models.Model):
     affiliate_link = models.CharField(max_length=255, unique=True,
                                       blank=True, null=True)
     discord_id = models.CharField(
-        max_length=255, unique=True, help_text="Discord ID of the Affiliate")
+        max_length=255, primary_key=True, help_text="Discord ID of the Affiliate")
     server_id = models.CharField(max_length=255, unique=True)
     serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     total_invites = models.PositiveIntegerField(default=0)
