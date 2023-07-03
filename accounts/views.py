@@ -16,7 +16,8 @@ import stripe
 from allauth.socialaccount.models import SocialAccount
 
 from .forms import ChooseServerSubdomainForm, PlanForm
-from .models import Affiliate, Server, ServerOwner, StripePlan, Subscriber, Subscription, User
+from .models import (Affiliate, Server, ServerOwner,
+                     StripePlan, Subscriber, Subscription, User)
 from .utils import mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -59,22 +60,26 @@ def discord_callback(request):
                 "Authorization": f"Bearer {access_token}",
             }
 
-            response = requests.get("https://discord.com/api/users/@me", headers=headers)
+            response = requests.get(
+                "https://discord.com/api/users/@me", headers=headers)
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
                 if state == "subscriber":
                     try:
-                        social_account = SocialAccount.objects.get(provider="discord", uid=user_info["id"])
+                        social_account = SocialAccount.objects.get(
+                            provider="discord", uid=user_info["id"])
                         user = social_account.user
                         user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                         login(request, user, backend=user.backend)
                         return redirect("dashboard_view")
                     except (SocialAccount.DoesNotExist, IndexError):
                         # Create a new user and social account
-                        user = User.objects.create_user(username=user_info["username"], is_subscriber=True)
+                        user = User.objects.create_user(
+                            username=user_info["username"], is_subscriber=True)
                         social_account = SocialAccount.objects.create(
-                            user=user, provider="discord", uid=user_info["id"], extra_data=user_info
+                            user=user, provider="discord", uid=user_info["id"],
+                            extra_data=user_info
                         )
                         subscriber = Subscriber.objects.get(user=user)
                         subscriber.discord_id = user_info.get("id", "")
@@ -82,7 +87,6 @@ def discord_callback(request):
                         subscriber.avatar = user_info.get("avatar", "")
                         subscriber.email = user_info.get("email", "")
                         subscriber.save()
-                        # Associate the subscriber with the ServerOwner based on the subdomain
                         server_owner = ServerOwner.objects.get(subdomain=subdomain)
                         subscriber.subscribed_via = server_owner
                         subscriber.save()
@@ -91,7 +95,8 @@ def discord_callback(request):
                     return redirect("subscriber_dashboard")
                 else:
                     # state is serverowner
-                    guild_response = requests.get("https://discord.com/api/users/@me/guilds", headers=headers)
+                    guild_response = requests.get(
+                        "https://discord.com/api/users/@me/guilds", headers=headers)
                     if guild_response.status_code == 200:
                         # Gets all the discord servers joined by the user
                         server_list = guild_response.json()
@@ -106,7 +111,9 @@ def discord_callback(request):
                                 # Check if user owns the server
                                 if server_owner:
                                     owned_servers.append(
-                                        {"id": server_id, "name": server_name, "icon": server_icon})
+                                        {"id": server_id,
+                                         "name": server_name,
+                                         "icon": server_icon})
                     else:
                         # Redirect user and show a message to create a server
                         messages.info(request,
@@ -114,13 +121,16 @@ def discord_callback(request):
                         return redirect("index")
 
                     try:
-                        social_account = SocialAccount.objects.get(provider="discord", uid=user_info["id"])
+                        social_account = SocialAccount.objects.get(
+                            provider="discord", uid=user_info["id"])
                         user = social_account.user
                     except (SocialAccount.DoesNotExist, IndexError):
                         # Create a new user and social account
-                        user = User.objects.create_user(username=user_info["username"], is_serverowner=True)
+                        user = User.objects.create_user(
+                            username=user_info["username"], is_serverowner=True)
                         social_account = SocialAccount.objects.create(
-                            user=user, provider="discord", uid=user_info["id"], extra_data=user_info
+                            user=user, provider="discord",
+                            uid=user_info["id"], extra_data=user_info
                         )
                         serverowner = ServerOwner.objects.get(user=user)
                         serverowner.discord_id = user_info.get("id", "")
@@ -147,7 +157,8 @@ def discord_callback(request):
             return HttpResponse("Failed to obtain access token.")  # TODO Change this
 
     # Redirect user and show a message if 'code' was not generated
-    messages.error(request, "Failed to generate the authorization code. Please try again.")
+    messages.error(
+        request, "Failed to generate the authorization code. Please try again.")
     return redirect("index")
 
 
@@ -189,8 +200,12 @@ def choose_name(request):
 def dashboard_view(request):
     """Redirect the user to the appropriate dashboard."""
     if request.user.is_serverowner:
+        if not request.user.serverowner.subdomain:
+            return redirect("choose_name")
         return redirect("dashboard")
-    elif request.user.is_subscriber:
+    elif request.user.is_affiliate:
+        return redirect("affiliate_dashboard")
+    elif request.user.is_subscriber and not request.user.is_affiliate:
         return redirect("subscriber_dashboard")
     else:
         return redirect("index")
@@ -514,12 +529,15 @@ def subscriber_dashboard(request):
     try:
         # Retrieve the latest active subscription for the subscriber
         latest_subscription = Subscription.objects.filter(
-            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
+            subscriber=subscriber,
+            status=Subscription.SubscriptionStatus.ACTIVE).latest()
     except Subscription.DoesNotExist:
         latest_subscription = None
 
     # Retrieve all the subscriptions done by the subscriber
     subscriptions = Subscription.objects.filter(subscriber=subscriber)
+
+    discord_client_id = settings.DISCORD_CLIENT_ID
 
     template = "subscriber/dashboard.html"
     context = {
@@ -528,6 +546,7 @@ def subscriber_dashboard(request):
         "server_owner": server_owner,
         "subscription": latest_subscription,
         "subscriptions": subscriptions,
+        "discord_client_id": discord_client_id,
     }
 
     return render(request, template, context)

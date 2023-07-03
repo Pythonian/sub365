@@ -29,8 +29,9 @@ class ServerOwner(models.Model):
     subdomain = models.CharField(max_length=20)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    affiliate_commission = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(100)])
+    affiliate_commission = models.IntegerField(blank=True, null=True,
+                                               validators=[MinValueValidator(1),
+                                                           MaxValueValidator(100)])
 
     def __str__(self):
         return self.username
