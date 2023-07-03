@@ -3,7 +3,8 @@ from django.contrib.auth.models import Group
 
 from allauth.account.models import EmailAddress
 
-from .models import Affiliate, AffiliateInvitee, Server, ServerOwner, StripePlan, Subscriber, Subscription, User
+from .models import (Affiliate, AffiliateInvitee, Server, ServerOwner,
+                     StripePlan, Subscriber, Subscription, User)
 
 
 @admin.register(Server)
@@ -31,19 +32,21 @@ class StripePlanAdmin(admin.ModelAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ["subscriber", "subscribed_via", "plan", "subscription_date", "expiration_date", "status"]
+    list_display = ["subscriber", "subscribed_via", "plan", "subscription_date",
+                    "expiration_date", "status"]
     search_fields = ["subscriber", "subscribed_via", "plan"]
     list_filter = ["status", "subscription_date", "expiration_date"]
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ["username", "is_serverowner", "is_affiliate", "is_subscriber", "is_superuser", "is_active"]
+    list_display = ["username", "is_serverowner", "is_affiliate", "is_subscriber",
+                    "is_superuser", "is_active"]
 
 
 @admin.register(Affiliate)
 class AffiliateAdmin(admin.ModelAdmin):
-    list_display = ["subscriber", "discord_id", "affiliate_link", "created"]
+    list_display = ["subscriber", "affiliate_link", "created"]
 
 
 @admin.register(AffiliateInvitee)

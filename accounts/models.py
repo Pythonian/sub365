@@ -29,7 +29,8 @@ class ServerOwner(models.Model):
     subdomain = models.CharField(max_length=20)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    affiliate_commission = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(100)])
+    affiliate_commission = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(100)])
 
     def __str__(self):
         return self.username
@@ -66,13 +67,16 @@ class ServerOwner(models.Model):
         Get the popular plans created by the ServerOwner based on number of subscribers.
 
         Returns:
-            QuerySet: QuerySet of StripePlan objects ordered by subscriber count in descending order.
+            QuerySet: QuerySet of StripePlan objects ordered by subscriber count
+                      in descending order.
         """
-        return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE).order_by("-subscriber_count")[:limit]
+        return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE).order_by(
+            "-subscriber_count")[:limit]
 
     def get_subscribed_users(self):
         """
-        Retrieve the subscribers who subscribed to any of the plans created by the ServerOwner.
+        Retrieve the subscribers who subscribed to any of the plans created by the
+        ServerOwner.
 
         Returns:
             QuerySet: QuerySet of Subscriber objects who subscribed via the ServerOwner.
@@ -81,7 +85,8 @@ class ServerOwner(models.Model):
 
     def get_affiliate_users(self):
         """
-        Retrieve the subscribers who upgraded to affiliates and associated with the ServerOwner.
+        Retrieve the subscribers who upgraded to affiliates and associated with the
+        ServerOwner.
 
         Returns:
             QuerySet: QuerySet of Affiliate objects who upgraded.
@@ -105,9 +110,10 @@ class ServerOwner(models.Model):
             limit (int): The maximum number of subscriptions to retrieve. Default is 3.
 
         Returns:
-            QuerySet: QuerySet of Subscription objects ordered by creation date (latest first).
+            QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
-        return Subscription.objects.filter(subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE)[:limit]
+        return Subscription.objects.filter(
+            subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE)[:limit]
 
     def get_total_subscriptions(self):
         """
@@ -135,10 +141,12 @@ class ServerOwner(models.Model):
             Decimal: The total earnings amount formatted with two decimal places.
         """
         total_earnings = (
-            Subscription.objects.filter(subscribed_via=self).aggregate(total=Sum("plan__amount")).get("total")
+            Subscription.objects.filter(
+                subscribed_via=self).aggregate(total=Sum("plan__amount")).get("total")
         )
         if total_earnings is not None:
-            total_earnings = Decimal(total_earnings).quantize(Decimal("0.00"), rounding=ROUND_DOWN)
+            total_earnings = Decimal(total_earnings).quantize(
+                Decimal("0.00"), rounding=ROUND_DOWN)
         else:
             total_earnings = Decimal(0)
         return total_earnings
@@ -149,7 +157,8 @@ class Server(models.Model):
     Model for servers.
     """
 
-    owner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name="servers")
+    owner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE,
+                              related_name="servers")
     server_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=255, blank=True, null=True)
@@ -170,7 +179,8 @@ class Subscriber(models.Model):
     avatar = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.SET_NULL, blank=True, null=True)
+    subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.SET_NULL,
+                                       blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -182,7 +192,8 @@ class Subscriber(models.Model):
 
     def has_active_subscription(self):
         return self.subscriptions.filter(
-            status=Subscription.SubscriptionStatus.ACTIVE, expiration_date__gt=timezone.now()
+            status=Subscription.SubscriptionStatus.ACTIVE,
+            expiration_date__gt=timezone.now()
         ).exists()
 
     def get_subscriptions(self):
@@ -191,8 +202,10 @@ class Subscriber(models.Model):
 
 class Affiliate(models.Model):
     subscriber = models.OneToOneField(Subscriber, on_delete=models.CASCADE)
-    affiliate_link = models.CharField(max_length=255, unique=True, blank=True, null=True)
-    discord_id = models.CharField(max_length=255, unique=True)
+    affiliate_link = models.CharField(max_length=255, unique=True,
+                                      blank=True, null=True)
+    discord_id = models.CharField(
+        max_length=255, unique=True, help_text="Discord ID of the Affiliate")
     server_id = models.CharField(max_length=255, unique=True)
     serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     total_invites = models.PositiveIntegerField(default=0)
@@ -207,7 +220,8 @@ class AffiliateInvitee(models.Model):
     """Model table for an Invited user by an Affiliate"""
 
     affiliate = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
-    discord_id = models.CharField(max_length=255, unique=True)
+    invitee_discord_id = models.CharField(
+        max_length=255, unique=True, help_text="Discord ID of the Invitee")
     paid = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -225,16 +239,19 @@ class StripePlan(models.Model):
         ACTIVE = "A", "Active"
         INACTIVE = "I", "Inactive"
 
-    user = models.ForeignKey(ServerOwner, on_delete=models.CASCADE, related_name="plans")
+    user = models.ForeignKey(ServerOwner, on_delete=models.CASCADE,
+                             related_name="plans")
     product_id = models.CharField(max_length=100)
     price_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
     description = models.TextField(max_length=300, help_text="300 characters")
     currency = models.CharField(max_length=3, default="usd")
-    interval_count = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+    interval_count = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(12)])
     subscriber_count = models.IntegerField(default=0)
-    status = models.CharField(max_length=1, choices=PlanStatus.choices, default=PlanStatus.ACTIVE)
+    status = models.CharField(max_length=1, choices=PlanStatus.choices,
+                              default=PlanStatus.ACTIVE)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -261,7 +278,8 @@ class Subscription(models.Model):
     #     CANCELED = 'C', 'Canceled'
     #     UNPAID = 'U', 'Unpaid'
 
-    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE, related_name="subscriptions")
+    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE,
+                                   related_name="subscriptions")
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
     subscription_date = models.DateTimeField()
@@ -269,8 +287,10 @@ class Subscription(models.Model):
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
     session_id = models.CharField(max_length=200, blank=True, null=True)
     customer_id = models.CharField(max_length=200, blank=True, null=True)
-    status = models.CharField(max_length=1, choices=SubscriptionStatus.choices, default=SubscriptionStatus.INACTIVE)
-    value = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(1)])
+    status = models.CharField(max_length=1, choices=SubscriptionStatus.choices,
+                              default=SubscriptionStatus.INACTIVE)
+    value = models.IntegerField(default=0, validators=[MinValueValidator(0),
+                                                       MaxValueValidator(1)])
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

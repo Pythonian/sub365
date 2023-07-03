@@ -25,20 +25,12 @@
             <span>Affiliates</span></a>
     </li>
     {% elif request.user.is_affiliate %}
-    <li
-        class="nav-item {% url 'affiliate_dashboard' as affiliate_dashboard_url %}{% if request.get_full_path == affiliate_dashboard_url %}active{% endif %}">
+    <li class="nav-item {% url 'affiliate_dashboard' as affiliate_dashboard_url %}{% if request.get_full_path == affiliate_dashboard_url %}active{% endif %}">
         <a class="nav-link" href="{{ affiliate_dashboard_url }}">
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
-    <!-- <li
-        class="nav-item {% url 'affiliate_invitations' as affiliate_invitations_url %}{% if request.get_full_path == affiliate_invitations_url %}active{% endif %}">
-        <a class="nav-link" href="{{ affiliate_invitations_url }}">
-            <i class="fas fa-fw fa-hand-holding-hand"></i>
-            <span>Invitations</span></a>
-    </li> -->
-    <li
-        class="nav-item {% url 'subscriber_dashboard' as subscriber_dashboard_url %}{% if request.get_full_path == subscriber_dashboard_url %}active{% endif %}">
+    <li class="nav-item {% url 'subscriber_dashboard' as subscriber_dashboard_url %}{% if request.get_full_path == subscriber_dashboard_url %}active{% endif %}">
         <a class="nav-link" href="{{ subscriber_dashboard_url }}">
             <i class="fas fa-fw fa-cube"></i>
             <span>Subscription</span></a>

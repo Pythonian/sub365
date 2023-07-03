@@ -692,6 +692,7 @@ def affiliate_invitations(request):
 #                   ERROR PAGES                  #
 ##################################################
 
+
 def error_400(request, exception):
     return render(request, '400.html', status=400)
 

@@ -11,7 +11,7 @@ def mk_paginator(request, items, num_items):
     :return: A paginated queryset
     """
     paginator = Paginator(items, num_items)
-    page = request.GET.get('page', 1)
+    page = request.GET.get("page", 1)
     try:
         items = paginator.page(page)
     except PageNotAnInteger:
