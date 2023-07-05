@@ -40,7 +40,7 @@
                                 {% for affiliate in serverowner.get_affiliate_users.all %}
                                 <tr>
                                     <td>{{ affiliate.subscriber.username }}</td>
-                                    <td>{{ affiliate.total_invites }}</td>
+                                    <td>{{ affiliates_count }}</td>
                                     <td>$0{{ affiliate.total_earnings }}</td>
                                     <td>%0{{ affiliate.conversion_rate }}</td>
                                     <td>$0{{ affiliate.average_revenue }}</td>

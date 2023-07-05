@@ -498,9 +498,13 @@ def subscriber_detail(request, id):
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
+    affiliates_count = AffiliateInvitee.objects.filter(
+        affiliate__serverowner=serverowner).count()
+
     template = 'serverowner/affiliates.html'
     context = {
         "serverowner": serverowner,
+        "affiliates_count": affiliates_count,
     }
 
     return render(request, template, context)
@@ -712,14 +716,6 @@ def affiliate_dashboard(request):
 
     return render(request, template, context)
 
-
-@login_required
-def affiliate_invitations(request):
-
-    template = 'affiliate/invitations.html'
-    context = {}
-
-    return render(request, template, context)
 
 ##################################################
 #                   ERROR PAGES                  #

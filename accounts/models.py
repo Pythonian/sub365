@@ -209,7 +209,6 @@ class Affiliate(models.Model):
         max_length=255, primary_key=True, help_text="Discord ID of the Affiliate")
     server_id = models.CharField(max_length=255, unique=True)
     serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
-    total_invites = models.PositiveIntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -229,13 +228,6 @@ class AffiliateInvitee(models.Model):
 
     def __str__(self):
         return self.invitee_discord_id
-
-    def save(self, *args, **kwargs):
-        created = not self.pk  # Check if the object is being created
-        super().save(*args, **kwargs)
-        if created:
-            self.affiliate.total_invites += 1
-            self.affiliate.save()
 
 
 class StripePlan(models.Model):
