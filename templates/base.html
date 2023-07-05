@@ -97,7 +97,7 @@
     <script src="{% static 'scripts/app.js' %}"></script>
     <script>
         $(function () {
-            $('[data-toggle="popover"]').popover()
+            $('[data-toggle="popover"]').popover({trigger: 'focus'})
         })
     </script>
 
