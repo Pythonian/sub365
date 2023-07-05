@@ -94,6 +94,12 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'scripts/dashboard.min.js' %}"></script>
+    <script src="{% static 'scripts/app.js' %}"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="popover"]').popover()
+        })
+    </script>
 
     {% block clipboard %}
     <script>

@@ -11,10 +11,7 @@
                 <small>Here is your dashboard overview</small>
             </div>
             {% if not user.is_affiliate %}
-            <form action="{% url 'upgrade_to_affiliate' %}" method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-user-tie me-1"></i> Become an Affiliate</button>
-            </form>
+            <a class="btn btn-primary btn-sm" data-toggle="modal" data-target="#affiliateModal"><i class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
             {% endif %}
         </div>
         <div class="row mb-4">
@@ -63,9 +60,14 @@
             </div>
         </div>
     {% else %}
-    <div class="row mb-4 mt-5">
-        <h1 class="h3 mb-1 text-dark">Welcome, {{ subscriber.username }}. Choose a subscription plan below</h1>
-        <p class="small m-0">You will need to subscribe to a plan to be granted access to <span class="text-primary">{{ server_owner.get_choice_server }}</span> by the Server owner.</p>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-dark">Welcome, {{ subscriber.username }}. Choose a subscription plan below</h1>
+            <p class="small m-0">You will need to subscribe to a plan to be granted access to <span class="text-primary">{{ server_owner.get_choice_server }}</span> by the Server owner.</p>
+        </div>
+        {% if not user.is_affiliate %}
+            <a class="btn btn-primary btn-sm" data-toggle="modal" data-target="#affiliateModal"><i class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
+        {% endif %}
     </div>
     <div class="row g-4 mb-5">
         {% for plan in plans %}
@@ -141,5 +143,27 @@
         {% endif %}
     </div>
     {% endif %}
+
+<div class="modal fade" id="affiliateModal" tabindex="-1" role="dialog" aria-labelledby="affiliateModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="affiliateModalLabel">Become an Affiliate</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">x</span>
+                </button>
+            </div>
+            <div class="modal-body">You will become an Affiliate and be able to invite users to the server <span class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> for a commission.</div>
+            <div class="modal-footer">
+                <form action="{% url 'upgrade_to_affiliate' %}" method="post">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-dark" type="button" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-user-tie fa-fw"></i> Become an Affiliate</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

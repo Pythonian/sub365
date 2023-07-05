@@ -6,46 +6,58 @@
 
 {% block content %}
 
-<div class="mx-auto bg-white justify-content-center p-5 text-center" style="width: 450px;">
-    <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
-    <h6 class="my-4 text-dark">Enter a Subdomain name below for custom URL and choose a Server you want to use:</h6>
-    <div class="text-start">
-        <form action="" method="post">
-            {% csrf_token %}
+<div class="col-xl-4 col-lg-6 col-md-8 col-sm-9 mx-auto">
+    <div class="bg-white justify-content-center p-5 text-center shadow-lg rounded-4">
+        <a href="/"><img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo"></a>
+        <h6 class="my-4 text-dark">Enter the information below and proceed to connect your account with Stripe.</h6>
+        <div class="text-start">
+            <form action="" method="post">
+                {% csrf_token %}
 
-            {{ form.non_field_errors }}
-
-            <div class="form-group">
-                {% for error in form.subdomain.errors %}
+                {% for error in form.non_field_errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>
                 {% endfor %}
-                {% render_field form.subdomain class="form-control" placeholder="Enter your Subdomain" %}
-            </div>
 
-            <div class="form-group">
-                {% for error in form.server.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
+                <div class="form-group">
+                    {% for error in form.subdomain.errors %}
+                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                    </div>
+                    {% endfor %}
+                    {% render_field form.subdomain %}
+                    <span class="small">{{ form.subdomain.help_text }}</span>
                 </div>
-                {% endfor %}
-                {% render_field form.server class="form-control" %}
-            </div>
 
-            <div class="form-group">
-                {% for error in form.affiliate_commission.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
+                <div class="form-group">
+                    {% for error in form.server.errors %}
+                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                    </div>
+                    {% endfor %}
+                    {% render_field form.server class="form-select" %}
+                    <span class="small">{{ form.server.help_text }} <i class="fas fa-circle-question ms-1 small" data-toggle="tooltip" data-placement="top" title="You must have a Server on Discord to continue"></i></span>
                 </div>
-                {% endfor %}
-                {% render_field form.affiliate_commission class="form-control" placeholder="Enter Affiliate Commission" %}
-            </div>
 
-            <button class="btn btn-primary py-3 w-100" type="submit">
-                Connect with Stripe
-            </button>
-        </form>
+                <div class="form-group">
+                    {% for error in form.affiliate_commission.errors %}
+                        <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                        </div>
+                    {% endfor %}
+                    <div class="input-group">
+                        {% render_field form.affiliate_commission %}
+                        <span class="input-group-text" id="affiliate-commission"><i class="fa-solid fa-percent"></i></span>
+                    </div>
+                    <span class="small">{{ form.affiliate_commission.help_text }}</span>
+                </div>
+
+                <button class="btn btn-primary py-3 w-100" type="submit">
+                    Connect with Stripe
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 

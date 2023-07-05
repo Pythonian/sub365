@@ -214,7 +214,7 @@ class Affiliate(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.discord_id
+        return self.subscriber.username
 
 
 class AffiliateInvitee(models.Model):
@@ -229,6 +229,13 @@ class AffiliateInvitee(models.Model):
 
     def __str__(self):
         return self.invitee_discord_id
+
+    def save(self, *args, **kwargs):
+        created = not self.pk  # Check if the object is being created
+        super().save(*args, **kwargs)
+        if created:
+            self.affiliate.total_invites += 1
+            self.affiliate.save()
 
 
 class StripePlan(models.Model):
@@ -253,6 +260,12 @@ class StripePlan(models.Model):
     subscriber_count = models.IntegerField(default=0)
     status = models.CharField(max_length=1, choices=PlanStatus.choices,
                               default=PlanStatus.ACTIVE)
+    discord_role_id = models.CharField(
+        max_length=255, help_text="ID of Discord role to be assigned to subscribers")
+    permission_description = models.CharField(
+        max_length=255,
+        blank=True, null=True,
+        help_text="Description of permissions to be given to subscribers")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

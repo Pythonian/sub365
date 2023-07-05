@@ -8,7 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{% block title %}{% endblock title %} | Sub365.co</title>
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+        integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
     <link href="{% static 'styles/dashboard.min.css' %}" rel="stylesheet">
 </head>
 
@@ -25,17 +28,39 @@
         </div>
     </main>
 
+    <div class="container mt-auto">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
+            <p class="col-md-4 mb-lg-0 text-body-secondary ps-0">&copy;{% now "Y" %} &bull; All rights reserved</p>
+
+            <a href="/"
+                class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+            </a>
+
+            <ul class="nav col-md-4 justify-content-end pe-0">
+                <li class="nav-item"><a href="/about/" class="nav-link px-2 text-body-secondary">About</a></li>
+                <li class="nav-item"><a href="/feedback/" class="nav-link px-2 text-body-secondary">Feedback</a></li>
+                <li class="nav-item"><a href="/policy/" class="nav-link px-2 text-body-secondary">Privacy Policy</a></li>
+            </ul>
+        </footer>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"
         integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'scripts/dashboard.min.js' %}"></script>
+    <script src="{% static 'scripts/app.js' %}"></script>
+    {% block scripts %}{% endblock scripts %}
     <script>
         window.onload = (event) => {
             let myAlert = document.querySelector('.toast');
             let bsAlert = new bootstrap.Toast(myAlert);
             bsAlert.show();
         }
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+            })
     </script>
 </body>
 </html>

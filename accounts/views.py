@@ -15,8 +15,9 @@ import requests
 import stripe
 from allauth.socialaccount.models import SocialAccount
 
+from .decorators import redirect_if_no_subdomain
 from .forms import ChooseServerSubdomainForm, PlanForm
-from .models import (Affiliate, Server, ServerOwner,
+from .models import (Affiliate, Server, ServerOwner, AffiliateInvitee,
                      StripePlan, Subscriber, Subscription, User)
 from .utils import mk_paginator
 
@@ -154,7 +155,8 @@ def discord_callback(request):
                     else:
                         return redirect("subscriber_dashboard")
         else:
-            return HttpResponse("Failed to obtain access token.")  # TODO Change this
+            messages.error(request, "Failed to obtain access token.")
+            return redirect("index")
 
     # Redirect user and show a message if 'code' was not generated
     messages.error(
@@ -177,14 +179,11 @@ def choose_name(request):
     """Handle choosing a server and subdomain name."""
     if request.user.serverowner.subdomain:
         return redirect("dashboard")
-    #TODO handle User.serverowner.RelatedObjectDoesNotExist
     if request.method == "POST":
         form = ChooseServerSubdomainForm(request.POST, user=request.user)
         if form.is_valid():
             form.save(user=request.user)
             return redirect("create_stripe_account")
-        else:
-            messages.error(request, "An error occurred while saving the form.")
     else:
         form = ChooseServerSubdomainForm(user=request.user)
 
@@ -269,13 +268,14 @@ def stripe_refresh(request):
 ##################################################
 
 @login_required
+@redirect_if_no_subdomain
 def dashboard(request):
     """
     Display the dashboard for a server owner.
 
     This view retrieves the server owner associated with the logged-in user
     and renders the server owner's dashboard.
-    The dashboard provides an overview of the server owner's information and relevant data.
+    The dashboard provides an overview of the server owner's relevant data.
 
     Template:
         - ``serverowner/dashboard.html``
@@ -289,7 +289,7 @@ def dashboard(request):
             The HTTP request object representing the current request.
 
     Returns:
-        HttpResponse: The rendered dashboard template with the server owner's information.
+        HttpResponse: The rendered dashboard template with the server owner's data.
 
     Raises:
         Http404: If the server owner is not found.
@@ -310,6 +310,7 @@ def dashboard(request):
 
 
 @login_required
+@redirect_if_no_subdomain
 def plans(request):
     """
     Display the server owner's plans and handle plan creation.
@@ -356,11 +357,15 @@ def plans(request):
                 stripe_product.user = request.user.serverowner
                 stripe_product.save()
 
-                messages.success(request, "Your Subscription Plan has been successfully created.")
+                messages.success(
+                    request, "Your Subscription Plan has been successfully created.")
                 return redirect("plans")
             except stripe.error.StripeError as e:
-                logger.exception("An error occurred during a Stripe API call: %s", str(e))
-                messages.error(request, "An error occurred while processing your request. Please try again later.")
+                logger.exception(
+                    "An error occurred during a Stripe API call: %s", str(e))
+                messages.error(
+                    request,
+                    "An error occurred while processing your request. Please try again later.")
         else:
             messages.error(request, "An error occured while creating your Plan.")
     else:
@@ -380,6 +385,7 @@ def plans(request):
 
 
 @login_required
+@redirect_if_no_subdomain
 def plan_detail(request, product_id):
     """Display detailed information about a specific plan."""
     plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
@@ -405,6 +411,7 @@ def plan_detail(request, product_id):
 
 
 @login_required
+@redirect_if_no_subdomain
 @require_POST
 def deactivate_plan(request):
     """Deactivate a plan."""
@@ -448,6 +455,7 @@ def deactivate_plan(request):
 
 
 @login_required
+@redirect_if_no_subdomain
 def subscribers(request):
     """Display the subscribers of a user's plans."""
     # Retrieve the user's server owner profile
@@ -466,6 +474,7 @@ def subscribers(request):
 
 
 @login_required
+@redirect_if_no_subdomain
 def subscriber_detail(request, id):
     subscriber = get_object_or_404(Subscriber, id=id)
     try:
@@ -485,8 +494,8 @@ def subscriber_detail(request, id):
 
 
 @login_required
+@redirect_if_no_subdomain
 def affiliates(request):
-    # Retrieve the user's server owner profile
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     template = 'serverowner/affiliates.html'
@@ -691,9 +700,14 @@ def affiliate_dashboard(request):
 
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
+    invitations = AffiliateInvitee.objects.filter(affiliate=affiliate)
+    invitation_count = invitations.count()
+
     template = 'affiliate/dashboard.html'
     context = {
         "affiliate": affiliate,
+        "invitations": invitations,
+        "invitation_count": invitation_count,
     }
 
     return render(request, template, context)
