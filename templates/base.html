@@ -38,14 +38,14 @@
                                 {% if user.is_serverowner %}
                                 <img class="img-profile rounded-circle me-2" src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ user.serverowner.discord_id }}/{{ user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
-                                    {{ user.serverowner.username|title }} <br>
+                                    {{ user.serverowner.username }} <br>
                                     {{ choice_server.name }}
                                 </span>
 
                                 {% else %}
                                 <img class="img-profile rounded-circle me-2" src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ user.subscriber.discord_id }}/{{ user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
-                                    {{ user.subscriber.username|title }}<br>
+                                    {{ user.subscriber.username }}<br>
                                     {% if user.is_affiliate %}Affiliate{% else %}Subscriber{% endif %}
                                 </span>
                                 {% endif %}

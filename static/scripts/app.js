@@ -28,12 +28,12 @@ $("#createPlanModal").on('hidden.bs.modal', function() {
     $('#createPlanModal form')[0].reset();
 });
 
-// Allow only letters in field
+// Allow letters, numbers, space and underscore in field
 $("input[name=subdomain], input[name=name]").keyup(function() {
-    if (!/^[a-zA-Z _]*$/.test(this.value)) {
-        this.value = this.value.split(/[^a-zA-Z _]/).join('');
+    if (!/^[a-zA-Z0-9 _]*$/.test(this.value)) {
+        this.value = this.value.split(/[^a-zA-Z0-9 _]/).join('');
     }
-})
+});
 
 // Convert texts to Lowercase
 $("input[name=subdomain]").keyup(function () {

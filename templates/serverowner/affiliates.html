@@ -33,7 +33,6 @@
                                     <th>Total Invites</th>
                                     <th>Total Earnings</th>
                                     <th>Conversion Rate</th>
-                                    <th>Average Revenue</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -41,9 +40,8 @@
                                 <tr>
                                     <td>{{ affiliate.subscriber.username }}</td>
                                     <td>{{ affiliates_count }}</td>
-                                    <td>$0{{ affiliate.total_earnings }}</td>
-                                    <td>%0{{ affiliate.conversion_rate }}</td>
-                                    <td>$0{{ affiliate.average_revenue }}</td>
+                                    <td>${{ affiliate.calculate_total_commissions }}</td>
+                                    <td>%{{ affiliate.calculate_conversion_rate }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

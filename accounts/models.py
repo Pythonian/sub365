@@ -36,6 +36,18 @@ class ServerOwner(models.Model):
     def __str__(self):
         return self.username
 
+    def calculate_affiliate_commission(self, subscription_amount):
+        """
+        Calculate the affiliate commission based on the subscription
+        amount and affiliate commission percentage.
+        """
+        commission_percentage = self.affiliate_commission
+        if commission_percentage is None:
+            return 0
+
+        commission_amount = (subscription_amount * commission_percentage) / 100
+        return commission_amount
+
     def get_choice_server(self):
         """
         Retrieve the choice server marked as True for the ServerOwner.
@@ -152,6 +164,17 @@ class ServerOwner(models.Model):
             total_earnings = Decimal(0)
         return total_earnings
 
+    def affiliate_commissions(self):
+        """
+        Calculate the sum of all commissions received by the serverowner from affiliates.
+        """
+        total_commissions = 0
+        affiliates = self.affiliate_set.all()
+        for affiliate in affiliates:
+            total_commissions += affiliate.calculate_total_commissions()
+
+        return total_commissions
+
 
 class Server(models.Model):
     """
@@ -215,6 +238,34 @@ class Affiliate(models.Model):
     def __str__(self):
         return self.subscriber.username
 
+    def calculate_total_commissions(self):
+        """
+        Calculate the sum of all commissions received by the affiliate.
+        """
+        total_commissions = 0
+        invitees = self.affiliateinvitee_set.all()
+        for invitee in invitees:
+            commission_payment = invitee.get_affiliate_commission_payment()
+            total_commissions += commission_payment
+        return total_commissions
+
+    def calculate_conversion_rate(self):
+        """
+        Calculate the conversion rate of the affiliate.
+        """
+        invitees_count = self.affiliateinvitee_set.count()
+        successful_invitees_count = self.affiliateinvitee_set.filter(
+            invitee_discord_id__in=Subscriber.objects.filter(
+            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).values('discord_id')
+        ).count()
+
+        if invitees_count > 0:
+            conversion_rate = (successful_invitees_count / invitees_count) * 100
+        else:
+            conversion_rate = 0
+
+        return conversion_rate
+
 
 class AffiliateInvitee(models.Model):
     """Model table for an Invited user by an Affiliate"""
@@ -222,12 +273,32 @@ class AffiliateInvitee(models.Model):
     affiliate = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
     invitee_discord_id = models.CharField(
         max_length=255, unique=True, help_text="Discord ID of the Invitee")
-    paid = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.invitee_discord_id
+
+    def get_invitee_subscription(self):
+        """
+        Get the first subscription of the invitee, regardless of its status.
+        """
+        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        if subscriber:
+            return subscriber.subscriptions.order_by('created').latest()
+        return None
+
+    def get_affiliate_commission_payment(self):
+        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        if subscriber:
+            subscriptions = subscriber.subscriptions.all()
+            commission_payment = 0
+            for subscription in subscriptions:
+                subscription_amount = subscription.plan.amount
+                server_owner = self.affiliate.serverowner
+                commission_payment += server_owner.calculate_affiliate_commission(subscription_amount)
+            return commission_payment
+        return 0
 
 
 class StripePlan(models.Model):

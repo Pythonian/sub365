@@ -52,8 +52,7 @@
                         </li>
                         <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
                             <p class="p-0 m-0 text-muted fs-6">STATUS</p>
-                            <span
-                                class="text-{% if subscription.status == 'A' %}success{% else %}danger{% endif %}">{{ subscription.get_status_display }}</span>
+                            <span class="badge py-2 px-3 rounded-pill badge-{% if subscription.status == 'A' %}success{% else %}danger{% endif %}">{{ subscription.get_status_display }}</span>
                         </li>
                     </ul>
                 </div>
@@ -67,8 +66,8 @@
             <i class="fas fa-circle fa-stack-2x"></i>
             <i class="fas fa-face-frown fa-stack-1x fa-inverse"></i>
         </span>
-        <h3 class="text-dark">{{ subscriber.username|title }} is yet to subscribe to any of your plan</h3>
-        <p class="mb-5">Maybe you should personally reach out to {{ subscriber.username|title }}, <br> to know why they are yet to activate any of your subscription plan.</p>
+        <h3 class="text-dark">{{ subscriber.username }} is yet to subscribe to any of your plan</h3>
+        <p class="mb-5">Maybe you should personally reach out to {{ subscriber.username }}, <br> to know why they are yet to activate any of your subscription plan.</p>
         <a target="_blank" href="mailto:{{ subscriber.email }}" class="btn btn-primary rounded-5 py-2 px-4 shadow-sm"><i class="far fa-envelope me-1"></i> Send a Mail</a>
     </div>
 {% endif %}

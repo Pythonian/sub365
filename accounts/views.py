@@ -5,11 +5,12 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.db.models import Count, Q
 
 import requests
 import stripe
@@ -29,6 +30,7 @@ def index(request):
     """Render the Landing page."""
     template = "index.html"
     context = {}
+    #TODO Use TemplateView
     return render(request, template, context)
 
 
@@ -211,6 +213,7 @@ def dashboard_view(request):
 
 
 @login_required
+#@require_POST
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
     connected_account = stripe.Account.create(
@@ -701,17 +704,24 @@ def upgrade_to_affiliate(request):
 
 @login_required
 def affiliate_dashboard(request):
-
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
     invitations = AffiliateInvitee.objects.filter(affiliate=affiliate)
-    invitation_count = invitations.count()
+    total_invitation_count = invitations.count()
+
+    # Count the number of invitees with active subscriptions
+    active_subscription_count = invitations.filter(
+        invitee_discord_id__in=Subscriber.objects.filter(
+            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
+        ).values('discord_id')
+    ).count()
 
     template = 'affiliate/dashboard.html'
     context = {
         "affiliate": affiliate,
         "invitations": invitations,
-        "invitation_count": invitation_count,
+        "total_invitation_count": total_invitation_count,
+        "active_subscription_count": active_subscription_count,
     }
 
     return render(request, template, context)

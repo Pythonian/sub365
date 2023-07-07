@@ -51,8 +51,7 @@ class AffiliateAdmin(admin.ModelAdmin):
 
 @admin.register(AffiliateInvitee)
 class AffiliateInviteeAdmin(admin.ModelAdmin):
-    list_display = ["affiliate", "invitee_discord_id", "paid", "created"]
-    list_filter = ["paid"]
+    list_display = ["affiliate", "invitee_discord_id", "created"]
 
 
 admin.site.unregister(EmailAddress)
