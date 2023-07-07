@@ -11,10 +11,15 @@
         </div>
         {% if plan.status == 'A' %}
         <div>
+            <a data-toggle="modal" data-target="#updatePlan{{ plan.id }}" class="btn btn-sm btn-success shadow-sm">
+                Update Plan
+            </a>
             <a data-toggle="modal" data-target="#deactivatePlan{{ plan.id }}" class="btn btn-sm btn-danger shadow-sm">
                 Deactivate Plan
             </a>
         </div>
+        {% else %}
+        <span class="badge py-2 px-3 badge-danger">Plan Deactivated</span>
         {% endif %}
     </div>
 
@@ -90,6 +95,7 @@
         {% endif %}
     {% endif %}
 
+{% include 'modals/_update_plan_modal.html' %}
 {% include 'modals/_deactivate_plan_modal.html' %}
 
 {% endblock content %}

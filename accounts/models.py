@@ -98,13 +98,19 @@ class ServerOwner(models.Model):
 
     def get_affiliate_users(self):
         """
-        Retrieve the subscribers who upgraded to affiliates and associated with the
-        ServerOwner.
+        Retrieve the affiliates associated with the ServerOwner.
 
         Returns:
-            QuerySet: QuerySet of Affiliate objects who upgraded.
+            QuerySet: QuerySet of Affiliate objects associated with the ServerOwner.
         """
-        return Affiliate.objects.filter(serverowner=self)
+        affiliates = Affiliate.objects.filter(serverowner=self)
+        affiliate_counts = []
+
+        for affiliate in affiliates:
+            invite_count = AffiliateInvitee.objects.filter(affiliate=affiliate).count()
+            affiliate_counts.append((affiliate, invite_count))
+
+        return affiliate_counts
 
     def get_total_affiliates(self):
         """
@@ -174,6 +180,43 @@ class ServerOwner(models.Model):
             total_commissions += affiliate.calculate_total_commissions()
 
         return total_commissions
+
+    def get_active_subscribers_count(self):
+        """
+        Get the total number of subscribers with active subscriptions.
+
+        Returns:
+            int: The total number of subscribers with active subscriptions.
+        """
+        return self.get_subscribed_users().filter(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).count()
+
+    def get_inactive_subscribers_count(self):
+        """
+        Get the total number of subscribers with inactive subscriptions.
+
+        Returns:
+            int: The total number of subscribers with inactive subscriptions.
+        """
+        return self.get_subscribed_users().exclude(
+            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).count()
+
+    def get_active_plans_count(self):
+        """
+        Get the total number of active plans.
+
+        Returns:
+            int: The total number of active plans.
+        """
+        return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE.value).count()
+
+    def get_inactive_plans_count(self):
+        """
+        Get the total number of inactive plans.
+
+        Returns:
+            int: The total number of inactive plans.
+        """
+        return self.plans.filter(status=StripePlan.PlanStatus.INACTIVE.value).count()
 
 
 class Server(models.Model):

@@ -15,6 +15,12 @@
         </a>
     </div>
 
+    <div class="row mb-4">
+        {% include 'serverowner/_total_plans.html' %}
+        {% include 'serverowner/_total_active_plans.html' %}
+        {% include 'serverowner/_total_inactive_plans.html' %}
+    </div>
+
     <h5 class="text-gray-800 mb-3">All Subscription Plans <span class="ms-2 small badge badge-primary opacity-75">{{ serverowner.get_plan_count }}</span></h5>
 
     <div class="row g-4 mb-5">

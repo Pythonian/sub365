@@ -118,7 +118,7 @@ class ChooseServerSubdomainForm(forms.Form):
 
 class PlanForm(forms.ModelForm):
     """
-    Form for creating a Stripe plan.
+    Form for creating a Stripe Product.
     """
 
     interval_count = forms.IntegerField(

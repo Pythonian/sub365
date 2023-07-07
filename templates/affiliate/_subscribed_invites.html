@@ -1,5 +1,5 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
 {% block data_title %}Subscribed Invites{% endblock data_title %}
-{% block data_value %}{{ active_subscription_count }}{% endblock data_value %}
+{% block data_value %}{{ affiliate.get_active_subscription_count }}{% endblock data_value %}
 {% block data_icon %}fa-user-check{% endblock data_icon %}

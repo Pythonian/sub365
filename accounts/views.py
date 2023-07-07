@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.db.models import Sum
 
 import requests
 import stripe
@@ -383,24 +384,83 @@ def plans(request):
     return render(request, template, context)
 
 
+# @login_required
+# @redirect_if_no_subdomain
+# def plan_detail(request, product_id):
+#     """Display detailed information about a specific plan."""
+#     plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
+
+#     subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
+#     active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
+#     subscriptions_count = subscribers.count()
+
+#     # Calculate the total earnings
+#     total_earnings = Decimal(0)
+#     for subscriber in subscribers:
+#         total_earnings += subscriber.plan.amount
+
+#     template = "serverowner/plan_detail.html"
+#     context = {
+#         "plan": plan,
+#         "subscribers": subscribers,
+#         "subscriptions_count": subscriptions_count,
+#         "active_subscriptions": active_subscriptions,
+#         "total_earnings": total_earnings,
+#     }
+#     return render(request, template, context)
+
 @login_required
 @redirect_if_no_subdomain
 def plan_detail(request, product_id):
     """Display detailed information about a specific plan."""
     plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
 
+    if request.method == "POST":
+        form = PlanForm(request.POST, instance=plan)
+
+        if form.is_valid():
+            try:
+                # Update the product on Stripe
+                product_params = {
+                    "name": form.cleaned_data["name"],
+                    "description": form.cleaned_data["description"],
+                    "active": True,
+                }
+
+                product = stripe.Product.modify(
+                    plan.product_id,
+                    **product_params
+                )
+
+                # Save the updated plan details in the database
+                plan = form.save()
+
+                messages.success(request, "Your Subscription Plan has been successfully updated.")
+                return redirect("plan", product_id=plan.id)
+            except stripe.error.StripeError as e:
+                logger.exception(
+                    "An error occurred during a Stripe API call: %s", str(e))
+                messages.error(
+                    request,
+                    "An error occurred while processing your request. Please try again later."
+                )
+        else:
+            messages.error(request, "An error occurred while updating your Plan.")
+    else:
+        form = PlanForm(instance=plan)
+
     subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
     active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
     subscriptions_count = subscribers.count()
 
     # Calculate the total earnings
-    total_earnings = Decimal(0)
-    for subscriber in subscribers:
-        total_earnings += subscriber.plan.amount
+    total_earnings = subscribers.aggregate(total=Sum("plan__amount"))["total"]
+    total_earnings = Decimal(total_earnings) if total_earnings else Decimal(0)
 
     template = "serverowner/plan_detail.html"
     context = {
         "plan": plan,
+        "form": form,
         "subscribers": subscribers,
         "subscriptions_count": subscriptions_count,
         "active_subscriptions": active_subscriptions,
@@ -497,13 +557,9 @@ def subscriber_detail(request, id):
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    affiliates_count = AffiliateInvitee.objects.filter(
-        affiliate__serverowner=serverowner).count()
-
     template = 'serverowner/affiliates.html'
     context = {
         "serverowner": serverowner,
-        "affiliates_count": affiliates_count,
     }
 
     return render(request, template, context)
@@ -698,52 +754,24 @@ def upgrade_to_affiliate(request):
 #                   AFFILIATES                   #
 ##################################################
 
-# @login_required
-# def affiliate_dashboard(request):
-#     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
-
-#     invitations = AffiliateInvitee.objects.filter(affiliate=affiliate)
-#     total_invitation_count = invitations.count()
-
-#     # Count the number of invitees with active subscriptions
-#     active_subscription_count = invitations.filter(
-#         invitee_discord_id__in=Subscriber.objects.filter(
-#             subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
-#         ).values('discord_id')
-#     ).count()
-
-#     template = 'affiliate/dashboard.html'
-#     context = {
-#         "affiliate": affiliate,
-#         "invitations": invitations,
-#         "total_invitation_count": total_invitation_count,
-#         "active_subscription_count": active_subscription_count,
-#     }
-
-#     return render(request, template, context)
-
 @login_required
 def affiliate_dashboard(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
     invitations = affiliate.get_affiliate_invitees()
-    total_invitation_count = affiliate.get_total_invitation_count()
-    active_subscription_count = affiliate.get_active_subscription_count()
 
     template = 'affiliate/dashboard.html'
     context = {
         "affiliate": affiliate,
         "invitations": invitations,
-        "total_invitation_count": total_invitation_count,
-        "active_subscription_count": active_subscription_count,
     }
 
     return render(request, template, context)
 
+
 ##################################################
 #                   ERROR PAGES                  #
 ##################################################
-
 
 def error_400(request, exception):
     return render(request, '400.html', status=400)

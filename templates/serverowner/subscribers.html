@@ -14,6 +14,12 @@
             data-subscription-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ serverowner.subdomain }}"><i class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
     </div>
 
+    <div class="row mb-4">
+        {% include 'serverowner/_total_subscribers.html' %}
+        {% include 'serverowner/_active_subscribers.html' %}
+        {% include 'serverowner/_inactive_subscribers.html' %}
+    </div>
+
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="text-gray-800">All Subscribers</h5>
     </div>

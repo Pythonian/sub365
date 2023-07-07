@@ -77,3 +77,20 @@ $("input[name=affiliate_commission], input[name=amount], input[name=interval_cou
         this.value = this.value.replace(/^0/, "")
     }
 });
+
+// Disable the submit button if no changes has been made to the form input
+const form = document.querySelectorAll("input, textarea");
+for (const data of form) {
+    data.saved = data.value;
+}
+(btnEnabled = function () {
+    var btn = true;
+    for (const data of form) {
+        if (data.saved !== data.value) {
+            btn = false;
+            break;
+        }
+    }
+    $("#updatePlan").prop("disabled", btn);
+})();
+document.oninput = btnEnabled // Call

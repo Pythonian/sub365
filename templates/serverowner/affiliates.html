@@ -36,13 +36,13 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for affiliate in serverowner.get_affiliate_users.all %}
-                                <tr>
-                                    <td>{{ affiliate.subscriber.username }}</td>
-                                    <td>{{ affiliates_count }}</td>
-                                    <td>${{ affiliate.calculate_total_commissions }}</td>
-                                    <td>%{{ affiliate.calculate_conversion_rate }}</td>
-                                </tr>
+                                {% for affiliate, invite_count in serverowner.get_affiliate_users %}
+                                    <tr>
+                                        <td>{{ affiliate.subscriber.username }}</td>
+                                        <td>{{ invite_count }}</td>
+                                        <td>${{ affiliate.calculate_total_commissions }}</td>
+                                        <td>%{{ affiliate.calculate_conversion_rate }}</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
