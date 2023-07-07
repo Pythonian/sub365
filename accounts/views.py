@@ -384,31 +384,6 @@ def plans(request):
     return render(request, template, context)
 
 
-# @login_required
-# @redirect_if_no_subdomain
-# def plan_detail(request, product_id):
-#     """Display detailed information about a specific plan."""
-#     plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
-
-#     subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
-#     active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
-#     subscriptions_count = subscribers.count()
-
-#     # Calculate the total earnings
-#     total_earnings = Decimal(0)
-#     for subscriber in subscribers:
-#         total_earnings += subscriber.plan.amount
-
-#     template = "serverowner/plan_detail.html"
-#     context = {
-#         "plan": plan,
-#         "subscribers": subscribers,
-#         "subscriptions_count": subscriptions_count,
-#         "active_subscriptions": active_subscriptions,
-#         "total_earnings": total_earnings,
-#     }
-#     return render(request, template, context)
-
 @login_required
 @redirect_if_no_subdomain
 def plan_detail(request, product_id):

@@ -19,6 +19,7 @@
             {% include 'serverowner/_total_payments.html' %}
         </div>
 
+        {% if serverowner.get_popular_plans %}
         <h5 class="text-secondary mb-3">Popular Plans</h5>
         <div class="row g-4 mb-5">
             {% for plan in serverowner.get_popular_plans %}
@@ -27,6 +28,7 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
 
         {% if serverowner.get_latest_subscriptions %}
             <h5 class="text-secondary mb-3">Latest Subscriptions</h5>

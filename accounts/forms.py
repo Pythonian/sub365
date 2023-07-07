@@ -4,21 +4,23 @@ from .models import ServerOwner, Server, StripePlan
 
 
 DISALLOWED_SUBDOMAINS = [
-    'activate', 'account', 'admin', 'about', 'administrator', 'activity', 'account', 'auth', 'authentication',
+    'activate', 'account', 'accounts', 'admin', 'about', 'administrator',
+    'activity', 'affiliate', 'auth', 'authentication',
     'blogs', 'blog', 'billing',
-    'create', 'cookie', 'contact', 'config', 'contribute', 'campaign',
+    'create', 'cookie', 'contact', 'config', 'contribute',
     'disable', 'delete', 'download', 'downloads', 'delete',
     'edit', 'explore', 'email',
-    'footystory', 'follow', 'feed', 'forum', 'forums',
+    'feedback', 'follow', 'feed',
     'intranet',
     'jobs', 'join',
     'login', 'logout', 'library',
     'media', 'mail',
     'news', 'newsletter',
     'help', 'home',
-    'privacy', 'profile',
+    'privacy', 'profile', 'plan',
     'registration', 'register', 'remove', 'root', 'reviews', 'review',
-    'signin', 'signup', 'signout', 'settings', 'setting', 'static', 'support', 'status', 'search', 'subscribe', 'shop',
+    'signin', 'signup', 'signout', 'settings', 'setting', 'static', 'support',
+    'status', 'search', 'subscribe', 'shop', 'sub365', 'subscriber',
     'terms', 'term',
     'update', 'username', 'user', 'users',
 ]
