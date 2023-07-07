@@ -188,7 +188,8 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with active subscriptions.
         """
-        return self.get_subscribed_users().filter(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).count()
+        return self.get_subscribed_users().filter(
+            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).count()
 
     def get_inactive_subscribers_count(self):
         """
@@ -322,7 +323,7 @@ class Affiliate(models.Model):
         invitees_count = self.affiliateinvitee_set.count()
         successful_invitees_count = self.affiliateinvitee_set.filter(
             invitee_discord_id__in=Subscriber.objects.filter(
-            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).values('discord_id')
+                                   subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).values('discord_id')
         ).count()
 
         if invitees_count > 0:
@@ -421,14 +422,6 @@ class Subscription(models.Model):
     class SubscriptionStatus(models.TextChoices):
         ACTIVE = "A", "Active"
         INACTIVE = "I", "Inactive"
-
-    # class SubscriptionStatus(models.TextChoices):
-    #     INCOMPLETE = 'I', 'Incomplete'
-    #     TRIALING = 'T', 'Trialing'
-    #     ACTIVE = 'A', 'Active'
-    #     PAST_DUE = 'P', 'Past Due'
-    #     CANCELED = 'C', 'Canceled'
-    #     UNPAID = 'U', 'Unpaid'
 
     subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE,
                                    related_name="subscriptions")

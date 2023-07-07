@@ -18,7 +18,7 @@ from allauth.socialaccount.models import SocialAccount
 
 from .decorators import redirect_if_no_subdomain
 from .forms import ChooseServerSubdomainForm, PlanForm
-from .models import (Affiliate, Server, ServerOwner, AffiliateInvitee,
+from .models import (Affiliate, Server, ServerOwner,
                      StripePlan, Subscriber, Subscription, User)
 from .utils import mk_paginator
 
@@ -92,7 +92,8 @@ def discord_callback(request):
                         subscriber.save()
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
-                    return redirect("subscriber_dashboard")
+                    return redirect("dashboard_view")
+                    # return redirect("subscriber_dashboard")
                 else:
                     # state is serverowner
                     guild_response = requests.get(
@@ -116,7 +117,8 @@ def discord_callback(request):
                                          "icon": server_icon})
                     else:
                         # Redirect user and show a message to create a server
-                        messages.info(request,
+                        messages.info(
+                            request,
                             "You do not have any servers. Please create a server on Discord before continuing.")
                         return redirect("index")
 
@@ -149,17 +151,16 @@ def discord_callback(request):
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
 
-                    if request.user.is_serverowner:
-                        return redirect("choose_name")
-                    else:
-                        return redirect("subscriber_dashboard")
+                    return redirect("dashboard_view")
+                    # if request.user.is_serverowner:
+                    #     return redirect("choose_name")
+                    # else:
+                    #     return redirect("subscriber_dashboard")
         else:
             messages.error(request, "Failed to obtain access token.")
             return redirect("index")
 
-    # Redirect user and show a message if 'code' was not generated
-    messages.error(
-        request, "Failed to generate the authorization code. Please try again.")
+    messages.error(request, "Your discord authorization was aborted.")
     return redirect("index")
 
 
@@ -210,7 +211,7 @@ def dashboard_view(request):
 
 
 @login_required
-#@require_POST
+# @require_POST
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
     connected_account = stripe.Account.create(

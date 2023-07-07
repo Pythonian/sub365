@@ -52,7 +52,7 @@ $("input[name=subdomain]").keyup(function () {
     var words = subdomain.split(' ');
 
     if (words.length > 1) {
-        alert("Only one word is allowed.");
+        alert("Only one word is allowed. Use underscore for multiple words.");
         // Keep only the first word
         $("input[name=subdomain]").val(words[0]);
     }
