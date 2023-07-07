@@ -44,9 +44,7 @@
                             <tr>
                                 <td>
                                     {% if invitation.get_invitee_subscription %}
-                                        {% with subscriber=invitation.get_invitee_subscription.subscriber %}
-                                            {{ subscriber.username }}
-                                        {% endwith %}
+                                        {{ invitation.get_affiliateinvitee_name }}
                                     {% else %}
                                     {{ invitation.invitee_discord_id }}
                                     {% endif %}

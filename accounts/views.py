@@ -10,7 +10,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.db.models import Count, Q
 
 import requests
 import stripe
@@ -28,10 +27,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def index(request):
     """Render the Landing page."""
-    template = "index.html"
-    context = {}
-    #TODO Use TemplateView
-    return render(request, template, context)
+    return render(request, "index.html")
 
 
 def discord_callback(request):
@@ -702,19 +698,37 @@ def upgrade_to_affiliate(request):
 #                   AFFILIATES                   #
 ##################################################
 
+# @login_required
+# def affiliate_dashboard(request):
+#     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+
+#     invitations = AffiliateInvitee.objects.filter(affiliate=affiliate)
+#     total_invitation_count = invitations.count()
+
+#     # Count the number of invitees with active subscriptions
+#     active_subscription_count = invitations.filter(
+#         invitee_discord_id__in=Subscriber.objects.filter(
+#             subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
+#         ).values('discord_id')
+#     ).count()
+
+#     template = 'affiliate/dashboard.html'
+#     context = {
+#         "affiliate": affiliate,
+#         "invitations": invitations,
+#         "total_invitation_count": total_invitation_count,
+#         "active_subscription_count": active_subscription_count,
+#     }
+
+#     return render(request, template, context)
+
 @login_required
 def affiliate_dashboard(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
-    invitations = AffiliateInvitee.objects.filter(affiliate=affiliate)
-    total_invitation_count = invitations.count()
-
-    # Count the number of invitees with active subscriptions
-    active_subscription_count = invitations.filter(
-        invitee_discord_id__in=Subscriber.objects.filter(
-            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
-        ).values('discord_id')
-    ).count()
+    invitations = affiliate.get_affiliate_invitees()
+    total_invitation_count = affiliate.get_total_invitation_count()
+    active_subscription_count = affiliate.get_active_subscription_count()
 
     template = 'affiliate/dashboard.html'
     context = {
@@ -725,7 +739,6 @@ def affiliate_dashboard(request):
     }
 
     return render(request, template, context)
-
 
 ##################################################
 #                   ERROR PAGES                  #

@@ -3,7 +3,7 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center">
             <span class="text-primary fw-bold">{{ plan.name }}</span>
-            <span class="badge py-2 px-3 rounded-pill badge-{% if plan.status == 'A' %}success{% else %}danger opacity-75{% endif %} py-1">{{ plan.get_status_display }}</span>
+            <span class="badge py-2 px-3 rounded-pill badge-{% if plan.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ plan.get_status_display }}</span>
         </div>
         <h5 class="fw-bold my-3">${{ plan.amount }}<small> /{{ plan.interval_count }} month{{ plan.interval_count|pluralize }}</small></h5>
         <p>{{ plan.description }}</p>

@@ -230,13 +230,36 @@ class Affiliate(models.Model):
                                       blank=True, null=True)
     discord_id = models.CharField(
         max_length=255, primary_key=True, help_text="Discord ID of the Affiliate")
-    server_id = models.CharField(max_length=255, unique=True)
+    server_id = models.CharField(max_length=255)
     serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.subscriber.username
+
+    def get_affiliate_invitees(self):
+        """
+        Get the affiliate invitees associated with this affiliate.
+        """
+        return self.affiliateinvitee_set.all()
+
+    def get_total_invitation_count(self):
+        """
+        Get the total count of affiliate invitees.
+        """
+        return self.get_affiliate_invitees().count()
+
+    def get_active_subscription_count(self):
+        """
+        Get the count of invitees with active subscriptions.
+        """
+        invitees_with_active_subscriptions = self.get_affiliate_invitees().filter(
+            invitee_discord_id__in=Subscriber.objects.filter(
+                subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
+            ).values('discord_id')
+        )
+        return invitees_with_active_subscriptions.count()
 
     def calculate_total_commissions(self):
         """
@@ -279,9 +302,18 @@ class AffiliateInvitee(models.Model):
     def __str__(self):
         return self.invitee_discord_id
 
+    def get_affiliateinvitee_name(self):
+        """
+        Get the username of the Invitee
+        """
+        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        if subscriber:
+            return subscriber.username
+        return None
+
     def get_invitee_subscription(self):
         """
-        Get the first subscription of the invitee, regardless of its status.
+        Get the latest subscription of the invitee, regardless of its status.
         """
         subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
         if subscriber:
