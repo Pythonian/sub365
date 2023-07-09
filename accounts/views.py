@@ -18,8 +18,15 @@ from allauth.socialaccount.models import SocialAccount
 
 from .decorators import redirect_if_no_subdomain
 from .forms import ChooseServerSubdomainForm, PlanForm
-from .models import (Affiliate, Server, ServerOwner,
-                     StripePlan, Subscriber, Subscription, User)
+from .models import (
+    Affiliate,
+    Server,
+    ServerOwner,
+    StripePlan,
+    Subscriber,
+    Subscription,
+    User,
+)
 from .utils import mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -61,14 +68,16 @@ def discord_callback(request):
             }
 
             response = requests.get(
-                "https://discord.com/api/users/@me", headers=headers)
+                "https://discord.com/api/users/@me", headers=headers
+            )
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
                 if state == "subscriber":
                     try:
                         social_account = SocialAccount.objects.get(
-                            provider="discord", uid=user_info["id"])
+                            provider="discord", uid=user_info["id"]
+                        )
                         user = social_account.user
                         user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                         login(request, user, backend=user.backend)
@@ -76,10 +85,13 @@ def discord_callback(request):
                     except (SocialAccount.DoesNotExist, IndexError):
                         # Create a new user and social account
                         user = User.objects.create_user(
-                            username=user_info["username"], is_subscriber=True)
+                            username=user_info["username"], is_subscriber=True
+                        )
                         social_account = SocialAccount.objects.create(
-                            user=user, provider="discord", uid=user_info["id"],
-                            extra_data=user_info
+                            user=user,
+                            provider="discord",
+                            uid=user_info["id"],
+                            extra_data=user_info,
                         )
                         subscriber = Subscriber.objects.get(user=user)
                         subscriber.discord_id = user_info.get("id", "")
@@ -93,11 +105,11 @@ def discord_callback(request):
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
                     return redirect("dashboard_view")
-                    # return redirect("subscriber_dashboard")
                 else:
                     # state is serverowner
                     guild_response = requests.get(
-                        "https://discord.com/api/users/@me/guilds", headers=headers)
+                        "https://discord.com/api/users/@me/guilds", headers=headers
+                    )
                     if guild_response.status_code == 200:
                         # Gets all the discord servers joined by the user
                         server_list = guild_response.json()
@@ -112,27 +124,35 @@ def discord_callback(request):
                                 # Check if user owns the server
                                 if server_owner:
                                     owned_servers.append(
-                                        {"id": server_id,
-                                         "name": server_name,
-                                         "icon": server_icon})
+                                        {
+                                            "id": server_id,
+                                            "name": server_name,
+                                            "icon": server_icon,
+                                        }
+                                    )
                     else:
                         # Redirect user and show a message to create a server
                         messages.info(
                             request,
-                            "You do not have any servers. Please create a server on Discord before continuing.")
+                            "You do not have any servers. Please create a server on Discord before continuing.",
+                        )
                         return redirect("index")
 
                     try:
                         social_account = SocialAccount.objects.get(
-                            provider="discord", uid=user_info["id"])
+                            provider="discord", uid=user_info["id"]
+                        )
                         user = social_account.user
                     except (SocialAccount.DoesNotExist, IndexError):
                         # Create a new user and social account
                         user = User.objects.create_user(
-                            username=user_info["username"], is_serverowner=True)
+                            username=user_info["username"], is_serverowner=True
+                        )
                         social_account = SocialAccount.objects.create(
-                            user=user, provider="discord",
-                            uid=user_info["id"], extra_data=user_info
+                            user=user,
+                            provider="discord",
+                            uid=user_info["id"],
+                            extra_data=user_info,
                         )
                         serverowner = ServerOwner.objects.get(user=user)
                         serverowner.discord_id = user_info.get("id", "")
@@ -152,10 +172,6 @@ def discord_callback(request):
                     login(request, user, backend=user.backend)
 
                     return redirect("dashboard_view")
-                    # if request.user.is_serverowner:
-                    #     return redirect("choose_name")
-                    # else:
-                    #     return redirect("subscriber_dashboard")
         else:
             messages.error(request, "Failed to obtain access token.")
             return redirect("index")
@@ -268,6 +284,7 @@ def stripe_refresh(request):
 #                   SERVER OWNER                 #
 ##################################################
 
+
 @login_required
 @redirect_if_no_subdomain
 def dashboard(request):
@@ -359,14 +376,17 @@ def plans(request):
                 stripe_product.save()
 
                 messages.success(
-                    request, "Your Subscription Plan has been successfully created.")
+                    request, "Your Subscription Plan has been successfully created."
+                )
                 return redirect("plans")
             except stripe.error.StripeError as e:
                 logger.exception(
-                    "An error occurred during a Stripe API call: %s", str(e))
+                    "An error occurred during a Stripe API call: %s", str(e)
+                )
                 messages.error(
                     request,
-                    "An error occurred while processing your request. Please try again later.")
+                    "An error occurred while processing your request. Please try again later.",
+                )
         else:
             messages.error(request, "An error occured while creating your Plan.")
     else:
@@ -403,30 +423,34 @@ def plan_detail(request, product_id):
                     "active": True,
                 }
 
-                product = stripe.Product.modify(
-                    plan.product_id,
-                    **product_params
-                )
+                product = stripe.Product.modify(plan.product_id, **product_params)
 
                 # Save the updated plan details in the database
                 plan = form.save()
 
-                messages.success(request, "Your Subscription Plan has been successfully updated.")
+                messages.success(
+                    request, "Your Subscription Plan has been successfully updated."
+                )
                 return redirect("plan", product_id=plan.id)
             except stripe.error.StripeError as e:
                 logger.exception(
-                    "An error occurred during a Stripe API call: %s", str(e))
+                    "An error occurred during a Stripe API call: %s", str(e)
+                )
                 messages.error(
                     request,
-                    "An error occurred while processing your request. Please try again later."
+                    "An error occurred while processing your request. Please try again later.",
                 )
         else:
             messages.error(request, "An error occurred while updating your Plan.")
     else:
         form = PlanForm(instance=plan)
 
-    subscribers = Subscription.objects.filter(plan=plan, subscribed_via=request.user.serverowner)
-    active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE).count()
+    subscribers = Subscription.objects.filter(
+        plan=plan, subscribed_via=request.user.serverowner
+    )
+    active_subscriptions = subscribers.filter(
+        status=Subscription.SubscriptionStatus.ACTIVE
+    ).count()
     subscriptions_count = subscribers.count()
 
     # Calculate the total earnings
@@ -453,29 +477,21 @@ def deactivate_plan(request):
 
     if request.method == "POST":
         product_id = request.POST.get("product_id")
-        plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
+        plan = get_object_or_404(
+            StripePlan, id=product_id, user=request.user.serverowner
+        )
 
         try:
             # Retrieve the product ID from the plan's StripeProduct object
             product_id = plan.product_id
 
             # Deactivate the product on Stripe
-            stripe.Product.modify(
-                product_id,
-                active=False
-            )
+            stripe.Product.modify(product_id, active=False)
 
             # Deactivate the prices associated with the product
-            prices = stripe.Price.list(
-                product=product_id,
-                active=True,
-                limit=100
-            )
+            prices = stripe.Price.list(product=product_id, active=True, limit=100)
             for price in prices:
-                stripe.Price.modify(
-                    price.id,
-                    active=False
-                )
+                stripe.Price.modify(price.id, active=False)
 
             # Update the plan status in the database
             plan.status = StripePlan.PlanStatus.INACTIVE
@@ -484,9 +500,12 @@ def deactivate_plan(request):
             messages.success(request, "Your plan has been successfully deactivated.")
         except stripe.error.StripeError as e:
             logger.exception("An error occurred during a Stripe API call: %s", str(e))
-            messages.error(request, "An error occurred while processing your request. Please try again later.")
+            messages.error(
+                request,
+                "An error occurred while processing your request. Please try again later.",
+            )
 
-    return redirect('plans')
+    return redirect("plans")
 
 
 @login_required
@@ -515,7 +534,8 @@ def subscriber_detail(request, id):
     try:
         # Retrieve the latest active subscription for the subscriber
         subscription = Subscription.objects.filter(
-            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE).latest()
+            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+        ).latest()
     except Subscription.DoesNotExist:
         subscription = None
 
@@ -533,7 +553,7 @@ def subscriber_detail(request, id):
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    template = 'serverowner/affiliates.html'
+    template = "serverowner/affiliates.html"
     context = {
         "serverowner": serverowner,
     }
@@ -544,6 +564,7 @@ def affiliates(request):
 ##################################################
 #                   SUBSCRIBERS                  #
 ##################################################
+
 
 @login_required
 def subscriber_dashboard(request):
@@ -569,15 +590,16 @@ def subscriber_dashboard(request):
     server_owner = subscriber.subscribed_via
 
     # Retrieve the plans related to the ServerOwner
-    plans = StripePlan.objects.filter(user=server_owner.user.serverowner,
-                                      status=StripePlan.PlanStatus.ACTIVE)
+    plans = StripePlan.objects.filter(
+        user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
+    )
     plans = mk_paginator(request, plans, 9)
 
     try:
         # Retrieve the latest active subscription for the subscriber
         latest_subscription = Subscription.objects.filter(
-            subscriber=subscriber,
-            status=Subscription.SubscriptionStatus.ACTIVE).latest()
+            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+        ).latest()
     except Subscription.DoesNotExist:
         latest_subscription = None
 
@@ -618,9 +640,10 @@ def subscribe_to_plan(request, product_id):
 
     try:
         session = stripe.checkout.Session.create(
-            success_url=request.build_absolute_uri(reverse("subscription_success")) + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
+            success_url=request.build_absolute_uri(reverse("subscription_success"))
+            + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
             cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
-            payment_method_types=['us_bank_account'],
+            payment_method_types=["us_bank_account"],
             line_items=[
                 {
                     "price": plan.price_id,
@@ -633,7 +656,10 @@ def subscribe_to_plan(request, product_id):
 
     except stripe.error.StripeError as e:
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
-        messages.error(request, "An error occurred while processing your request. Please try again later.")
+        messages.error(
+            request,
+            "An error occurred while processing your request. Please try again later.",
+        )
         return redirect("subscriber_dashboard")
 
     return redirect(session.url)
@@ -664,8 +690,8 @@ def subscription_success(request):
     subscription = None
 
     try:
-        session_id = request.GET.get('session_id')
-        plan_id = request.GET.get('subscribed_plan')
+        session_id = request.GET.get("session_id")
+        plan_id = request.GET.get("subscribed_plan")
         plan = get_object_or_404(StripePlan, id=plan_id)
         if session_id:
             session_info = stripe.checkout.Session.retrieve(session_id)
@@ -696,7 +722,10 @@ def subscription_success(request):
             raise Http404()
     except stripe.error.StripeError as e:
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
-        messages.error(request, "An error occurred while processing your request. Please try again later.")
+        messages.error(
+            request,
+            "An error occurred while processing your request. Please try again later.",
+        )
 
     template = "subscriber/success.html"
     context = {
@@ -716,19 +745,21 @@ def upgrade_to_affiliate(request):
         subscriber=subscriber,
         serverowner=subscriber.subscribed_via,
         discord_id=subscriber.discord_id,
-        server_id=subscriber.subscribed_via.get_choice_server().server_id)
+        server_id=subscriber.subscribed_via.get_choice_server().server_id,
+    )
 
     # Update the user's role to be an affiliate
     subscriber.user.is_affiliate = True
     subscriber.user.save()
 
     messages.success(request, "You have upgraded to being an Affiliate.")
-    return redirect('affiliate_dashboard')
+    return redirect("affiliate_dashboard")
 
 
 ##################################################
 #                   AFFILIATES                   #
 ##################################################
+
 
 @login_required
 def affiliate_dashboard(request):
@@ -736,7 +767,7 @@ def affiliate_dashboard(request):
 
     invitations = affiliate.get_affiliate_invitees()
 
-    template = 'affiliate/dashboard.html'
+    template = "affiliate/dashboard.html"
     context = {
         "affiliate": affiliate,
         "invitations": invitations,
@@ -749,12 +780,13 @@ def affiliate_dashboard(request):
 #                   ERROR PAGES                  #
 ##################################################
 
+
 def error_400(request, exception):
-    return render(request, '400.html', status=400)
+    return render(request, "400.html", status=400)
 
 
 def error_403(request, exception):
-    return render(request, '403.html', status=403)
+    return render(request, "403.html", status=403)
 
 
 def error_405(request, exception):
@@ -762,8 +794,20 @@ def error_405(request, exception):
 
 
 def error_404(request, exception):
-    return render(request, '404.html', status=404)
+    return render(request, "404.html", status=404)
 
 
 def error_500(request):
-    return render(request, '500.html', status=500)
+    return render(request, "500.html", status=500)
+
+
+# def affiliate_payment(request):
+#     server_owner = ServerOwner.objects.get(user=request.user)
+#     pending_affiliates = server_owner.get_pending_affiliates()
+
+#     context = {
+#         "server_owner": server_owner,
+#         "pending_affiliates": pending_affiliates,
+#     }
+
+#     return render(request, "serverowner/affiliate_payment.html", context)

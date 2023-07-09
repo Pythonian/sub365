@@ -253,7 +253,8 @@ class PlanForm(forms.ModelForm):
         Clean up the description field to remove excess whitespace.
         """
         description = self.cleaned_data.get("description")
-        description = re.sub(r"\s+", " ", description).strip()
+        if description:
+            description = re.sub(r"\s+", " ", description).strip()
         return description
 
     def clean_permission_description(self):
@@ -261,5 +262,6 @@ class PlanForm(forms.ModelForm):
         Clean up the permission_description field to remove excess whitespace.
         """
         permission_description = self.cleaned_data.get("permission_description")
-        permission_description = re.sub(r"\s+", " ", permission_description).strip()
+        if permission_description:
+            permission_description = re.sub(r"\s+", " ", permission_description).strip()
         return permission_description
