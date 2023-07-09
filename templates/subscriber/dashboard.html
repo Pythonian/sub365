@@ -4,147 +4,156 @@
 
 {% block content %}
 
-    {% if subscription %}
-        <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <div>
-                <h3 class="mb-0 text-secondary">Welcome back!</h3>
-                <small>Here is your dashboard overview</small>
-            </div>
-            {% if not user.is_affiliate %}
-            <a class="btn btn-primary btn-sm" data-toggle="modal" data-target="#affiliateModal"><i class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
-            {% endif %}
-        </div>
-        <div class="row mb-4">
-            {% include 'subscriber/_payment_due.html' %}
-            {% include 'subscriber/_current_bill.html' %}
-            {% include 'subscriber/_current_plan.html' %}
-        </div>
-
-       <div class="row">
-            <div class="col-12 mb-4">
-                <div class="card">
-                    <div class="card-header bg-transparent d-flex justify-content-between">
-                        <span class="text-primary fw-bold">Subscription History</span>
-                    </div>
-                    <div class="card-body p-0 px-2">
-                        <div class="table-responsive">
-                            <table class="table table-borderless">
-                                <thead>
-                                    <tr>
-                                        <th>Plan Name</th>
-                                        <th>Amount</th>
-                                        <th>Server</th>
-                                        <th>Subscribed via</th>
-                                        <th>Subscription date</th>
-                                        <th>Expiry date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for subscription in subscriptions %}
-                                    <tr>
-                                        <td>{{ subscription.plan.name }}</td>
-                                        <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }} month{{ subscription.plan.interval_count|pluralize }}</td>
-                                        <td>{{ subscription.subscribed_via.get_choice_server }}</td>
-                                        <td>{{ subscription.subscribed_via }}</td>
-                                        <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
-                                        <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
-                                        <td>
-                                            <span class="badge py-2 px-3 rounded-pill badge-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% else %}
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-1 text-dark">Welcome, {{ subscriber.username }}. Choose a subscription plan below</h1>
-            <p class="small m-0">You will need to subscribe to a plan to be granted access to <span class="text-primary">{{ server_owner.get_choice_server }}</span> by the Server owner.</p>
-        </div>
-        {% if not user.is_affiliate %}
-            <a class="btn btn-primary btn-sm" data-toggle="modal" data-target="#affiliateModal"><i class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
-        {% endif %}
+{% if subscription %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="mb-0 text-secondary">Welcome back!</h3>
+        <small>Here is your dashboard overview</small>
     </div>
-    <div class="row g-4 mb-5">
-        {% for plan in plans %}
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow h-100 pb-2">
-                <div class="card-header bg-primary py-3"></div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-primary fw-bold">{{ plan.name }}</span>
-                        <span class="font-monospace">{{ plan.subscriber_count }}
-                            Subscriber{{ plan.subscriber_count|pluralize }}</span>
-                    </div>
-                    <h5 class="fw-bold my-3">${{ plan.amount }}<small> /{{ plan.interval_count }} month{{ plan.interval_count|pluralize }}</small></h5>
-                    <p>{{ plan.description }}</p>
-                    <form action="{% url 'subscribe_to_plan' product_id=plan.id %}" method="post">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-primary" type="submit"><i class="far fa-credit-card me-1"></i> Subscribe</button>
-                    </form>
+    {% if not user.is_affiliate %}
+    <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#affiliateModal"><i
+            class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
+    {% endif %}
+</div>
+<div class="row mb-4">
+    {% include 'subscriber/_payment_due.html' %}
+    {% include 'subscriber/_current_bill.html' %}
+    {% include 'subscriber/_current_plan.html' %}
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-transparent d-flex justify-content-between">
+                <span class="text-primary fw-bold">Subscription History</span>
+            </div>
+            <div class="card-body p-0 px-2">
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <thead>
+                            <tr>
+                                <th>Plan Name</th>
+                                <th>Amount</th>
+                                <th>Server</th>
+                                <th>Subscribed via</th>
+                                <th>Subscription date</th>
+                                <th>Expiry date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subscription in subscriptions %}
+                            <tr>
+                                <td>{{ subscription.plan.name }}</td>
+                                <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
+                                    month{{ subscription.plan.interval_count|pluralize }}</td>
+                                <td>{{ subscription.subscribed_via.get_choice_server }}</td>
+                                <td>{{ subscription.subscribed_via }}</td>
+                                <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
+                                <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
+                                <td>
+                                    <span
+                                        class="badge py-2 px-3 rounded-pill text-bg-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        {% empty %}
-        <div class="text-center py-5">
-            <span class="text-primary fa-stack fa-4x mb-3">
-                <i class="fas fa-circle fa-stack-2x"></i>
-                <i class="fas fa-ban fa-stack-1x fa-inverse"></i>
-            </span>
-            <h3 class="text-dark">No subscription plan found.</h3>
-            <p class="mb-5">There are no Plans attached to this server <span class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
-        </div>
-        {% endfor %}
-        {% if subscriber.get_subscriptions %}
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-transparent d-flex justify-content-between">
-                    <span class="text-primary fw-bold">Subscription History</span>
+    </div>
+</div>
+{% else %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="h3 mb-1 text-dark">Welcome, {{ subscriber.username }}. Choose a subscription plan below</h1>
+        <p class="small m-0">You will need to subscribe to a plan to be granted access to <span
+                class="text-primary">{{ server_owner.get_choice_server }}</span> by the Server owner.</p>
+    </div>
+    {% if not user.is_affiliate %}
+    <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#affiliateModal"><i
+            class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
+    {% endif %}
+</div>
+<div class="row g-4 mb-5">
+    {% for plan in plans %}
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow h-100 pb-2">
+            <div class="card-header bg-primary py-3"></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-primary fw-bold">{{ plan.name }}</span>
+                    <span class="font-monospace">{{ plan.subscriber_count }}
+                        Subscriber{{ plan.subscriber_count|pluralize }}</span>
                 </div>
-                <div class="card-body p-0 px-2">
-                    <div class="table-responsive">
-                        <table class="table table-borderless">
-                            <thead>
-                                <tr>
-                                    <th>Plan Name</th>
-                                    <th>Amount</th>
-                                    <th>Server</th>
-                                    <th>Subscribed via</th>
-                                    <th>Subscription date</th>
-                                    <th>Expiry date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for subscription in subscriptions %}
-                                <tr>
-                                    <td>{{ subscription.plan.name }}</td>
-                                    <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
-                                        month{{ subscription.plan.interval_count|pluralize }}</td>
-                                    <td>{{ subscription.subscribed_via.get_choice_server }}</td>
-                                    <td>{{ subscription.subscribed_via }}</td>
-                                    <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
-                                    <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
-                                    <td>
-                                        <span class="badge py-2 px-3 rounded-pill badge-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <h5 class="fw-bold my-3">${{ plan.amount }}<small> /{{ plan.interval_count }}
+                        month{{ plan.interval_count|pluralize }}</small></h5>
+                <p>{{ plan.description }}</p>
+                <form action="{% url 'subscribe_to_plan' product_id=plan.id %}" method="post">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-primary" type="submit"><i class="far fa-credit-card me-1"></i>
+                        Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5">
+        <span class="text-primary fa-stack fa-4x mb-3">
+            <i class="fas fa-circle fa-stack-2x"></i>
+            <i class="fas fa-ban fa-stack-1x fa-inverse"></i>
+        </span>
+        <h3 class="text-dark">No subscription plan found.</h3>
+        <p class="mb-5">There are no Plans attached to this server <span
+                class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
+    </div>
+    {% endfor %}
+    {% if subscriber.get_subscriptions %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-transparent d-flex justify-content-between">
+                <span class="text-primary fw-bold">Subscription History</span>
+            </div>
+            <div class="card-body p-0 px-2">
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <thead>
+                            <tr>
+                                <th>Plan Name</th>
+                                <th>Amount</th>
+                                <th>Server</th>
+                                <th>Subscribed via</th>
+                                <th>Subscription date</th>
+                                <th>Expiry date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subscription in subscriptions %}
+                            <tr>
+                                <td>{{ subscription.plan.name }}</td>
+                                <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
+                                    month{{ subscription.plan.interval_count|pluralize }}</td>
+                                <td>{{ subscription.subscribed_via.get_choice_server }}</td>
+                                <td>{{ subscription.subscribed_via }}</td>
+                                <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
+                                <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
+                                <td>
+                                    <span
+                                        class="badge py-2 px-3 rounded-pill text-bg-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        {% endif %}
     </div>
     {% endif %}
+</div>
+{% endif %}
 
 <div class="modal fade" id="affiliateModal" tabindex="-1" role="dialog" aria-labelledby="affiliateModalLabel"
     aria-hidden="true">
@@ -152,16 +161,17 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="affiliateModalLabel">Become an Affiliate</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">x</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">You will become an Affiliate and be able to invite users to the server <span class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> for a commission.</div>
+            <div class="modal-body">You will become an Affiliate and be able to invite users to the server <span
+                    class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> for a
+                commission.</div>
             <div class="modal-footer">
                 <form action="{% url 'upgrade_to_affiliate' %}" method="post">
                     {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-dark" type="button" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-user-tie fa-fw"></i> Become an Affiliate</button>
+                    <button class="btn btn-outline-dark" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-user-tie fa-fw"></i> Become an
+                        Affiliate</button>
                 </form>
             </div>
         </div>

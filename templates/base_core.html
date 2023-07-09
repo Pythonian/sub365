@@ -1,15 +1,16 @@
-{% load static %}
+{% load static socialaccount %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{% block title %}{% endblock title %} | Sub365.co</title>
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{% static 'styles/dashboard.min.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/bootstrap-5.3.0.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/bootstrap5.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/app5.css' %}" rel="stylesheet">
 </head>
 
 <body class="d-flex flex-column min-vh-100">
@@ -29,8 +30,9 @@
     {% block header %}
     <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow py-lg-3">
         <div class="container">
-            <a href="/" class="navbar-brand">
-                <div class="fw-bold fs-4"><img src="{% static 'img/sub365logo-light.svg' %}" alt="sub365logo-light"></div>
+            <a href="{% url 'index' %}" class="navbar-brand">
+                <div class="fw-bold fs-4"><img src="{% static 'img/sub365logo-light.svg' %}" alt="sub365logo-light">
+                </div>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarToggler"
                 aria-controls="navbarToggler" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,7 +45,7 @@
                         <i class="fa-solid fa-tachometer-alt me-1"></i> My Dashboard
                     </a>
                     {% else %}
-                    <form method="post" action="/accounts/discord/login/">
+                    <form method="post" action="{% provider_login_url 'discord' %}">
                         {% csrf_token %}
                         <button class="btn btn-primary border rounded-3 text-white" type="submit">
                             <i class="fa-brands fa-discord me-1"></i> Sign in with Discord
@@ -64,7 +66,7 @@
         <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
             <p class="col-md-4 mb-lg-0 text-body-secondary ps-0">&copy;{% now "Y" %} &bull; All rights reserved</p>
 
-            <a href="/"
+            <a href="{% url 'index' %}"
                 class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
                 <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
             </a>
@@ -72,16 +74,15 @@
             <ul class="nav col-md-4 justify-content-end pe-0">
                 <li class="nav-item"><a href="/about/" class="nav-link px-2 text-body-secondary">About</a></li>
                 <li class="nav-item"><a href="/feedback/" class="nav-link px-2 text-body-secondary">Feedback</a></li>
-                <li class="nav-item"><a href="/policy/" class="nav-link px-2 text-body-secondary">Privacy Policy</a></li>
+                <li class="nav-item"><a href="/policy/" class="nav-link px-2 text-body-secondary">Privacy Policy</a>
+                </li>
             </ul>
         </footer>
     </div>
     {% endblock footer %}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}
-    {% endblock scripts %}
+    {% block scripts %}{% endblock scripts %}
 </body>
 
 </html>

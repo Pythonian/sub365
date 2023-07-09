@@ -15,7 +15,8 @@
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                 <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                <span>${{ subscriber.plan.amount }} /{{ subscriber.plan.interval_count }} month{{ subscriber.plan.interval_count|pluralize }}</span>
+                <span>${{ subscriber.plan.amount }} /{{ subscriber.plan.interval_count }}
+                    month{{ subscriber.plan.interval_count|pluralize }}</span>
             </li>
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
@@ -29,7 +30,8 @@
             </li>
             <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
                 <p class="p-0 m-0 text-muted fs-6">STATUS</p>
-                <span class="badge py-2 px-3 rounded-pill badge-{% if subscriber.status == 'A' %}success{% else %}danger{% endif %}">{{ subscriber.get_status_display }}</span>
+                <span
+                    class="badge py-2 px-3 rounded-pill text-bg-{% if subscriber.status == 'A' %}success{% else %}danger{% endif %}">{{ subscriber.get_status_display }}</span>
             </li>
         </ul>
     </div>

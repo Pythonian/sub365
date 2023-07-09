@@ -1,13 +1,11 @@
 {% load widget_tweaks %}
-<div class="modal fade" id="updatePlan{{ plan.id }}" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel{{ plan.id }}"
-    aria-hidden="true">
+<div class="modal fade" id="updatePlan{{ plan.id }}" tabindex="-1" role="dialog"
+    aria-labelledby="updateModalLabel{{ plan.id }}" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Update Plan</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form method="post" action=".">
@@ -22,7 +20,8 @@
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             {% for error in form.name.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                             </div>
                             {% endfor %}
@@ -31,7 +30,8 @@
                         </div>
                         <div class="col-md-5">
                             {% for error in form.amount.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                             </div>
                             {% endfor %}
@@ -43,47 +43,58 @@
                         </div>
                         <div class="col-md-7">
                             {% for error in form.interval_count.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                             </div>
                             {% endfor %}
-                            <label class="form-label" for="{{ form.interval_count.id_for_label }}">Plan Duration in Months:</label>
+                            <label class="form-label" for="{{ form.interval_count.id_for_label }}">Plan Duration in
+                                Months:</label>
                             {% render_field form.interval_count readonly=True title="You can not update this" placeholder="Enter a value between 1 - 12" %}
                         </div>
                         <div class="col-12">
                             {% for error in form.discord_role_id.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                             </div>
                             {% endfor %}
-                            <label class="form-label" for="{{ form.discord_role_id.id_for_label }}">Discord Role ID:</label>
+                            <label class="form-label" for="{{ form.discord_role_id.id_for_label }}">Discord Role
+                                ID:</label>
                             {% render_field form.discord_role_id %}
-                            <a tabindex="0" href="javascript:void(0)" class="small" role="button" data-toggle="popover" data-trigger="focus" data-content="To get a role's ID, enable developer mode in the Appearance section of your user settings, then go to the server settings, open the role menu, right-click on the desired role, and choose 'Copy ID'.">How do I get this?</a>
+                            <a class="small" role="button" data-bs-container="body" data-bs-toggle="popover"
+                                data-bs-content="To get a role's ID, enable developer mode in the Appearance section of your user settings, then go to the server settings, open the role menu, right-click on the desired role, and choose 'Copy ID'.">How
+                                do I get this?</a>
                         </div>
                         <div class="col-12">
                             {% for error in form.permission_description.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                             </div>
                             {% endfor %}
-                            <label class="form-label" for="{{ form.permission_description.id_for_label }}">Describe subscribers permissions
+                            <label class="form-label" for="{{ form.permission_description.id_for_label }}">Describe
+                                subscribers permissions
                                 (Optional):</label>
                             {% render_field form.permission_description %}
                         </div>
                         <div class="col-12">
                             {% for error in form.description.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                             </div>
                             {% endfor %}
-                            <label class="form-label" for="{{ form.description.id_for_label }}">Description of the Plan:</label>
+                            <label class="form-label" for="{{ form.description.id_for_label }}">Description of the
+                                Plan:</label>
                             {% render_field form.description %}
                             <span class="small" id="remainingCharacters"></span>
                         </div>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <button class="btn btn-outline-dark" type="button" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="updatePlan"><i class="fas fa-fw fa-pen-to-square"></i> Update
+                        <button class="btn btn-outline-dark" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="updatePlan"><i
+                                class="fas fa-fw fa-pen-to-square"></i> Update
                             Plan</button>
                     </div>
                 </form>

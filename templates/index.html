@@ -5,68 +5,72 @@
 {% block title %}Welcome!{% endblock title %}
 
 {% block content %}
-    <section class="bg-primary mb-0 pt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-6 mb-5 mx-auto text-center text-white">
-                    <h1 class="mb-3">Revolutionalize Your Discord <br> Community Management</h1>
-                    <p class="lead">Effortlessly manage your server's subscriptions with our comprehensive solution.</p>
-                </div>
-                <div class="overflow-hidden text-center" style="max-height: 40vh;">
-                    <div class="container px-5">
-                        <img src="{% static 'img/dashboard.png' %}" class="img-fluid border rounded-3 shadow-lg mb-4" alt="Example image" width="700" height="500" loading="lazy">
-                    </div>
+<section class="bg-primary mb-0 pt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mb-5 mx-auto text-center text-white">
+                <h1 class="mb-3">Revolutionalize Your Discord <br> Community Management</h1>
+                <p class="lead">Effortlessly manage your server's subscriptions with our comprehensive solution.</p>
+            </div>
+            <div class="overflow-hidden text-center" style="max-height: 40vh;">
+                <div class="container px-5">
+                    <img src="{% static 'img/dashboard.png' %}" class="img-fluid border rounded-top shadow-lg"
+                        alt="dashboard" width="700" height="500" loading="lazy">
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="bg-light py-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-6 mx-auto my-5 text-center">
-                    <h2 class="text-dark mb-3">Our Service Simplifies Discord <br> Community Management</h2>
-                    <p class="text-dark">Here is how it works:</p>
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mx-auto my-5 text-center">
+                <h2 class="text-dark mb-3">Our Service Simplifies Discord <br> Community Management</h2>
+                <p class="text-dark">Here is how it works:</p>
+            </div>
+        </div>
+        <div class="row g-4 mx-lg-5">
+            <div class="col-xl-4 col-md-6">
+                <div class="card bg-primary text-light h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5 class="mt-5 pe-2">Connect your account with Discord</h5>
+                            <i class="fa-solid fa-1 fa-3x text-white"></i>
+                        </div>
+                        <p class="card-text mb-3">Server owner purchases the software and provides the necessary
+                            details. A unique website link to their homepage is generated</p>
+                    </div>
                 </div>
             </div>
-            <div class="row g-4">
-                <div class="col-sm-4">
-                    <div class="card bg-primary text-light h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="mt-5 pe-2">Connect your account with Discord</h5>
-                                <i class="fa-solid fa-1 fa-3x text-white"></i>
-                            </div>
-                            <p class="card-text mb-3">Server owner purchases the software and provides the necessary details. A unique website link to their homepage is generated</p>
+            <div class="col-xl-4 col-md-6">
+                <div class="card bg-primary text-light h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5 class="mt-5 pe-2">Invite subscribers to join your server</h5>
+                            <i class="fa-solid fa-2 fa-3x text-white"></i>
                         </div>
+                        <p class="card-text mb-3">Subscribers join the server owner's Discord server by using a Discord
+                            command or by following the owner's unique link.</p>
                     </div>
                 </div>
-                <div class="col-sm-4">
-                    <div class="card bg-primary text-light h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="mt-5 pe-2">Invite subscribers to join your server</h5>
-                                <i class="fa-solid fa-2 fa-3x text-white"></i>
-                            </div>
-                            <p class="card-text mb-3">Subscribers join the server owner's Discord server by using a Discord command or by following the owner's unique link.</p>
+            </div>
+            <div class="col-xl-4 col-md-6">
+                <div class="card bg-primary text-light h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5 class="mt-5 pe-2">Manage your subscriptions</h5>
+                            <i class="fa-solid fa-3 fa-3x text-white"></i>
                         </div>
-                    </div>
-                </div>
-                <div class="col-sm-4">
-                    <div class="card bg-primary text-light h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="mt-5 pe-2">Manage your subscriptions</h5>
-                                <i class="fa-solid fa-3 fa-3x text-white"></i>
-                            </div>
-                            <p class="card-text mb-3">Subscribers sign up for the server owner's Discord server using a Discord command or by following the owner's unique
+                        <p class="card-text mb-3">Subscribers sign up for the server owner's Discord server using a
+                            Discord command or by following the owner's unique
                             link</p>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 {% endblock content %}
 
 {% block scripts %}

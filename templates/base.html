@@ -1,17 +1,16 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{% block title %}{% endblock title %} | Sub365.co</title>
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
-        integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="{% static 'styles/dashboard.min.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/bootstrap-5.3.0.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/bootstrap5.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/app5.css' %}" rel="stylesheet">
 </head>
 
 <body>
@@ -21,29 +20,31 @@
             <div id="content">
 
                 <nav class="navbar navbar-expand navbar-light bg-white topbar static-top shadow px-5">
-                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle me-3">
                         <i class="fa fa-bars"></i>
                     </button>
 
-                    <ul class="navbar-nav ml-auto">
+                    <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
                             <span class="nav-link">
-                                <span class="d-none d-lg-inline badge badge-primary small py-2 px-2">Registered on
+                                <span class="d-none d-lg-inline badge text-bg-primary small py-2 px-2">Registered on
                                     {{ user.date_joined|date:"j F, Y" }}</span>
-                                </span>
+                            </span>
                         </li>
                         <div class="topbar-divider d-none d-sm-block"></div>
                         <li class="nav-item">
                             <span class="nav-link">
                                 {% if user.is_serverowner %}
-                                <img class="img-profile rounded-circle me-2" src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ user.serverowner.discord_id }}/{{ user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
+                                <img class="img-profile rounded-circle me-2"
+                                    src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ user.serverowner.discord_id }}/{{ user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
                                     {{ user.serverowner.username }} <br>
                                     {{ choice_server.name }}
                                 </span>
 
                                 {% else %}
-                                <img class="img-profile rounded-circle me-2" src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ user.subscriber.discord_id }}/{{ user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
+                                <img class="img-profile rounded-circle me-2"
+                                    src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ user.subscriber.discord_id }}/{{ user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
                                 <span class="text-gray-600 small">
                                     {{ user.subscriber.username }}<br>
                                     {% if user.is_affiliate %}Affiliate{% else %}Subscriber{% endif %}
@@ -56,18 +57,18 @@
                 </nav>
 
                 {% if messages %}
-                    {% for message in messages %}
-                    <div class="container mt-2 px-lg-5">
-                        <div class="alert alert-{{ message.tags }} rounded-0 alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close"></button>
-                        </div>
+                {% for message in messages %}
+                <div class="container mt-2 px-lg-5">
+                    <div class="alert alert-{{ message.tags }} rounded-0 alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    {% endfor %}
+                </div>
+                {% endfor %}
                 {% endif %}
 
                 <div class="container-fluid px-lg-5 mt-4">
-                {% block content %}{% endblock content %}
+                    {% block content %}{% endblock content %}
                 </div>
             </div>
 
@@ -89,55 +90,13 @@
 
     {% include 'modals/_logout_modal.html' %}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"
-        integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'scripts/dashboard.min.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'scripts/app.js' %}"></script>
     <script>
-        $(function () {
-            $('[data-toggle="popover"]').popover({trigger: 'focus'})
-        })
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
     </script>
-
-    {% block clipboard %}
-    <script>
-
-        document.getElementById("copy-button").addEventListener("click", function () {
-            var subscriptionLink = this.getAttribute("data-subscription-link");
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(subscriptionLink)
-                    .then(function () {
-                        alert("Subscription link copied to clipboard!");
-                    })
-                    .catch(function (error) {
-                        console.error("Failed to copy subscription link:", error);
-                    });
-            } else {
-                // Fallback for browsers that don't support the Clipboard API
-                var textarea = document.createElement("textarea");
-                textarea.value = subscriptionLink;
-                textarea.style.position = "fixed";  // Ensure the textarea is visible
-                document.body.appendChild(textarea);
-                textarea.focus();
-                textarea.select();
-
-                try {
-                    var successful = document.execCommand("copy");
-                    var msg = successful ? "Subscription link copied to clipboard!" : "Failed to copy subscription link.";
-                    alert(msg);
-                } catch (error) {
-                    console.error("Failed to copy subscription link:", error);
-                }
-
-                document.body.removeChild(textarea);
-            }
-        });
-
-    </script>
-    {% endblock clipboard %}
 
 </body>
 

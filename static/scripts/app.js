@@ -1,8 +1,8 @@
-jQuery(function() {
+jQuery(function () {
     // Characters remaining counter
     var start = 0;
     var limit = 300;
-    $("#id_description").keyup(function() {
+    $("#id_description").keyup(function () {
         start = this.value.length
         if (start > limit) {
             return false;
@@ -24,12 +24,12 @@ jQuery(function() {
 });
 
 // Clear contents in modal form when closed
-$("#createPlanModal").on('hidden.bs.modal', function() {
+$("#createPlanModal").on('hidden.bs.modal', function () {
     $('#createPlanModal form')[0].reset();
 });
 
 // Allow letters, numbers, space and underscore in field
-$("input[name=subdomain], input[name=name]").keyup(function() {
+$("input[name=subdomain], input[name=name]").keyup(function () {
     if (!/^[a-zA-Z0-9 _]*$/.test(this.value)) {
         this.value = this.value.split(/[^a-zA-Z0-9 _]/).join('');
     }
@@ -41,7 +41,7 @@ $("input[name=subdomain]").keyup(function () {
 });
 
 // Prevent excess whitespace in the field(s)
-$("input[name=subdomain], input[name=name], input[name=discord_role_id]").on('keydown', function() {
+$("input[name=subdomain], input[name=name], input[name=discord_role_id]").on('keydown', function () {
     var $this = $(this);
     $(this).val($this.val().replace(/(\s{2,})|[^a-zA-Z0-9_']/g, ' ').replace(/^\s*/, ''));
 });
@@ -59,21 +59,21 @@ $("input[name=subdomain]").keyup(function () {
 });
 
 // Prevent starting whitespace in inputs
-$("input[type='text'], textarea").on('keypress', function(e) {
+$("input[type='text'], textarea").on('keypress', function (e) {
     if (e.which === 32 && !this.value.length)
         e.preventDefault();
 });
 
 // Allow only numbers in number field
-$("input[name=affiliate_commission], input[name=amount], input[name=interval_count]").keyup(function() {
+$("input[name=affiliate_commission], input[name=amount], input[name=interval_count]").keyup(function () {
     if (!/^[0-9]*$/.test(this.value)) {
         this.value = this.value.split(/[^0-9]/).join('');
     }
 });
 
 // Prevent starting by Zero in number field
-$("input[name=affiliate_commission], input[name=amount], input[name=interval_count]").on("input", function() {
-    if(/^0/.test(this.value)) {
+$("input[name=affiliate_commission], input[name=amount], input[name=interval_count]").on("input", function () {
+    if (/^0/.test(this.value)) {
         this.value = this.value.replace(/^0/, "")
     }
 });
@@ -94,3 +94,60 @@ for (const data of form) {
     $("#updatePlan").prop("disabled", btn);
 })();
 document.oninput = btnEnabled // Call
+
+document.getElementById("copy-button").addEventListener("click", function () {
+    var textLink = this.getAttribute("data-copy-link");
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textLink)
+            .then(function () {
+                alert("Link copied to clipboard!");
+            })
+            .catch(function (error) {
+                console.error("Failed to copy link:", error);
+            });
+    } else {
+        // Fallback for browsers that don't support the Clipboard API
+        var textarea = document.createElement("textarea");
+        textarea.value = textLink;
+        textarea.style.position = "fixed";  // Ensure the textarea is visible
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        try {
+            var successful = document.execCommand("copy");
+            var msg = successful ? "Link copied to clipboard!" : "Failed to copy link.";
+            alert(msg);
+        } catch (error) {
+            console.error("Failed to copy link:", error);
+        }
+
+        document.body.removeChild(textarea);
+    }
+});
+
+!(function (l) {
+    "use strict";
+    l("#sidebarToggle, #sidebarToggleTop").on("click", function (e) {
+        l("body").toggleClass("sidebar-toggled"), l(".sidebar").toggleClass("toggled"), l(".sidebar").hasClass("toggled") && l(".sidebar .collapse").collapse("hide");
+    }),
+        l(window).resize(function () {
+            l(window).width() < 768 && l(".sidebar .collapse").collapse("hide"),
+                l(window).width() < 480 && !l(".sidebar").hasClass("toggled") && (l("body").addClass("sidebar-toggled"), l(".sidebar").addClass("toggled"), l(".sidebar .collapse").collapse("hide"));
+        }),
+        l("body.fixed-nav .sidebar").on("mousewheel DOMMouseScroll wheel", function (e) {
+            var o;
+            768 < l(window).width() && ((o = (o = e.originalEvent).wheelDelta || -o.detail), (this.scrollTop += 30 * (o < 0 ? 1 : -1)), e.preventDefault());
+        }),
+        l(document).on("scroll", function () {
+            100 < l(this).scrollTop() ? l(".scroll-to-top").fadeIn() : l(".scroll-to-top").fadeOut();
+        }),
+        l(document).on("click", "a.scroll-to-top", function (e) {
+            var o = l(this);
+            l("html, body")
+                .stop()
+                .animate({ scrollTop: l(o.attr("href")).offset().top }, 1e3, "easeInOutExpo"),
+                e.preventDefault();
+        });
+})(jQuery);

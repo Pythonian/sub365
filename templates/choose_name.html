@@ -1,64 +1,125 @@
-{% extends "base_auth.html" %}
-
 {% load static widget_tweaks %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block title %}Choose a Subdomain Name{% endblock title %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Choose a Subdomain Name | Sub365.co</title>
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="{% static 'styles/bootstrap-5.3.0.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/bootstrap5.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/app5.css' %}" rel="stylesheet">
+</head>
 
-{% block content %}
+<body>
 
-<div class="col-xl-4 col-lg-6 col-md-8 col-sm-9 mx-auto">
-    <div class="bg-white justify-content-center p-5 text-center shadow-lg rounded-4">
-        <a href="/"><img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo"></a>
-        <h6 class="my-4 text-dark">Enter the information below and proceed to connect your account with Stripe.</h6>
-        <div class="text-start">
-            <form action="" method="post">
-                {% csrf_token %}
+    <main class="container-fluid bg-primary">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-center vh-100">
+                    <div class="col-xl-4 col-lg-6 col-md-8 col-sm-9 mx-auto">
+                        <div class="bg-white justify-content-center p-5 text-center shadow-lg rounded-4">
+                            <a href="{% url 'index' %}"><img src="{% static 'img/sub365-logo.svg' %}"
+                                    alt="sub365-logo"></a>
+                            <h6 class="my-4 text-dark">Enter the information below and proceed to connect your account
+                                with Stripe.</h6>
+                            <div class="text-start">
+                                <form action="" method="post">
+                                    {% csrf_token %}
 
-                {% for error in form.non_field_errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
-                </div>
-                {% endfor %}
+                                    {% for error in form.non_field_errors %}
+                                    <div class="alert alert-danger" role="alert">
+                                        {{ error }}
+                                    </div>
+                                    {% endfor %}
 
-                <div class="form-group">
-                    {% for error in form.subdomain.errors %}
-                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                    </div>
-                    {% endfor %}
-                    {% render_field form.subdomain %}
-                    <span class="small">{{ form.subdomain.help_text }}</span>
-                </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="form-group">
+                                            {% for error in form.subdomain.errors %}
+                                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                                role="alert">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                                            </div>
+                                            {% endfor %}
+                                            {% render_field form.subdomain %}
+                                            <small>{{ form.subdomain.help_text }}</small>
+                                        </div>
 
-                <div class="form-group">
-                    {% for error in form.server.errors %}
-                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                    </div>
-                    {% endfor %}
-                    {% render_field form.server class="form-select" %}
-                    <span class="small">{{ form.server.help_text }} <i class="fas fa-circle-question ms-1 small" data-toggle="tooltip" data-placement="top" title="You must have a Server on Discord to continue"></i></span>
-                </div>
+                                        <div class="form-group">
+                                            {% for error in form.server.errors %}
+                                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                                role="alert">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                                            </div>
+                                            {% endfor %}
+                                            {% render_field form.server class="form-select" %}
+                                            <small>{{ form.server.help_text }} <i
+                                                    class="fas fa-circle-question ms-1 small" data-bs-toggle="tooltip"
+                                                    data-bs-placement="top"
+                                                    title="You must have a Server on Discord to continue"></i></small>
+                                        </div>
 
-                <div class="form-group">
-                    {% for error in form.affiliate_commission.errors %}
-                        <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                                        <div class="form-group">
+                                            {% for error in form.affiliate_commission.errors %}
+                                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                                role="alert">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                                            </div>
+                                            {% endfor %}
+                                            <div class="input-group">
+                                                {% render_field form.affiliate_commission %}
+                                                <span class="input-group-text" id="affiliate-commission"><i
+                                                        class="fa-solid fa-percent"></i></span>
+                                            </div>
+                                            <small>{{ form.affiliate_commission.help_text }}</small>
+                                        </div>
+
+                                    </div>
+
+                                    <button class="btn btn-primary py-3 w-100" type="submit">
+                                        Connect with Stripe
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                    {% endfor %}
-                    <div class="input-group">
-                        {% render_field form.affiliate_commission %}
-                        <span class="input-group-text" id="affiliate-commission"><i class="fa-solid fa-percent"></i></span>
                     </div>
-                    <span class="small">{{ form.affiliate_commission.help_text }}</span>
                 </div>
-
-                <button class="btn btn-primary py-3 w-100" type="submit">
-                    Connect with Stripe
-                </button>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
+    </main>
 
-{% endblock %}
+    <div class="container mt-auto">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
+            <p class="col-md-4 mb-lg-0 text-body-secondary ps-0">&copy;{% now "Y" %} &bull; All rights reserved</p>
+
+            <a href="{% url 'index' %}"
+                class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto text-decoration-none">
+                <img src="{% static 'img/sub365-logo.svg' %}" alt="sub365-logo">
+            </a>
+
+            <ul class="nav col-md-4 justify-content-end pe-0">
+                <li class="nav-item"><a href="/about/" class="nav-link px-2 text-body-secondary">About</a></li>
+                <li class="nav-item"><a href="/feedback/" class="nav-link px-2 text-body-secondary">Feedback</a></li>
+                <li class="nav-item"><a href="/policy/" class="nav-link px-2 text-body-secondary">Privacy Policy</a>
+                </li>
+            </ul>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'scripts/app.js' %}"></script>
+    <script>
+        window.onload = (event) => {
+            let myAlert = document.querySelector('.toast');
+            let bsAlert = new bootstrap.Toast(myAlert);
+            bsAlert.show();
+        }
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    </script>
+</body>
+
+</html>
