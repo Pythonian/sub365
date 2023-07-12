@@ -1,0 +1,5 @@
+{% extends "serverowner/_base_dashboard_data.html" %}
+
+{% block data_title %}Affiliates Awaiting Payment{% endblock data_title %}
+{% block data_value %}{{ serverowner.get_pending_affiliates_count }}{% endblock data_value %}
+{% block data_icon %}fa-users{% endblock data_icon %}

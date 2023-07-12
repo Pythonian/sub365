@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Affiliate Payments{% endblock title %}
+
+{% block content %}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <a href="{% url 'affiliates' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Affiliates</a>
+        <h4 class="mb-0 text-secondary">Pending Affiliates</h4>
+    </div>
+</div>
+
+{% if serverowner.get_pending_affiliate_payments %}
+
+<div class="row mb-4">
+    {% include 'serverowner/partials/_total_pending_affiliates.html' %}
+    {% include 'serverowner/partials/_total_pending_payments.html' %}
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-transparent d-flex justify-content-between">
+                <span class="text-primary fw-bold">Pending Payments</span>
+            </div>
+            <div class="card-body p-0 px-2">
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <thead>
+                            <tr>
+                                <th>Affiliate</th>
+                                <th>Discord ID</th>
+                                <th>Pending Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for affiliate in serverowner.get_pending_affiliates %}
+                                <tr>
+                                    <td>{{ affiliate.subscriber }}</td>
+                                    <td>{{ affiliate.discord_id }}</td>
+                                    <td>${{ affiliate.pending_commissions }}</td>
+                                    <td><a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#confirmPayment{{ affiliate.id }}">Confirm Payment</a></td>
+                                </tr>
+                                <div class="modal fade" id="confirmPayment{{ affiliate.id }}" tabindex="-1" role="dialog" aria-labelledby="confirmPaymentModalLabel{{ affiliate.id }}" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirm Payment</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-dark">
+                                                <p>Have you sent the sum of <span class="text-primary">${{ affiliate.pending_commissions }}</span> to the affiliate <span class="text-primary">{{ affiliate.subscriber }}</span>?</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn btn-outline-dark" type="button" data-bs-dismiss="modal">No</button>
+                                                <form method="POST" action="">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="affiliate_id" value="{{ affiliate.discord_id }}">
+                                                    <button type="submit" class="btn btn-success text-white"><i class="fas fa-check me-1"></i> Yes, I have</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-file-invoice-dollar fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">No Pending Payments.</h3>
+    <p class="mb-5">You currently do not have any affiliate commissions pending to be paid.</p>
+</div>
+{% endif %}
+
+{% endblock content %}

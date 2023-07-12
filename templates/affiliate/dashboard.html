@@ -43,20 +43,13 @@
                         <tbody>
                             {% for invitation in invitations %}
                             <tr>
-                                <td>
-                                    {% if invitation.get_invitee_subscription %}
-                                    {{ invitation.get_affiliateinvitee_name }}
-                                    {% else %}
-                                    {{ invitation.invitee_discord_id }}
-                                    {% endif %}
-                                </td>
-                                <td>${{ invitation.get_affiliate_commission_payment }}</td>
+                                <td>{{ invitation.invitee.get_affiliateinvitee_name }}</td>
+                                <td>${{ invitation.invitee.get_affiliate_commission_payment }}</td>
                                 <td>
                                     <span
-                                        class="badge py-2 px-3 rounded-pill text-bg-{% if invitation.get_invitee_subscription %}success{% else %}danger{% endif %}">{% if invitation.get_invitee_subscription %}Active{% else %}Not
-                                        Active{% endif %}</span>
+                                        class="badge py-2 px-3 rounded-pill text-bg-{% if invitation.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{% if invitation.status == 'A' %}Active{% elif invitation.status == 'E' %}Expired{% else %}Inactive{% endif %}</span>
                                 </td>
-                                <td>{{ invitation.created|date:"F j, Y" }}</td>
+                                <td>{{ invitation.invitee.created|date:"F j, Y" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

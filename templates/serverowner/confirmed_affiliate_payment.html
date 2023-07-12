@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Affiliate Commissions Paid{% endblock title %}
+
+{% block content %}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <a href="{% url 'affiliates' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Affiliates</a>
+        <h4 class="mb-0 text-secondary">Affiliate Commissions Paid</h4>
+    </div>
+</div>
+
+{% if serverowner.get_confirmed_affiliate_payments %}
+
+<div class="row mb-4">
+    {% include 'serverowner/partials/_total_confirmed_affiliates.html' %}
+    {% include 'serverowner/partials/_total_confirmed_payments.html' %}
+</div>
+
+<div class="row g-4 mb-5">
+    {% for affiliate in serverowner.get_confirmed_affiliate_payments %}
+    <div class="col-lg-4 col-sm-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary py-3"></div>
+            <div class="card-body">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">AFFILIATE:</p>
+                        <span>{{ affiliate.affiliate }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
+                        <span>${{ affiliate.amount }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">CONFIRMED DATE:</p>
+                        <span>{{ affiliate.date_payment_confirmed|date:"F j, Y" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-file-invoice-dollar fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">No Payments Made.</h3>
+    <p class="mb-5">You currently have no payments made to an Affiliate.</p>
+</div>
+{% endif %}
+{% endblock content %}

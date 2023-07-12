@@ -10,7 +10,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.db.models import Sum
+from django.db.models import Sum, F
+from django.core.exceptions import ObjectDoesNotExist
 
 import requests
 import stripe
@@ -20,6 +21,8 @@ from .decorators import redirect_if_no_subdomain
 from .forms import ChooseServerSubdomainForm, PlanForm
 from .models import (
     Affiliate,
+    AffiliateInvitee,
+    AffiliatePayment,
     Server,
     ServerOwner,
     StripePlan,
@@ -186,7 +189,7 @@ def subscribe_redirect(request):
     request.session["subdomain_redirect"] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
-    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"
+    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"  # noqa
     return redirect(redirect_url)
 
 
@@ -423,7 +426,9 @@ def plan_detail(request, product_id):
                     "active": True,
                 }
 
-                product = stripe.Product.modify(plan.product_id, **product_params)
+                product = stripe.Product.modify(
+                    plan.product_id, **product_params
+                )  # noqa
 
                 # Save the updated plan details in the database
                 plan = form.save()
@@ -561,6 +566,59 @@ def affiliates(request):
     return render(request, template, context)
 
 
+@login_required
+@redirect_if_no_subdomain
+def pending_affiliate_payment(request):
+    serverowner = ServerOwner.objects.get(user=request.user)
+
+    if request.method == "POST":
+        affiliate_id = request.POST.get("affiliate_id")
+        if affiliate_id is not None:
+            affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
+            if affiliate is not None:
+                # Update the server owner's total_pending_commissions
+                serverowner.total_pending_commissions = (
+                    F("total_pending_commissions") - affiliate.pending_commissions
+                )
+                serverowner.save()
+
+                # Update the affiliate's pending_commissions and total_commissions_paid fields
+                affiliate.total_commissions_paid = (
+                    F("total_commissions_paid") + affiliate.pending_commissions
+                )
+                affiliate.pending_commissions = Decimal(0)
+                affiliate.last_payment_date = timezone.now()
+                affiliate.save()
+
+                # Mark the associated AffiliatePayment instances as paid
+                affiliate_payments = AffiliatePayment.objects.filter(
+                    serverowner=serverowner, affiliate=affiliate, paid=False
+                )
+                affiliate_payments.update(
+                    paid=True, date_payment_confirmed=timezone.now()
+                )
+
+                messages.success(request, "Payment confirmed.")
+                return redirect("pending_affiliate_payment")
+    context = {
+        "serverowner": serverowner,
+    }
+
+    return render(request, "serverowner/pending_affiliate_payment.html", context)
+
+
+@login_required
+@redirect_if_no_subdomain
+def confirmed_affiliate_payment(request):
+    serverowner = ServerOwner.objects.get(user=request.user)
+
+    context = {
+        "serverowner": serverowner,
+    }
+
+    return render(request, "serverowner/confirmed_affiliate_payment.html", context)
+
+
 ##################################################
 #                   SUBSCRIBERS                  #
 ##################################################
@@ -667,25 +725,6 @@ def subscribe_to_plan(request, product_id):
 
 @login_required
 def subscription_success(request):
-    """
-    Handle the success callback from a Stripe subscription session.
-
-    This view retrieves the necessary information from the request's
-    GET parameters to process a successful subscription.
-    It creates a new Subscription object for the subscriber, updates the
-    relevant details, and increments the subscriber count for the plan.
-
-    Args:
-        request: The HTTP request object.
-
-    Returns:
-        HttpResponse: The rendered success template with the subscription information.
-
-    Raises:
-        Http404: If the session ID is missing or invalid.
-        stripe.error.StripeError: If an error occurs during a Stripe API call.
-
-    """
     subscriber = get_object_or_404(Subscriber, user=request.user)
     subscription = None
 
@@ -714,8 +753,36 @@ def subscription_success(request):
                 status=Subscription.SubscriptionStatus.ACTIVE,
             )
 
+            try:
+                affiliateinvitee = AffiliateInvitee.objects.get(
+                    invitee_discord_id=subscriber.discord_id
+                )
+                affiliatepayment = AffiliatePayment.objects.create(
+                    serverowner=subscriber.subscribed_via,
+                    affiliate=affiliateinvitee.affiliate,
+                    subscriber=subscriber,
+                    amount=affiliateinvitee.get_affiliate_commission_payment(),
+                )
+
+                # Update fields using F expression
+                affiliateinvitee.affiliate.update_last_payment_date()
+                affiliateinvitee.affiliate.pending_commissions = (
+                    F("pending_commissions")
+                    + affiliateinvitee.get_affiliate_commission_payment()
+                )
+                affiliateinvitee.affiliate.save()
+
+                subscriber.subscribed_via.total_pending_commissions = (
+                    F("total_pending_commissions")
+                    + affiliateinvitee.get_affiliate_commission_payment()
+                )
+                subscriber.subscribed_via.save()
+
+            except ObjectDoesNotExist:
+                affiliateinvitee = None
+
             # Increment the subscriber count for the plan
-            plan.subscriber_count += 1
+            plan.subscriber_count = F("subscriber_count") + 1
             plan.save()
 
         else:
@@ -741,7 +808,7 @@ def upgrade_to_affiliate(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     # Create an affiliate object for the subscriber
-    affiliate = Affiliate.objects.create(
+    affiliate = Affiliate.objects.create(  # noqa
         subscriber=subscriber,
         serverowner=subscriber.subscribed_via,
         discord_id=subscriber.discord_id,
@@ -799,15 +866,3 @@ def error_404(request, exception):
 
 def error_500(request):
     return render(request, "500.html", status=500)
-
-
-# def affiliate_payment(request):
-#     server_owner = ServerOwner.objects.get(user=request.user)
-#     pending_affiliates = server_owner.get_pending_affiliates()
-
-#     context = {
-#         "server_owner": server_owner,
-#         "pending_affiliates": pending_affiliates,
-#     }
-
-#     return render(request, "serverowner/affiliate_payment.html", context)

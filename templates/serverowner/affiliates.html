@@ -9,9 +9,14 @@
         <h1 class="h3 mb-0 text-gray-800">Affiliates Overview</h1>
         <small>See all details about your affiliates</small>
     </div>
-    <a href="#" class="btn btn-sm btn-primary shadow-sm">
-        <i class="fas fa-fw fa-sack-dollar"></i> View Pending Payments
-    </a>
+    <div>
+        <a href="{% url 'confirmed_affiliate_payment' %}" class="btn btn-sm btn-success text-white shadow-sm">
+            <i class="fas fa-fw fa-sack-dollar"></i> Payments Made
+        </a>
+        <a href="{% url 'pending_affiliate_payment' %}" class="btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-fw fa-hand-holding-dollar"></i> Pending Payments
+        </a>
+    </div>
 </div>
 
 {% if serverowner.get_affiliate_users %}
@@ -39,11 +44,11 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for affiliate, invite_count in serverowner.get_affiliate_users %}
+                                {% for affiliate in serverowner.get_affiliates %}
                                     <tr>
                                         <td>{{ affiliate.subscriber.username }}</td>
-                                        <td>{{ invite_count }}</td>
-                                        <td>${{ affiliate.calculate_total_commissions }}</td>
+                                        <td>{{ affiliate.get_total_invitation_count }}</td>
+                                        <td>${{ affiliate.total_commissions_paid }}</td>
                                         <td>%{{ affiliate.calculate_conversion_rate }}</td>
                                     </tr>
                                 {% endfor %}

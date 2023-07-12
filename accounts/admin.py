@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 
 from allauth.account.models import EmailAddress
 
-from .models import (Affiliate, AffiliateInvitee, Server, ServerOwner,
+from .models import (Affiliate, AffiliateInvitee, AffiliatePayment, Server, ServerOwner,
                      StripePlan, Subscriber, Subscription, User)
 
 
@@ -52,6 +52,11 @@ class AffiliateAdmin(admin.ModelAdmin):
 @admin.register(AffiliateInvitee)
 class AffiliateInviteeAdmin(admin.ModelAdmin):
     list_display = ["affiliate", "invitee_discord_id", "created"]
+
+
+@admin.register(AffiliatePayment)
+class AffiliatePaymentAdmin(admin.ModelAdmin):
+    list_display = ["serverowner", "affiliate", "subscriber", "amount", "paid"]
 
 
 admin.site.unregister(EmailAddress)

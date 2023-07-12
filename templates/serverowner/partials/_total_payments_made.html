@@ -1,5 +1,5 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
-{% block data_title %}Total Payments{% endblock data_title %}
-{% block data_value %}$?{% endblock data_value %}
+{% block data_title %}Affiliate Payments{% endblock data_title %}
+{% block data_value %}${{ serverowner.get_total_payments_to_affiliates }}{% endblock data_value %}
 {% block data_icon %}fa-sack-dollar{% endblock data_icon %}
