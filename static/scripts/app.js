@@ -91,41 +91,44 @@ for (const data of form) {
             break;
         }
     }
-    $("#updatePlan").prop("disabled", btn);
+    $("#updatePlan, #updatepaymentMethod").prop("disabled", btn);
 })();
 document.oninput = btnEnabled // Call
 
-document.getElementById("copy-button").addEventListener("click", function () {
-    var textLink = this.getAttribute("data-copy-link");
+var copyButton = document.getElementById("copy-button");
+if (copyButton) {
+    copyButton.addEventListener("click", function () {
+        var textLink = this.getAttribute("data-copy-link");
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(textLink)
-            .then(function () {
-                alert("Link copied to clipboard!");
-            })
-            .catch(function (error) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textLink)
+                .then(function () {
+                    alert("Link copied to clipboard!");
+                })
+                .catch(function (error) {
+                    console.error("Failed to copy link:", error);
+                });
+        } else {
+            // Fallback for browsers that don't support the Clipboard API
+            var textarea = document.createElement("textarea");
+            textarea.value = textLink;
+            textarea.style.position = "fixed";  // Ensure the textarea is visible
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                var successful = document.execCommand("copy");
+                var msg = successful ? "Link copied to clipboard!" : "Failed to copy link.";
+                alert(msg);
+            } catch (error) {
                 console.error("Failed to copy link:", error);
-            });
-    } else {
-        // Fallback for browsers that don't support the Clipboard API
-        var textarea = document.createElement("textarea");
-        textarea.value = textLink;
-        textarea.style.position = "fixed";  // Ensure the textarea is visible
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
+            }
 
-        try {
-            var successful = document.execCommand("copy");
-            var msg = successful ? "Link copied to clipboard!" : "Failed to copy link.";
-            alert(msg);
-        } catch (error) {
-            console.error("Failed to copy link:", error);
+            document.body.removeChild(textarea);
         }
-
-        document.body.removeChild(textarea);
-    }
-});
+    });
+}
 
 !(function (l) {
     "use strict";

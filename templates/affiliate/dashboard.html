@@ -9,10 +9,15 @@
         <h3 class="mb-0 text-secondary">Welcome back!</h3>
         <small>Here is your dashboard overview</small>
     </div>
-    {% if invitations %}
-    <button id="copy-button" class="btn btn-sm btn-primary" data-copy-link="{{ affiliate.affiliate_link }}"><i
-            class="far fa-clipboard me-1"></i> Copy Affiliate Link</button>
-    {% endif %}
+    <div>
+        <a data-bs-toggle="modal" data-bs-target="#paymentMethod" class="btn btn-sm btn-success text-white shadow-sm">
+            Payment Method
+        </a>
+        {% if invitations %}
+        <button id="copy-button" class="btn btn-sm btn-primary" data-copy-link="{{ affiliate.affiliate_link }}"><i
+                class="far fa-clipboard me-1"></i> Copy Affiliate Link</button>
+        {% endif %}
+    </div>
 </div>
 
 {% if invitations %}
@@ -79,5 +84,48 @@
     {% endif %}
 </div>
 {% endif %}
+
+{% load widget_tweaks %}
+<div class="modal fade" id="paymentMethod" tabindex="-1" role="dialog" aria-labelledby="paymentMethodLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Method</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action=".">
+                    {% csrf_token %}
+
+                    {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            {% for error in form.body.errors %}
+                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                role="alert">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                            </div>
+                            {% endfor %}
+                            {% render_field form.body placeholder="Describe how you will like to be paid your commission" %}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-sm btn-outline-dark" type="button"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm btn-primary" id="updatepaymentMethod"><i
+                                class="fas fa-fw fa-pen-to-square"></i> Update
+                            Payment Method</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

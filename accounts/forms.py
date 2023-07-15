@@ -2,7 +2,7 @@ import re
 
 from django import forms
 
-from .models import Server, ServerOwner, StripePlan
+from .models import Server, ServerOwner, StripePlan, PaymentDetail
 
 DISALLOWED_SUBDOMAINS = [
     "activate",
@@ -265,3 +265,12 @@ class PlanForm(forms.ModelForm):
         if permission_description:
             permission_description = re.sub(r"\s+", " ", permission_description).strip()
         return permission_description
+
+
+class PaymentDetailForm(forms.ModelForm):
+    class Meta:
+        model = PaymentDetail
+        fields = ["body"]
+        widgets = {
+            "body": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+        }

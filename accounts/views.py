@@ -18,11 +18,12 @@ import stripe
 from allauth.socialaccount.models import SocialAccount
 
 from .decorators import redirect_if_no_subdomain
-from .forms import ChooseServerSubdomainForm, PlanForm
+from .forms import ChooseServerSubdomainForm, PlanForm, PaymentDetailForm
 from .models import (
     Affiliate,
     AffiliateInvitee,
     AffiliatePayment,
+    PaymentDetail,
     Server,
     ServerOwner,
     StripePlan,
@@ -37,7 +38,6 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def index(request):
-    """Render the Landing page."""
     return render(request, "index.html")
 
 
@@ -116,7 +116,7 @@ def discord_callback(request):
                     if guild_response.status_code == 200:
                         # Gets all the discord servers joined by the user
                         server_list = guild_response.json()
-                        # Process the server list to only returned servers owned by user
+                        # Process the server list to only return servers owned by user
                         owned_servers = []
                         if server_list:
                             for server in server_list:
@@ -291,32 +291,6 @@ def stripe_refresh(request):
 @login_required
 @redirect_if_no_subdomain
 def dashboard(request):
-    """
-    Display the dashboard for a server owner.
-
-    This view retrieves the server owner associated with the logged-in user
-    and renders the server owner's dashboard.
-    The dashboard provides an overview of the server owner's relevant data.
-
-    Template:
-        - ``serverowner/dashboard.html``
-
-    Context:
-        serverowner (ServerOwner):
-            The ServerOwner object representing the logged-in user.
-
-    Args:
-        request (HttpRequest):
-            The HTTP request object representing the current request.
-
-    Returns:
-        HttpResponse: The rendered dashboard template with the server owner's data.
-
-    Raises:
-        Http404: If the server owner is not found.
-
-    """
-
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     discord_client_id = settings.DISCORD_CLIENT_ID
@@ -333,18 +307,6 @@ def dashboard(request):
 @login_required
 @redirect_if_no_subdomain
 def plans(request):
-    """
-    Display the server owner's plans and handle plan creation.
-
-    Templates: ``serverowner/plans.html``
-    Context:
-        serverowner
-            ServerOwner object
-        form
-            StripePlanForm object
-        stripe_plans
-            List of StripePlan objects
-    """
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     if request.method == "POST":
@@ -626,21 +588,6 @@ def confirmed_affiliate_payment(request):
 
 @login_required
 def subscriber_dashboard(request):
-    """
-    Display the subscriber's dashboard.
-
-    Args:
-        request: The HTTP request object.
-
-    Returns:
-        HttpResponse: The rendered dashboard template with the subscriber's information and relevant data.
-
-    Raises:
-        Http404: If the subscriber or server owner is not found.
-        Subscription.DoesNotExist: If the latest active subscription is not found.
-
-    """
-
     # Retrieve the subscriber based on the logged-in user
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
@@ -664,6 +611,8 @@ def subscriber_dashboard(request):
     # Retrieve all the subscriptions done by the subscriber
     subscriptions = Subscription.objects.filter(subscriber=subscriber)
 
+    form = PaymentDetailForm()
+
     template = "subscriber/dashboard.html"
     context = {
         "plans": plans,
@@ -671,6 +620,7 @@ def subscriber_dashboard(request):
         "server_owner": server_owner,
         "subscription": latest_subscription,
         "subscriptions": subscriptions,
+        "form": form,
     }
 
     return render(request, template, context)
@@ -679,20 +629,6 @@ def subscriber_dashboard(request):
 @login_required
 @require_POST
 def subscribe_to_plan(request, product_id):
-    """
-    Subscribe to a plan by creating a Stripe Checkout session.
-
-    Args:
-        request: The HTTP request object.
-        product_id (int): The ID of the StripePlan to subscribe to.
-
-    Returns:
-        HttpResponseRedirect: Redirects the user to the Stripe Checkout page.
-
-    Raises:
-        Http404: If the StripePlan with the specified ID is not found.
-
-    """
     plan = get_object_or_404(StripePlan, id=product_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
@@ -764,7 +700,6 @@ def subscription_success(request):
                     amount=affiliateinvitee.get_affiliate_commission_payment(),
                 )
 
-                # Update fields using F expression
                 affiliateinvitee.affiliate.update_last_payment_date()
                 affiliateinvitee.affiliate.pending_commissions = (
                     F("pending_commissions")
@@ -819,6 +754,14 @@ def upgrade_to_affiliate(request):
     subscriber.user.is_affiliate = True
     subscriber.user.save()
 
+    form = PaymentDetailForm(request.POST)
+    if form.is_valid():
+        payment_detail = form.save(commit=False)
+        payment_detail.affiliate = affiliate
+        payment_detail.save()
+    else:
+        messages.error(request, "An error occured while submitting your form.")
+
     messages.success(request, "You have upgraded to being an Affiliate.")
     return redirect("affiliate_dashboard")
 
@@ -831,13 +774,26 @@ def upgrade_to_affiliate(request):
 @login_required
 def affiliate_dashboard(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
-
     invitations = affiliate.get_affiliate_invitees()
+    payment_detail = affiliate.paymentdetail
+
+    if request.method == "POST":
+        form = PaymentDetailForm(request.POST, instance=payment_detail)
+        if form.is_valid():
+            payment_detail = form.save(commit=False)
+            payment_detail.save()
+            messages.success(request, "Your payment detail has been updated.")
+            return redirect("affiliate_dashboard")
+        else:
+            messages.error(request, "An error occured while submitting your form.")
+    else:
+        form = PaymentDetailForm(instance=payment_detail)
 
     template = "affiliate/dashboard.html"
     context = {
         "affiliate": affiliate,
         "invitations": invitations,
+        "form": form,
     }
 
     return render(request, template, context)

@@ -24,7 +24,6 @@ urlpatterns = [
          views.pending_affiliate_payment, name="pending_affiliate_payment"),
     path("affiliates/confirmed-payments/",
          views.confirmed_affiliate_payment, name="confirmed_affiliate_payment"),
-    # path("make-payment/", views.make_payment, name="make_payment"),
     path("subscriber/", views.subscriber_dashboard, name="subscriber_dashboard"),
     path(
         "subscribe/<int:product_id>/", views.subscribe_to_plan, name="subscribe_to_plan"

@@ -29,22 +29,27 @@ class ServerOwner(models.Model):
     subdomain = models.CharField(max_length=20)
     email = models.EmailField()
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    affiliate_commission = models.IntegerField(blank=True, null=True,
-                                               validators=[MinValueValidator(1),
-                                                           MaxValueValidator(100)])
-
+    affiliate_commission = models.IntegerField(
+        blank=True, null=True, validators=[MinValueValidator(1), MaxValueValidator(100)]
+    )
     total_pending_commissions = models.DecimalField(
-        max_digits=9, decimal_places=2, default=0,
+        max_digits=9,
+        decimal_places=2,
+        default=0,
         validators=[MinValueValidator(0)],
-        help_text="Total pending commissions to be paid by the server owner"
+        help_text="Total pending commissions to be paid by the server owner",
     )
 
     def get_total_payments_to_affiliates(self):
         """
         Get the total payments the server owner has paid to affiliates.
         """
-        return self.affiliate_set.aggregate(
-            total_payments=Sum('total_commissions_paid')).get('total_payments') or 0
+        return (
+            self.affiliate_set.aggregate(
+                total_payments=Sum("total_commissions_paid")
+            ).get("total_payments")
+            or 0
+        )
 
     def get_pending_affiliates(self):
         """
@@ -80,7 +85,9 @@ class ServerOwner(models.Model):
 
     def update_total_pending_commissions(self):
         pending_payments = self.get_pending_affiliate_payments()
-        total_pending_commissions = pending_payments.aggregate(total=Sum("amount")).get("total")
+        total_pending_commissions = pending_payments.aggregate(total=Sum("amount")).get(
+            "total"
+        )
         if total_pending_commissions is None:
             total_pending_commissions = 0
         self.total_pending_commissions = total_pending_commissions
@@ -187,8 +194,7 @@ class ServerOwner(models.Model):
                       in descending order excluding plans with no subscribers.
         """
         return self.plans.filter(
-            status=StripePlan.PlanStatus.ACTIVE,
-            subscriber_count__gt=0
+            status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0
         ).order_by("-subscriber_count")[:limit]
 
     def get_subscribed_users(self):
@@ -237,7 +243,8 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
         return Subscription.objects.filter(
-            subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE)[:limit]
+            subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE
+        )[:limit]
 
     def get_total_subscriptions(self):
         """
@@ -265,12 +272,14 @@ class ServerOwner(models.Model):
             Decimal: The total earnings amount formatted with two decimal places.
         """
         total_earnings = (
-            Subscription.objects.filter(
-                subscribed_via=self).aggregate(total=Sum("plan__amount")).get("total")
+            Subscription.objects.filter(subscribed_via=self)
+            .aggregate(total=Sum("plan__amount"))
+            .get("total")
         )
         if total_earnings is not None:
             total_earnings = Decimal(total_earnings).quantize(
-                Decimal("0.00"), rounding=ROUND_DOWN)
+                Decimal("0.00"), rounding=ROUND_DOWN
+            )
         else:
             total_earnings = Decimal(0)
         return total_earnings
@@ -293,8 +302,11 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with active subscriptions.
         """
-        return self.get_subscribed_users().filter(
-            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).count()
+        return (
+            self.get_subscribed_users()
+            .filter(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+            .count()
+        )
 
     def get_inactive_subscribers_count(self):
         """
@@ -303,8 +315,11 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with inactive subscriptions.
         """
-        return self.get_subscribed_users().exclude(
-            subscriptions__status=Subscription.SubscriptionStatus.ACTIVE).count()
+        return (
+            self.get_subscribed_users()
+            .exclude(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+            .count()
+        )
 
     def get_active_plans_count(self):
         """
@@ -330,8 +345,9 @@ class Server(models.Model):
     Model for servers.
     """
 
-    owner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE,
-                              related_name="servers")
+    owner = models.ForeignKey(
+        ServerOwner, on_delete=models.CASCADE, related_name="servers"
+    )
     server_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=255, blank=True, null=True)
@@ -351,9 +367,12 @@ class Subscriber(models.Model):
     username = models.CharField(max_length=255, unique=True)
     avatar = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField()
-    stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.SET_NULL,
-                                       blank=True, null=True)
+    stripe_account_id = models.CharField(
+        max_length=100, blank=True, null=True
+    )  # TODO redundant
+    subscribed_via = models.ForeignKey(
+        ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -366,7 +385,7 @@ class Subscriber(models.Model):
     def has_active_subscription(self):
         return self.subscriptions.filter(
             status=Subscription.SubscriptionStatus.ACTIVE,
-            expiration_date__gt=timezone.now()
+            expiration_date__gt=timezone.now(),
         ).exists()
 
     def get_subscriptions(self):
@@ -375,23 +394,25 @@ class Subscriber(models.Model):
 
 class Affiliate(models.Model):
     subscriber = models.OneToOneField(Subscriber, on_delete=models.CASCADE)
-    affiliate_link = models.CharField(max_length=255, unique=True,
-                                      blank=True, null=True)
+    affiliate_link = models.CharField(
+        max_length=255, unique=True, blank=True, null=True
+    )
     discord_id = models.CharField(
-        max_length=255, primary_key=True, help_text="Discord ID of the Affiliate")
+        max_length=255, primary_key=True, help_text="Discord ID of the Affiliate"
+    )
     server_id = models.CharField(max_length=255)
     serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-
-    total_invites = models.PositiveIntegerField(default=0)  # TODO remove this
     last_payment_date = models.DateTimeField(null=True, blank=True)
     total_commissions_paid = models.DecimalField(
-        max_digits=9, decimal_places=2, default=0,
+        max_digits=9,
+        decimal_places=2,
+        default=0,
         validators=[MinValueValidator(0)],
-        help_text="Total commissions paid to the affiliate"
+        help_text="Total commissions paid to the affiliate",
     )
     pending_commissions = models.DecimalField(max_digits=9, decimal_places=2, default=0)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def calculate_commission(self):
         """
@@ -448,17 +469,16 @@ class Affiliate(models.Model):
         invitees_with_status = []
 
         for invitee in invitees:
-            subscriber = Subscriber.objects.filter(discord_id=invitee.invitee_discord_id).first()
+            subscriber = Subscriber.objects.filter(
+                discord_id=invitee.invitee_discord_id
+            ).first()
             if subscriber:
-                subscription = subscriber.subscriptions.order_by('-created').first()
+                subscription = subscriber.subscriptions.order_by("-created").first()
                 if subscription:
                     status = subscription.status
                 else:
                     status = Subscription.SubscriptionStatus.INACTIVE
-                invitees_with_status.append({
-                    'invitee': invitee,
-                    'status': status
-                })
+                invitees_with_status.append({"invitee": invitee, "status": status})
 
         return invitees_with_status
 
@@ -475,7 +495,7 @@ class Affiliate(models.Model):
         invitees_with_active_subscriptions = self.affiliateinvitee_set.filter(
             invitee_discord_id__in=Subscriber.objects.filter(
                 subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
-            ).values('discord_id')
+            ).values("discord_id")
         )
         return invitees_with_active_subscriptions.count()
 
@@ -497,9 +517,9 @@ class Affiliate(models.Model):
         invitees_count = self.affiliateinvitee_set.count()
         successful_invitees_count = self.affiliateinvitee_set.filter(
             invitee_discord_id__in=Subscriber.objects.filter(
-                Q(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE) |
-                Q(subscriptions__status=Subscription.SubscriptionStatus.EXPIRED)
-            ).values('discord_id')
+                Q(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+                | Q(subscriptions__status=Subscription.SubscriptionStatus.EXPIRED)
+            ).values("discord_id")
         ).count()
 
         if invitees_count > 0:
@@ -515,7 +535,8 @@ class AffiliateInvitee(models.Model):
 
     affiliate = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
     invitee_discord_id = models.CharField(
-        max_length=255, unique=True, help_text="Discord ID of the Invitee")
+        max_length=255, unique=True, help_text="Discord ID of the Invitee"
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -526,7 +547,9 @@ class AffiliateInvitee(models.Model):
         """
         Get the username of the Invitee
         """
-        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id
+        ).first()
         if subscriber:
             return subscriber.username
         return None
@@ -535,20 +558,26 @@ class AffiliateInvitee(models.Model):
         """
         Get the latest subscription of the invitee, regardless of its status.
         """
-        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id
+        ).first()
         if subscriber:
-            return subscriber.subscriptions.order_by('created').latest()
+            return subscriber.subscriptions.order_by("created").latest()
         return None
 
     def get_affiliate_commission_payment(self):
-        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id
+        ).first()
         if subscriber:
             subscriptions = subscriber.subscriptions.all()
             commission_payment = 0
             for subscription in subscriptions:
                 subscription_amount = subscription.plan.amount
                 server_owner = self.affiliate.serverowner
-                commission_payment += server_owner.calculate_affiliate_commission(subscription_amount)
+                commission_payment += server_owner.calculate_affiliate_commission(
+                    subscription_amount
+                )
             return commission_payment
         return 0
 
@@ -556,14 +585,19 @@ class AffiliateInvitee(models.Model):
 class AffiliatePayment(models.Model):
     serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     affiliate = models.ForeignKey(
-        Affiliate, on_delete=models.CASCADE,
-        help_text="Discord ID of the Affiliate")
+        Affiliate, on_delete=models.CASCADE, help_text="Discord ID of the Affiliate"
+    )
     subscriber = models.ForeignKey(
-        Subscriber, on_delete=models.CASCADE,
-        help_text="The Affiliate Invitee who subscribed")
+        Subscriber,
+        on_delete=models.CASCADE,
+        help_text="The Affiliate Invitee who subscribed",
+    )
     amount = models.DecimalField(
-        max_digits=9, decimal_places=2, validators=[MinValueValidator(0)],
-        help_text="The commission to be paid.")
+        max_digits=9,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="The commission to be paid.",
+    )
     paid = models.BooleanField(default=False)
     date_payment_confirmed = models.DateTimeField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -585,8 +619,9 @@ class StripePlan(models.Model):
         ACTIVE = "A", "Active"
         INACTIVE = "I", "Inactive"
 
-    user = models.ForeignKey(ServerOwner, on_delete=models.CASCADE,
-                             related_name="plans")
+    user = models.ForeignKey(
+        ServerOwner, on_delete=models.CASCADE, related_name="plans"
+    )
     product_id = models.CharField(max_length=100)
     price_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
@@ -594,16 +629,21 @@ class StripePlan(models.Model):
     description = models.TextField(max_length=300, help_text="300 characters")
     currency = models.CharField(max_length=3, default="usd")
     interval_count = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(12)])
+        validators=[MinValueValidator(1), MaxValueValidator(12)]
+    )
     subscriber_count = models.IntegerField(default=0)
-    status = models.CharField(max_length=1, choices=PlanStatus.choices,
-                              default=PlanStatus.ACTIVE)
+    status = models.CharField(
+        max_length=1, choices=PlanStatus.choices, default=PlanStatus.ACTIVE
+    )
     discord_role_id = models.CharField(
-        max_length=255, help_text="ID of Discord role to be assigned to subscribers")
+        max_length=255, help_text="ID of Discord role to be assigned to subscribers"
+    )
     permission_description = models.CharField(
         max_length=255,
-        blank=True, null=True,
-        help_text="Description of permissions to be given to subscribers")
+        blank=True,
+        null=True,
+        help_text="Description of permissions to be given to subscribers",
+    )
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -623,8 +663,9 @@ class Subscription(models.Model):
         INACTIVE = "I", "Inactive"
         EXPIRED = "E", "Expired"
 
-    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE,
-                                   related_name="subscriptions")
+    subscriber = models.ForeignKey(
+        Subscriber, on_delete=models.CASCADE, related_name="subscriptions"
+    )
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
     subscription_date = models.DateTimeField()
@@ -632,10 +673,14 @@ class Subscription(models.Model):
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
     session_id = models.CharField(max_length=200, blank=True, null=True)
     customer_id = models.CharField(max_length=200, blank=True, null=True)
-    status = models.CharField(max_length=1, choices=SubscriptionStatus.choices,
-                              default=SubscriptionStatus.INACTIVE)
-    value = models.IntegerField(default=0, validators=[MinValueValidator(0),
-                                                       MaxValueValidator(1)])
+    status = models.CharField(
+        max_length=1,
+        choices=SubscriptionStatus.choices,
+        default=SubscriptionStatus.INACTIVE,
+    )
+    value = models.IntegerField(
+        default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
+    )
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -644,3 +689,13 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f"Subscription #{self.id}"
+
+
+class PaymentDetail(models.Model):
+    affiliate = models.OneToOneField(Affiliate, on_delete=models.CASCADE)
+    body = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment detail for {self.affiliate}"
