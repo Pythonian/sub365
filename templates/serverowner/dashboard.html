@@ -11,7 +11,7 @@
         <small>Here is your dashboard overview</small>
     </div>
     <button id="copy-button" class="btn btn-sm btn-primary"
-        data-copy-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ serverowner.subdomain }}"><i
+        data-copy-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?ref={{ serverowner.subdomain }}"><i
             class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
 </div>
 <div class="row mb-4">
@@ -104,7 +104,7 @@
                     </div>
                     <div>
                         <button id="copy-button" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5"
-                            data-copy-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?subdomain={{ serverowner.subdomain }}"><i
+                            data-copy-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?ref={{ serverowner.subdomain }}"><i
                                 class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
                     </div>
                 </div>

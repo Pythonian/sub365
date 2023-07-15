@@ -17,11 +17,12 @@ def redirect_if_no_subdomain(view_func):
             # Your view code here
             ...
     """
+
     def wrapped_view(request, *args, **kwargs):
         """
         Wrapped view function to check if the server owner has a subdomain.
 
-        If the server owner does not have a subdomain, redirects to the 'choose_name' view.
+        If the server owner does not have a subdomain, redirects to the 'onboarding' view.
 
         Args:
             request (HttpRequest): The request object.
@@ -35,7 +36,7 @@ def redirect_if_no_subdomain(view_func):
             None.
         """
         if not request.user.serverowner.subdomain:
-            return redirect('choose_name')
+            return redirect("onboarding")
         return view_func(request, *args, **kwargs)
 
     return wrapped_view

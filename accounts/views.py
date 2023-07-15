@@ -18,12 +18,11 @@ import stripe
 from allauth.socialaccount.models import SocialAccount
 
 from .decorators import redirect_if_no_subdomain
-from .forms import ChooseServerSubdomainForm, PlanForm, PaymentDetailForm
+from .forms import OnboardingForm, PlanForm, PaymentDetailForm
 from .models import (
     Affiliate,
     AffiliateInvitee,
     AffiliatePayment,
-    PaymentDetail,
     Server,
     ServerOwner,
     StripePlan,
@@ -194,19 +193,19 @@ def subscribe_redirect(request):
 
 
 @login_required
-def choose_name(request):
+def onboarding(request):
     """Handle choosing a server and subdomain name."""
     if request.user.serverowner.subdomain:
         return redirect("dashboard")
     if request.method == "POST":
-        form = ChooseServerSubdomainForm(request.POST, user=request.user)
+        form = OnboardingForm(request.POST, user=request.user)
         if form.is_valid():
             form.save(user=request.user)
             return redirect("create_stripe_account")
     else:
-        form = ChooseServerSubdomainForm(user=request.user)
+        form = OnboardingForm(user=request.user)
 
-    template = "choose_name.html"
+    template = "onboarding.html"
     context = {
         "form": form,
     }
@@ -219,7 +218,7 @@ def dashboard_view(request):
     """Redirect the user to the appropriate dashboard."""
     if request.user.is_serverowner:
         if not request.user.serverowner.subdomain:
-            return redirect("choose_name")
+            return redirect("onboarding")
         return redirect("dashboard")
     elif request.user.is_affiliate:
         return redirect("affiliate_dashboard")
@@ -230,7 +229,6 @@ def dashboard_view(request):
 
 
 @login_required
-# @require_POST
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
     connected_account = stripe.Account.create(

@@ -83,7 +83,7 @@ class Lowercase(forms.CharField):
         return value.lower()
 
 
-class ChooseServerSubdomainForm(forms.Form):
+class OnboardingForm(forms.Form):
     """
     Form for choosing a server and subdomain.
     """
@@ -116,7 +116,7 @@ class ChooseServerSubdomainForm(forms.Form):
         servers of the current user.
         """
         user = kwargs.pop("user", None)
-        super(ChooseServerSubdomainForm, self).__init__(*args, **kwargs)
+        super(OnboardingForm, self).__init__(*args, **kwargs)
         if user:
             self.fields["server"].queryset = Server.objects.filter(owner__user=user)
             self.fields["server"].empty_label = "Choose a server"

@@ -4,7 +4,7 @@ from . import views, webhooks
 
 urlpatterns = [
     path("subscribe/", views.subscribe_redirect, name="subscribe_redirect"),
-    path("choosename/", views.choose_name, name="choose_name"),
+    path("onboarding/", views.onboarding, name="onboarding"),
     path("dashboard_view/", views.dashboard_view, name="dashboard_view"),
     path(
         "create-stripe-account/",
@@ -20,10 +20,16 @@ urlpatterns = [
     path("subscribers/", views.subscribers, name="subscribers"),
     path("mysubscriber/<int:id>/", views.subscriber_detail, name="subscriber_detail"),
     path("affiliates/", views.affiliates, name="affiliates"),
-    path("affiliates/pending-payments/",
-         views.pending_affiliate_payment, name="pending_affiliate_payment"),
-    path("affiliates/confirmed-payments/",
-         views.confirmed_affiliate_payment, name="confirmed_affiliate_payment"),
+    path(
+        "affiliates/pending-payments/",
+        views.pending_affiliate_payment,
+        name="pending_affiliate_payment",
+    ),
+    path(
+        "affiliates/confirmed-payments/",
+        views.confirmed_affiliate_payment,
+        name="confirmed_affiliate_payment",
+    ),
     path("subscriber/", views.subscriber_dashboard, name="subscriber_dashboard"),
     path(
         "subscribe/<int:product_id>/", views.subscribe_to_plan, name="subscribe_to_plan"
