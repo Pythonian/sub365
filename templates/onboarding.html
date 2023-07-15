@@ -76,6 +76,19 @@
                                             <small>{{ form.affiliate_commission.help_text }}</small>
                                         </div>
 
+                                        <div class="form-group">
+                                            {% for error in form.access_code.errors %}
+                                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                                role="alert">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+                                            </div>
+                                            {% endfor %}
+                                            {% render_field form.access_code %}
+                                            <small>Contact <a href="mailto:admin@sub365.co" target="_blank"
+                                                    title="Send a mail">Sub365.co</a>
+                                                for access code.</small>
+                                        </div>
+
                                     </div>
 
                                     <button class="btn btn-primary py-3 w-100" type="submit">

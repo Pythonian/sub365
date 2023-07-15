@@ -2,7 +2,7 @@ import re
 
 from django import forms
 
-from .models import Server, ServerOwner, StripePlan, PaymentDetail
+from .models import AccessCode, Server, ServerOwner, StripePlan, PaymentDetail
 
 DISALLOWED_SUBDOMAINS = [
     "activate",
@@ -83,6 +83,13 @@ class Lowercase(forms.CharField):
         return value.lower()
 
 
+class Uppercase(forms.CharField):
+    """Convert values in a field to uppercase."""
+
+    def to_python(self, value):
+        return value.upper()
+
+
 class OnboardingForm(forms.Form):
     """
     Form for choosing a server and subdomain.
@@ -107,6 +114,13 @@ class OnboardingForm(forms.Form):
         help_text="Percentage of commission to be given to Affiliates.",
         widget=forms.NumberInput(
             attrs={"placeholder": "Enter affiliate commission", "class": "form-control"}
+        ),
+    )
+    access_code = Uppercase(
+        min_length=5,
+        max_length=5,
+        widget=forms.TextInput(
+            attrs={"placeholder": "Enter access code", "class": "form-control"}
         ),
     )
 
@@ -167,6 +181,16 @@ class OnboardingForm(forms.Form):
                 )
         return server
 
+    def clean_access_code(self):
+        access_code = self.cleaned_data.get("access_code")
+        try:
+            access_code_obj = AccessCode.objects.get(code=access_code)
+            if access_code_obj.is_used:
+                raise forms.ValidationError("Invalid code. Contact admin@sub365.co")
+        except AccessCode.DoesNotExist:
+            raise forms.ValidationError("Invalid code. Contact admin@sub365.co")
+        return access_code
+
     def save(self, user):
         """
         Save the chosen subdomain and mark the server as chosen.
@@ -180,6 +204,11 @@ class OnboardingForm(forms.Form):
         profile.save()
         server.choice_server = True
         server.save()
+        access_code = self.cleaned_data["access_code"]
+        code = AccessCode.objects.get(code=access_code)
+        code.is_used = True
+        code.used_by = profile
+        code.save()
 
 
 class PlanForm(forms.ModelForm):

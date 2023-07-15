@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group
 from allauth.account.models import EmailAddress
 
 from .models import (
+    AccessCode,
     Affiliate,
     AffiliateInvitee,
     AffiliatePayment,
@@ -15,6 +16,12 @@ from .models import (
     User,
     PaymentDetail,
 )
+
+
+@admin.register(AccessCode)
+class AccessCode(admin.ModelAdmin):
+    list_display = ["code", "used_by", "is_used"]
+    list_filter = ["is_used"]
 
 
 @admin.register(Server)

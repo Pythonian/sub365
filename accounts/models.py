@@ -579,3 +579,16 @@ class PaymentDetail(models.Model):
 
     def __str__(self):
         return f"Payment detail for {self.affiliate}"
+
+
+class AccessCode(models.Model):
+    code = models.CharField(max_length=5, unique=True)
+    used_by = models.ForeignKey(
+        ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
+    )
+    is_used = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.code
