@@ -43,9 +43,11 @@
                                 <td>{{ affiliate.discord_id }}</td>
                                 <td>${{ affiliate.pending_commissions }}</td>
                                 <td><a data-bs-toggle="modal" data-bs-target="#paymentMethod{{ affiliate.id }}"
-                                        class="btn btn-sm btn-primary">Payment Method</a></td>
+                                        class="btn btn-sm btn-primary"><i class="fas fa-eye me-1"></i> View Method</a>
+                                </td>
                                 <td><a class="btn btn-success text-white btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#confirmPayment{{ affiliate.id }}">Confirm Payment</a></td>
+                                        data-bs-target="#confirmPayment{{ affiliate.id }}"><i
+                                            class="fas fa-handshake me-1"></i> Confirm Payment</a></td>
                             </tr>
                             <div class="modal fade" id="paymentMethod{{ affiliate.id }}" tabindex="-1" role="dialog"
                                 aria-labelledby="paymentMethodModalLabel{{ affiliate.id }}" aria-hidden="true">
@@ -111,6 +113,10 @@
     </span>
     <h3 class="text-dark">No Pending Payments.</h3>
     <p class="mb-5">You currently do not have any affiliate commissions pending to be paid.</p>
+    {% if serverowner.get_confirmed_affiliate_payments %}
+    <a href="{% url 'confirmed_affiliate_payment' %}" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"><i
+            class="fas fa-eye me-1"></i> View Confirmed Payments</a>
+    {% endif %}
 </div>
 {% endif %}
 

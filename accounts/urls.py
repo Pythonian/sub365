@@ -39,6 +39,8 @@ urlpatterns = [
     ),
     path("become-affiliate/", views.upgrade_to_affiliate, name="upgrade_to_affiliate"),
     path("affiliate/", views.affiliate_dashboard, name="affiliate_dashboard"),
+    path("affiliate/payments/", views.affiliate_payments, name="affiliate_payments"),
+    path("affiliate/invitees/", views.affiliate_invitees, name="affiliate_invitees"),
     path("webhook/", webhooks.stripe_webhook, name="stripe_webhook"),
     path("", views.index, name="index"),
 ]

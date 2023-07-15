@@ -40,6 +40,9 @@ class ServerOwner(models.Model):
         help_text="Total pending commissions to be paid by the server owner",
     )
 
+    def __str__(self):
+        return self.username
+
     def get_total_payments_to_affiliates(self):
         """
         Get the total payments the server owner has paid to affiliates.
@@ -58,6 +61,9 @@ class ServerOwner(models.Model):
         return self.affiliate_set.exclude(pending_commissions=0)
 
     def get_pending_affiliates_count(self):
+        """
+        Get the total number of affiliates who are yet to be paid by serverowner.
+        """
         return self.get_pending_affiliates().count()
 
     def get_affiliates(self):
@@ -65,36 +71,6 @@ class ServerOwner(models.Model):
         Get a list of all affiliates associated with the server owner.
         """
         return Affiliate.objects.filter(serverowner=self)
-
-    def calculate_total_commissions(self):
-        """
-        Calculate the total commission the server owner is to pay.
-        """
-        affiliates = self.affiliate_set.all()
-        total_commissions = 0
-        for affiliate in affiliates:
-            total_commissions += affiliate.get_pending_commissions()
-        return total_commissions
-
-    def update_pending_commissions(self, amount):
-        """
-        Update the total pending commissions of the server owner.
-        """
-        self.total_pending_commissions -= amount
-        self.save()
-
-    def update_total_pending_commissions(self):
-        pending_payments = self.get_pending_affiliate_payments()
-        total_pending_commissions = pending_payments.aggregate(total=Sum("amount")).get(
-            "total"
-        )
-        if total_pending_commissions is None:
-            total_pending_commissions = 0
-        self.total_pending_commissions = total_pending_commissions
-        self.save()
-
-    def __str__(self):
-        return self.username
 
     def get_affiliate_payments(self):
         """
@@ -107,22 +83,6 @@ class ServerOwner(models.Model):
         Get the pending commissions the server owner is to pay affiliates.
         """
         return self.get_affiliate_payments().filter(paid=False)
-
-    def get_affiliates_awaiting_payment(self):
-        """
-        Get the total number of affiliates who are yet to be paid by serverowner.
-        """
-        return self.get_pending_affiliate_payments().count()
-
-    def get_pending_payment_amount(self):
-        """
-        Get the total amount of pending payments the server owner is to pay affiliates.
-        """
-        pending_payments = self.get_pending_affiliate_payments()
-        total_amount = pending_payments.aggregate(total=Sum("amount")).get("total")
-        if total_amount is None:
-            total_amount = 0
-        return total_amount
 
     def get_confirmed_affiliate_payments(self):
         """
@@ -246,15 +206,6 @@ class ServerOwner(models.Model):
             subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE
         )[:limit]
 
-    def get_total_subscriptions(self):
-        """
-        Get the total number of subscriptions created for the ServerOwner.
-
-        Returns:
-            int: The total number of subscriptions.
-        """
-        return Subscription.objects.filter(subscribed_via=self).count()
-
     def get_total_subscribers(self):
         """
         Get the total number of subscribers who subscribed via the ServerOwner.
@@ -283,17 +234,6 @@ class ServerOwner(models.Model):
         else:
             total_earnings = Decimal(0)
         return total_earnings
-
-    def affiliate_commissions(self):
-        """
-        Calculate the sum of all commissions received by the serverowner from affiliates.
-        """
-        total_commissions = 0
-        affiliates = self.affiliate_set.all()
-        for affiliate in affiliates:
-            total_commissions += affiliate.calculate_total_commissions()
-
-        return total_commissions
 
     def get_active_subscribers_count(self):
         """
@@ -367,9 +307,7 @@ class Subscriber(models.Model):
     username = models.CharField(max_length=255, unique=True)
     avatar = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField()
-    stripe_account_id = models.CharField(
-        max_length=100, blank=True, null=True
-    )  # TODO redundant
+    stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
     subscribed_via = models.ForeignKey(
         ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
     )
@@ -414,73 +352,12 @@ class Affiliate(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
-    def calculate_commission(self):
-        """
-        Calculate the commission for the affiliate since their last payment.
-        """
-        last_payment_date = self.last_payment_date
-        if last_payment_date:
-            affiliate_payments = self.affiliatepayment_set.filter(
-                created__gt=last_payment_date, paid=True
-            )
-        else:
-            affiliate_payments = self.affiliatepayment_set.filter(paid=True)
-
-        commission = affiliate_payments.aggregate(total=Sum("amount")).get("total")
-        return commission or 0
-
-    def update_commissions_paid(self, amount):
-        """
-        Update the total commissions paid to the affiliate.
-        """
-        self.total_commissions_paid += amount
-        self.save()
-
-    def get_pending_commissions(self):
-        """
-        Get the total commissions pending for the affiliate.
-        """
-        commissions_paid = self.total_commissions_paid
-        commissions_earned = self.calculate_commission()
-        return commissions_earned - commissions_paid
+    def __str__(self):
+        return self.subscriber.username
 
     def update_last_payment_date(self):
         self.last_payment_date = timezone.now()
         self.save()
-
-    def update_total_commissions_paid(self, amount):
-        self.total_commissions_paid += amount
-        self.save()
-
-    def update_pending_commissions(self):
-        commissions_paid = self.total_commissions_paid
-        commissions_earned = self.calculate_commission()
-        self.pending_commissions = commissions_earned - commissions_paid
-        self.save()
-
-    def __str__(self):
-        return self.subscriber.username
-
-    def get_affiliate_invitees(self):
-        """
-        Get the affiliate invitees associated with this affiliate along with their subscription status.
-        """
-        invitees = self.affiliateinvitee_set.all()
-        invitees_with_status = []
-
-        for invitee in invitees:
-            subscriber = Subscriber.objects.filter(
-                discord_id=invitee.invitee_discord_id
-            ).first()
-            if subscriber:
-                subscription = subscriber.subscriptions.order_by("-created").first()
-                if subscription:
-                    status = subscription.status
-                else:
-                    status = Subscription.SubscriptionStatus.INACTIVE
-                invitees_with_status.append({"invitee": invitee, "status": status})
-
-        return invitees_with_status
 
     def get_total_invitation_count(self):
         """
@@ -498,17 +375,6 @@ class Affiliate(models.Model):
             ).values("discord_id")
         )
         return invitees_with_active_subscriptions.count()
-
-    def calculate_total_commissions(self):
-        """
-        Calculate the sum of all commissions received by the affiliate.
-        """
-        total_commissions = 0
-        invitees = self.affiliateinvitee_set.all()
-        for invitee in invitees:
-            commission_payment = invitee.get_affiliate_commission_payment()
-            total_commissions += commission_payment
-        return total_commissions
 
     def calculate_conversion_rate(self):
         """
@@ -528,6 +394,18 @@ class Affiliate(models.Model):
             conversion_rate = 0
 
         return conversion_rate
+
+    def get_affiliate_payments(self):
+        """
+        Get the affiliate payments associated with this affiliate.
+        """
+        return AffiliatePayment.objects.filter(affiliate=self)
+
+    def get_affiliate_invitees(self):
+        """
+        Get a list of all affiliate invitees associated with this affiliate.
+        """
+        return self.affiliateinvitee_set.all()
 
 
 class AffiliateInvitee(models.Model):
@@ -554,32 +432,34 @@ class AffiliateInvitee(models.Model):
             return subscriber.username
         return None
 
-    def get_invitee_subscription(self):
-        """
-        Get the latest subscription of the invitee, regardless of its status.
-        """
-        subscriber = Subscriber.objects.filter(
-            discord_id=self.invitee_discord_id
-        ).first()
-        if subscriber:
-            return subscriber.subscriptions.order_by("created").latest()
-        return None
-
     def get_affiliate_commission_payment(self):
         subscriber = Subscriber.objects.filter(
             discord_id=self.invitee_discord_id
         ).first()
         if subscriber:
-            subscriptions = subscriber.subscriptions.all()
-            commission_payment = 0
-            for subscription in subscriptions:
+            subscription = subscriber.subscriptions.order_by("-created").first()
+            if subscription:
                 subscription_amount = subscription.plan.amount
                 server_owner = self.affiliate.serverowner
-                commission_payment += server_owner.calculate_affiliate_commission(
+                commission_payment = server_owner.calculate_affiliate_commission(
                     subscription_amount
                 )
-            return commission_payment
+                return commission_payment
         return 0
+
+    def calculate_affiliate_payment_commission(self):
+        """
+        Calculate the total affiliate payment commission received for this AffiliateInvitee.
+        """
+        affiliate_payments = AffiliatePayment.objects.filter(
+            affiliate=self.affiliate,
+            subscriber__discord_id=self.invitee_discord_id,
+            paid=True,
+        )
+        total_commission = affiliate_payments.aggregate(
+            total_commission=Sum("amount")
+        ).get("total_commission")
+        return total_commission or 0
 
 
 class AffiliatePayment(models.Model):

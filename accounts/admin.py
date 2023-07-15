@@ -66,7 +66,7 @@ class UserAdmin(admin.ModelAdmin):
     ]
 
 
-class PaymentDetailInline(admin.TabularInline):
+class PaymentDetailInline(admin.StackedInline):
     model = PaymentDetail
     extra = 0
 

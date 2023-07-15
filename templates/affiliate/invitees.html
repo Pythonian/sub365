@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}My Invitees{% endblock title %}
+
+{% block content %}
+
+{% if affiliate.get_affiliate_invitees %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="mb-0 text-secondary">Invitees Overview</h3>
+        <small>See details about users you have invited.</small>
+    </div>
+</div>
+
+<div class="row mb-4">
+    {% include 'affiliate/_total_invites.html' %}
+    {% include 'affiliate/_subscribed_invites.html' %}
+</div>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="text-secondary">Affiliate Invitees</h5>
+</div>
+
+<div class="row g-4 mb-5">
+    {% for invitee in affiliate.get_affiliate_invitees %}
+    <div class="col-lg-4 col-sm-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary py-2"></div>
+            <div class="card-body pb-2">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">INVITEE:</p>
+                        <span>{{ invitee.get_affiliateinvitee_name }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">TOTAL COMMISSION:</p>
+                        <span>${{ invitee.calculate_affiliate_payment_commission }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">DATE JOINED:</p>
+                        <span>{{ invitee.created|date:"F j, Y" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 my-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-user-xmark fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">No Invitees Yet.</h3>
+    <p class="mb-5">Keep promoting your affiliate link. Once a user has joined the server via your link,<br> a list of
+        your invitees will be displayed here.</p>
+    <button id="copy-button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"
+        data-copy-link="{{ affiliate.affiliate_link }}"><i class="far fa-clipboard me-1"></i> Copy Affiliate
+        Link</button>
+</div>
+{% endif %}
+
+{% endblock %}

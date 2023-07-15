@@ -7,15 +7,15 @@
 {% if serverowner.get_affiliate_users %}
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
-        <h1 class="h3 mb-0 text-gray-800">Affiliates Overview</h1>
+        <h1 class="h3 mb-0 text-secondary">Affiliates Overview</h1>
         <small>See all details about your affiliates</small>
     </div>
     <div>
         <a href="{% url 'confirmed_affiliate_payment' %}" class="btn btn-sm btn-success text-white shadow-sm">
-            <i class="fas fa-fw fa-sack-dollar"></i> Payments Made
+            <i class="fas me-1 fa-sack-dollar"></i> Payments Made
         </a>
         <a href="{% url 'pending_affiliate_payment' %}" class="btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-fw fa-hand-holding-dollar"></i> Pending Payments
+            <i class="fas me-1 fa-hand-holding-dollar"></i> Pending Payments
         </a>
     </div>
 </div>
@@ -45,12 +45,12 @@
                         </thead>
                         <tbody>
                             {% for affiliate in serverowner.get_affiliates %}
-                                <tr>
-                                    <td>{{ affiliate.subscriber.username }}</td>
-                                    <td>{{ affiliate.get_total_invitation_count }}</td>
-                                    <td>${{ affiliate.total_commissions_paid }}</td>
-                                    <td>{{ affiliate.calculate_conversion_rate }}%</td>
-                                </tr>
+                            <tr>
+                                <td>{{ affiliate.subscriber.username }}</td>
+                                <td>{{ affiliate.get_total_invitation_count }}</td>
+                                <td>${{ affiliate.total_commissions_paid }}</td>
+                                <td>{{ affiliate.calculate_conversion_rate }}%</td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -60,14 +60,15 @@
     </div>
 </div>
 {% else %}
-    <div class="text-center py-5 my-5">
-        <span class="text-primary fa-stack fa-4x mb-3">
-            <i class="fas fa-circle fa-stack-2x"></i>
-            <i class="fas fa-sack-xmark fa-stack-1x fa-inverse"></i>
-        </span>
-        <h3 class="text-dark">No Affiliate Yet.</h3>
-        <p>You can encourage your subscribers to upgrade to an Affiliate account <br> so they can invite more users to your server and earn a commission.</p>
-    </div>
+<div class="text-center py-5 my-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-sack-xmark fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">No Affiliate Yet.</h3>
+    <p>You can encourage your subscribers to upgrade to an Affiliate account <br> so they can invite more users to your
+        server and earn a commission.</p>
+</div>
 {% endif %}
 
 {% endblock content %}

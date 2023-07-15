@@ -35,22 +35,24 @@
                         <li class="nav-item">
                             <span class="nav-link">
                                 {% if user.is_serverowner %}
+                                {% if user.serverowner.avatar %}
                                 <img class="img-profile rounded-circle me-2"
-                                    src="{% if user.serverowner.avatar %}https://cdn.discordapp.com/avatars/{{ user.serverowner.discord_id }}/{{ user.serverowner.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
-                                <span class="text-gray-600 small">
+                                    src="https://cdn.discordapp.com/avatars/{{ user.serverowner.discord_id }}/{{ user.serverowner.avatar }}.png">
+                                {% endif %}
+                                <span class="text-secondary small">
                                     {{ user.serverowner.username }} <br>
                                     {{ choice_server.name }}
                                 </span>
-
                                 {% else %}
+                                {% if user.subscriber.avatar %}
                                 <img class="img-profile rounded-circle me-2"
-                                    src="{% if user.subscriber.avatar %}https://cdn.discordapp.com/avatars/{{ user.subscriber.discord_id }}/{{ user.subscriber.avatar }}.png{% else %}https://placehold.it/50x50{% endif %}">
-                                <span class="text-gray-600 small">
+                                    src="https://cdn.discordapp.com/avatars/{{ user.subscriber.discord_id }}/{{ user.subscriber.avatar }}.png">
+                                {% endif %}
+                                <span class="text-secondary small">
                                     {{ user.subscriber.username }}<br>
                                     {% if user.is_affiliate %}Affiliate{% else %}Subscriber{% endif %}
                                 </span>
                                 {% endif %}
-
                             </span>
                         </li>
                     </ul>

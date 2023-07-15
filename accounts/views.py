@@ -184,7 +184,7 @@ def discord_callback(request):
 
 def subscribe_redirect(request):
     """Redirect the user to Discord authentication."""
-    subdomain = request.GET.get("subdomain")
+    subdomain = request.GET.get("ref")
     request.session["subdomain_redirect"] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
@@ -386,9 +386,9 @@ def plan_detail(request, product_id):
                     "active": True,
                 }
 
-                product = stripe.Product.modify(
+                product = stripe.Product.modify(  # noqa
                     plan.product_id, **product_params
-                )  # noqa
+                )
 
                 # Save the updated plan details in the database
                 plan = form.save()
@@ -691,7 +691,7 @@ def subscription_success(request):
                 affiliateinvitee = AffiliateInvitee.objects.get(
                     invitee_discord_id=subscriber.discord_id
                 )
-                affiliatepayment = AffiliatePayment.objects.create(
+                affiliatepayment = AffiliatePayment.objects.create(  # noqa
                     serverowner=subscriber.subscribed_via,
                     affiliate=affiliateinvitee.affiliate,
                     subscriber=subscriber,
@@ -792,6 +792,30 @@ def affiliate_dashboard(request):
         "affiliate": affiliate,
         "invitations": invitations,
         "form": form,
+    }
+
+    return render(request, template, context)
+
+
+@login_required
+def affiliate_payments(request):
+    affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+
+    template = "affiliate/payments.html"
+    context = {
+        "affiliate": affiliate,
+    }
+
+    return render(request, template, context)
+
+
+@login_required
+def affiliate_invitees(request):
+    affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+
+    template = "affiliate/invitees.html"
+    context = {
+        "affiliate": affiliate,
     }
 
     return render(request, template, context)

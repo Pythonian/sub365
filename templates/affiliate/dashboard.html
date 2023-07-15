@@ -11,7 +11,7 @@
     </div>
     <div>
         <a data-bs-toggle="modal" data-bs-target="#paymentMethod" class="btn btn-sm btn-success text-white shadow-sm">
-            Payment Method
+            <i class="fas fa-cash-register me-1"></i> Payment Method
         </a>
         {% if invitations %}
         <button id="copy-button" class="btn btn-sm btn-primary" data-copy-link="{{ affiliate.affiliate_link }}"><i
@@ -28,42 +28,6 @@
     {% include 'affiliate/_pending_payments.html' %}
 </div>
 
-<div class="row mb-4">
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header bg-transparent d-flex justify-content-between">
-                <span class="text-primary fw-bold">Affiliate Invitations</span>
-            </div>
-            <div class="card-body p-0 px-2">
-                <div class="table-responsive">
-                    <table class="table table-borderless">
-                        <thead>
-                            <tr>
-                                <th>Affiliate Invitee</th>
-                                <th>Affiliate Commission</th>
-                                <th>Subscription Status</th>
-                                <th>Referral Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for invitation in invitations %}
-                            <tr>
-                                <td>{{ invitation.invitee.get_affiliateinvitee_name }}</td>
-                                <td>${{ invitation.invitee.get_affiliate_commission_payment }}</td>
-                                <td>
-                                    <span
-                                        class="badge py-2 px-3 rounded-pill text-bg-{% if invitation.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{% if invitation.status == 'A' %}Active{% elif invitation.status == 'E' %}Expired{% else %}Inactive{% endif %}</span>
-                                </td>
-                                <td>{{ invitation.invitee.created|date:"F j, Y" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 {% else %}
 <div class="text-center py-5">
     <span class="text-primary fa-stack fa-4x mb-3">
@@ -116,10 +80,9 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <button class="btn btn-sm btn-outline-dark" type="button"
-                            data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-sm btn-outline-dark" type="button" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-sm btn-primary" id="updatepaymentMethod"><i
-                                class="fas fa-fw fa-pen-to-square"></i> Update
+                                class="fas me-1 fa-pen-to-square"></i> Update
                             Payment Method</button>
                     </div>
                 </form>
