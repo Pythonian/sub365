@@ -17,7 +17,7 @@ import requests
 import stripe
 from allauth.socialaccount.models import SocialAccount
 
-from .decorators import redirect_if_no_subdomain
+from .decorators import redirect_if_no_subdomain, check_stripe_onboarding
 from .forms import OnboardingForm, PlanForm, PaymentDetailForm
 from .models import (
     Affiliate,
@@ -216,13 +216,14 @@ def onboarding(request):
 @login_required
 def dashboard_view(request):
     """Redirect the user to the appropriate dashboard."""
-    if request.user.is_serverowner:
-        if not request.user.serverowner.subdomain:
+    user = request.user
+    if user.is_serverowner:
+        if not user.serverowner.subdomain:
             return redirect("onboarding")
         return redirect("dashboard")
-    elif request.user.is_affiliate:
+    elif user.is_affiliate:
         return redirect("affiliate_dashboard")
-    elif request.user.is_subscriber and not request.user.is_affiliate:
+    elif user.is_subscriber and not user.is_affiliate:
         return redirect("subscriber_dashboard")
     else:
         return redirect("index")
@@ -288,6 +289,7 @@ def stripe_refresh(request):
 
 @login_required
 @redirect_if_no_subdomain
+@check_stripe_onboarding
 def dashboard(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
@@ -304,6 +306,7 @@ def dashboard(request):
 
 @login_required
 @redirect_if_no_subdomain
+@check_stripe_onboarding
 def plans(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
@@ -475,6 +478,7 @@ def deactivate_plan(request):
 
 @login_required
 @redirect_if_no_subdomain
+@check_stripe_onboarding
 def subscribers(request):
     """Display the subscribers of a user's plans."""
     # Retrieve the user's server owner profile
@@ -515,6 +519,7 @@ def subscriber_detail(request, id):
 
 @login_required
 @redirect_if_no_subdomain
+@check_stripe_onboarding
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
@@ -528,6 +533,7 @@ def affiliates(request):
 
 @login_required
 @redirect_if_no_subdomain
+@check_stripe_onboarding
 def pending_affiliate_payment(request):
     serverowner = ServerOwner.objects.get(user=request.user)
 
@@ -569,6 +575,7 @@ def pending_affiliate_payment(request):
 
 @login_required
 @redirect_if_no_subdomain
+@check_stripe_onboarding
 def confirmed_affiliate_payment(request):
     serverowner = ServerOwner.objects.get(user=request.user)
 
