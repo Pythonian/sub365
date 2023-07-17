@@ -3,7 +3,7 @@ from django.urls import reverse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
 
-class MySocialAccountAdapter(DefaultSocialAccountAdapter):
+class DiscordAdapter(DefaultSocialAccountAdapter):
     """
     Custom social account adapter for handling login redirect URLs.
     """

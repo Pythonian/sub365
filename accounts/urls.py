@@ -51,5 +51,6 @@ urlpatterns = [
     # General URLs
     path("webhook/", webhooks.stripe_webhook, name="stripe_webhook"),
     path("dashboard/", views.dashboard_view, name="dashboard_view"),
+    path("delete-account/", views.delete_account, name="delete_account"),
     path("", views.index, name="index"),
 ]

@@ -101,7 +101,7 @@ class OnboardingForm(forms.Form):
         max_length=20,
         help_text="A unique name to invite subscribers to your server.",
         widget=forms.TextInput(
-            attrs={"placeholder": "Enter a subdomain name", "class": "form-control"}
+            attrs={"placeholder": "Enter a referral name", "class": "form-control"}
         ),
     )
     server = forms.ModelChoiceField(

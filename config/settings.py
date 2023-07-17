@@ -141,7 +141,7 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-SOCIALACCOUNT_ADAPTER = "accounts.adapters.MySocialAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "accounts.adapters.DiscordAdapter"
 
 LOGIN_REDIRECT_URL = "dashboard_view"
 LOGOUT_REDIRECT_URL = "/"

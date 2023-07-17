@@ -16,16 +16,16 @@
 <body>
 
     <main class="container-fluid bg-primary">
-        <div class="row">
+        <div class="row py-5">
             <div class="col-12">
-                <div class="d-flex align-items-center justify-content-center vh-100">
+                <div class="d-flex align-items-center justify-content-center">
                     <div class="col-xl-4 col-lg-6 col-md-8 col-sm-9 mx-auto">
-                        <div class="bg-white justify-content-center p-5 text-center shadow-lg rounded-4">
+                        <div class="bg-white justify-content-center px-5 pt-5 pb-3 text-center shadow-lg rounded-4">
                             <a href="{% url 'index' %}"><img src="{% static 'img/sub365-logo.svg' %}"
                                     alt="sub365-logo"></a>
                             <h6 class="my-4 text-dark">Enter the information below and proceed to connect your account
                                 with Stripe.</h6>
-                            <div class="text-start">
+                            <div class="text-start mb-3">
                                 <form action="" method="post">
                                     {% csrf_token %}
 
@@ -96,6 +96,11 @@
                                     </button>
                                 </form>
                             </div>
+                            <p class="text-center">If you want to terminate account creation,<br>
+                                <a data-bs-toggle="modal" data-bs-target="#deleteAccount"
+                                    class="btn btn-sm btn-link">Click
+                                    Here</a>.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -119,6 +124,31 @@
                 </li>
             </ul>
         </footer>
+    </div>
+
+    <div id="deleteAccount" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="deleteAccountLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Account Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Maybe you have clicked on a wrong link or need to register as a subscriber, you can delete your
+                        account and start afresh.</p>
+                    <p>This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{% url 'delete_account' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash me-1"></i> Delete
+                            Account</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>

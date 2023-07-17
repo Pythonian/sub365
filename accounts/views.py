@@ -15,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 import requests
 import stripe
+from allauth.account.views import LogoutView
 from allauth.socialaccount.models import SocialAccount
 
 from .decorators import redirect_if_no_subdomain, check_stripe_onboarding
@@ -280,6 +281,14 @@ def stripe_refresh(request):
 
     # Redirect the user to the onboarding process
     return redirect("collect_user_info")
+
+
+@login_required
+@require_POST
+def delete_account(request):
+    request.user.delete()
+    messages.success(request, "Your account has been deleted.")
+    return LogoutView.as_view()(request)
 
 
 ##################################################
