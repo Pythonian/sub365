@@ -11,6 +11,7 @@ urlpatterns = [
     path(
         "subscription/success/", views.subscription_success, name="subscription_success"
     ),
+    path("subscription/cancel/", views.subscription_cancel, name="subscription_cancel"),
     # Affiliate URLs
     path("affiliate/", views.affiliate_dashboard, name="affiliate_dashboard"),
     path("affiliate/upgrade/", views.upgrade_to_affiliate, name="upgrade_to_affiliate"),

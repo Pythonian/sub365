@@ -753,6 +753,39 @@ def subscription_success(request):
 
 @login_required
 @require_POST
+def subscription_cancel(request):
+    subscriber = get_object_or_404(Subscriber, user=request.user)
+
+    try:
+        # Retrieve the active subscription for the subscriber
+        subscription = Subscription.objects.get(
+            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+        )
+
+        # Cancel the subscription using the Stripe API
+        stripe.Subscription.delete(subscription.subscription_id)
+
+        # Add a success message
+        messages.success(request, "Your subscription has been canceled successfully.")
+    except stripe.error.StripeError as e:
+        logger.exception("An error occurred during a Stripe API call: %s", str(e))
+        messages.error(
+            request,
+            "An error occurred while canceling your subscription. Please try again later.",
+        )
+
+    except Exception as e:
+        logger.exception("An unexpected error occurred: %s", str(e))
+        messages.error(
+            request,
+            "An unexpected error occurred while processing your request. Please try again later.",
+        )
+
+    return redirect("subscriber_dashboard")
+
+
+@login_required
+@require_POST
 def upgrade_to_affiliate(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
 

@@ -542,6 +542,7 @@ class Subscription(models.Model):
         ACTIVE = "A", "Active"
         INACTIVE = "I", "Inactive"
         EXPIRED = "E", "Expired"
+        CANCELED = "C", "Canceled"
 
     subscriber = models.ForeignKey(
         Subscriber, on_delete=models.CASCADE, related_name="subscriptions"
