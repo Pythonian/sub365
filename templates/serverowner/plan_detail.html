@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load humanize %}
 {% block title %}Plan: {{ plan.name }}{% endblock title %}
 
 {% block content %}
@@ -7,17 +7,17 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
         <a href="{% url 'plans' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Plans</a>
-        <h3 class="mb-0 text-secondary">Plan: {{ plan.name }} <span class="text-primary h6">(${{ plan.amount }}
+        <h3 class="mb-0 text-secondary">Plan: {{ plan.name }} <span class="text-primary h6">(${{ plan.amount|intcomma }}
                 <small>/{{ plan.interval_count }} month{{ plan.interval_count|pluralize }}</small>)</span></h3>
     </div>
     {% if plan.status == 'A' %}
     <div>
         <a data-bs-toggle="modal" data-bs-target="#updatePlan{{ plan.id }}"
             class="btn btn-sm btn-success text-white shadow-sm">
-            Update Plan
+            <i class="fas fa-pen-to-square me-1"></i> Update Plan
         </a>
         <a data-bs-toggle="modal" data-bs-target="#deactivatePlan{{ plan.id }}" class="btn btn-sm btn-danger shadow-sm">
-            Deactivate Plan
+            <i class="fas fa-ban me-1"></i> Deactivate Plan
         </a>
     </div>
     {% endif %}

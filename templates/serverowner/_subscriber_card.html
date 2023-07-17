@@ -1,3 +1,5 @@
+{% load humanize %}
+
 <div class="card shadow mb-4">
     <div class="card-header bg-primary py-2"></div>
     <div class="card-body">
@@ -15,7 +17,7 @@
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                 <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                <span>${{ subscriber.plan.amount }} /{{ subscriber.plan.interval_count }}
+                <span>${{ subscriber.plan.amount|intcomma }} /{{ subscriber.plan.interval_count }}
                     month{{ subscriber.plan.interval_count|pluralize }}</span>
             </li>
             <li

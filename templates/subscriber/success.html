@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}Subscription Successful{% endblock title %}
 
@@ -8,7 +9,8 @@
     <div class="col-12 mb-4">
         {% if subscription %}
         <div class="mb-3">
-            <a href="{% url 'subscriber_dashboard' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Dashboard</a>
+            <a href="{% url 'subscriber_dashboard' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to
+                Dashboard</a>
         </div>
         <div class="card invoice">
             <div class="card-header p-4 p-md-5 border-bottom-0 bg-primary text-white-50">
@@ -45,14 +47,14 @@
                                 </td>
                                 <td class="text-end fw-bold">{{ subscription.subscription_date|date:"j F, Y" }}</td>
                                 <td class="text-end fw-bold">{{ subscription.expiration_date|date:"j F, Y" }}</td>
-                                <td class="text-end fw-bold">${{ subscription.plan.amount }}</td>
+                                <td class="text-end fw-bold">${{ subscription.plan.amount|intcomma }}</td>
                             </tr>
                             <tr>
                                 <td class="text-end pb-0" colspan="3">
                                     <div class="text-uppercase small fw-700 text-muted">Total Amount:</div>
                                 </td>
                                 <td class="text-end pb-0">
-                                    <div class="h5 fw-700 text-success">${{ subscription.plan.amount }}</div>
+                                    <div class="h5 fw-700 text-success">${{ subscription.plan.amount|intcomma }}</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -73,7 +75,9 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="small text-muted text-uppercase fw-bold mb-2">Note</div>
-                        <div class="small mb-0">This is your payment invoice for your subscription to the server <span class="text-primary">{{ subscription.subscribed_via.get_choice_server }}</span>. Please contact the server owner if you have any dispute about this.</div>
+                        <div class="small mb-0">This is your payment invoice for your subscription to the server <span
+                                class="text-primary">{{ subscription.subscribed_via.get_choice_server }}</span>. Please
+                            contact the server owner if you have any dispute about this.</div>
                     </div>
                 </div>
             </div>
@@ -85,7 +89,8 @@
                 <i class="fas fa-bug fa-stack-1x fa-inverse"></i>
             </span>
             <h3 class="text-dark">You do not have a valid session</h3>
-            <p class="mb-5">We do not have an information on this existing session.<br> The session ID might be incorrect, expired, or associated with a different session.</p>
+            <p class="mb-5">We do not have an information on this existing session.<br> The session ID might be
+                incorrect, expired, or associated with a different session.</p>
             <a href="{% url 'subscriber_dashboard' %}" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"><i
                     class="fas fa-tachometer-alt me-1"></i> Return to Dashboard</a>
         </div>

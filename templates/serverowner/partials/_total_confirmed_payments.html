@@ -1,5 +1,6 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
+{% load humanize %}
 
 {% block data_title %}Total Amount Paid{% endblock data_title %}
-{% block data_value %}${{ serverowner.get_confirmed_payment_amount }}{% endblock data_value %}
+{% block data_value %}${{ serverowner.get_confirmed_payment_amount|intcomma }}{% endblock data_value %}
 {% block data_icon %}fa-sack-dollar{% endblock data_icon %}

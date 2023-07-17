@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}Subscriber: {{ subscriber.username }}{% endblock title %}
 
@@ -21,7 +22,8 @@
     {% endif %}
 </div>
 
-<h5 class="text-secondary mb-3"><i class="fas fa-hourglass-start me-1"></i> Subscription History</h5>
+<h5 class="text-secondary mb-3">Subscription History</h5>
+
 <div class="row g-4 mb-5">
     {% for subscription in subscriber.get_subscriptions %}
     <div class="col-lg-4 col-sm-6">
@@ -37,7 +39,7 @@
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                         <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                        <span>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
+                        <span>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
                             month{{ subscription.plan.interval_count|pluralize }}</span>
                     </li>
                     <li

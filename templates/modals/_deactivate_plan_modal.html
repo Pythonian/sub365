@@ -13,11 +13,12 @@
                 <p class="text-danger">This action cannot be undone!</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline-dark" type="button" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-sm btn-outline-dark" type="button" data-bs-dismiss="modal">Cancel</button>
                 <form method="POST" action="{% url 'deactivate_plan' %}">
                     {% csrf_token %}
                     <input type="hidden" name="product_id" value="{{ plan.id }}">
-                    <button type="submit" class="btn btn-danger"><i class="fas fa-ban me-1"></i> Deactivate</button>
+                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-ban me-1"></i>
+                        Deactivate</button>
                 </form>
             </div>
         </div>

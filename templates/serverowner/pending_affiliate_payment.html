@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}Pending Affiliate Payments{% endblock title %}
 
@@ -17,6 +18,8 @@
     {% include 'serverowner/partials/_total_pending_affiliates.html' %}
     {% include 'serverowner/partials/_total_pending_payments.html' %}
 </div>
+
+<h5 class="text-secondary mb-3">Pending Affiliate Payments</h5>
 
 <div class="row g-4 mb-5">
     <div class="col-12 mb-4">
@@ -41,7 +44,7 @@
                             <tr>
                                 <td>{{ affiliate.subscriber }}</td>
                                 <td>{{ affiliate.discord_id }}</td>
-                                <td>${{ affiliate.pending_commissions }}</td>
+                                <td>${{ affiliate.pending_commissions|intcomma }}</td>
                                 <td><a data-bs-toggle="modal" data-bs-target="#paymentMethod{{ affiliate.id }}"
                                         class="btn btn-sm btn-primary"><i class="fas fa-eye me-1"></i> View Method</a>
                                 </td>
@@ -79,7 +82,8 @@
                                         </div>
                                         <div class="modal-body text-dark">
                                             <p>Have you sent the sum of <span
-                                                    class="text-primary">${{ affiliate.pending_commissions }}</span> to
+                                                    class="text-primary">${{ affiliate.pending_commissions|intcomma }}</span>
+                                                to
                                                 the affiliate <span
                                                     class="text-primary">{{ affiliate.subscriber }}</span>?</p>
                                         </div>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
+{% load widget_tweaks humanize %}
 {% block title %}My Dashboard{% endblock title %}
 
 {% block content %}
@@ -45,7 +45,7 @@
                             {% for subscription in subscriptions %}
                             <tr>
                                 <td>{{ subscription.plan.name }}</td>
-                                <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
+                                <td>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
                                     month{{ subscription.plan.interval_count|pluralize }}</td>
                                 <td>{{ subscription.subscribed_via.get_choice_server }}</td>
                                 <td>{{ subscription.subscribed_via }}</td>
@@ -78,7 +78,7 @@
 </div>
 <div class="row g-4 mb-5">
     {% for plan in plans %}
-    <div class="col-xl-4 col-lg-5">
+    <div class="col-lg-4">
         <div class="card shadow h-100 pb-2">
             <div class="card-header bg-primary py-2"></div>
             <div class="card-body">
@@ -87,7 +87,7 @@
                     <span class="font-monospace">{{ plan.subscriber_count }}
                         Subscription{{ plan.subscriber_count|pluralize }}</span>
                 </div>
-                <h5 class="fw-bold my-3">${{ plan.amount }}<small> /{{ plan.interval_count }}
+                <h5 class="fw-bold my-3">${{ plan.amount|intcomma }}<small> /{{ plan.interval_count }}
                         month{{ plan.interval_count|pluralize }}</small></h5>
                 <p>{{ plan.description }}</p>
                 <form action="{% url 'subscribe_to_plan' product_id=plan.id %}" method="post">
@@ -133,7 +133,7 @@
                             {% for subscription in subscriptions %}
                             <tr>
                                 <td>{{ subscription.plan.name }}</td>
-                                <td>${{ subscription.plan.amount }} /{{ subscription.plan.interval_count }}
+                                <td>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
                                     month{{ subscription.plan.interval_count|pluralize }}</td>
                                 <td>{{ subscription.subscribed_via.get_choice_server }}</td>
                                 <td>{{ subscription.subscribed_via }}</td>

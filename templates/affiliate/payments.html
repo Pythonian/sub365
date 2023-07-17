@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}My Payments{% endblock title %}
 
@@ -36,7 +37,7 @@
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                         <p class="p-0 m-0 text-muted fs-6">COMMISSION:</p>
-                        <span>${{ payment.amount }}</span>
+                        <span>${{ payment.amount|intcomma }}</span>
                     </li>
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load humanize %}
 {% block title %}My Affiliates{% endblock title %}
 
 {% block content %}
@@ -26,38 +26,40 @@
     {% include 'serverowner/_pending_payments.html' %}
 </div>
 
+<h5 class="text-secondary mb-3">All Affiliates</h5>
+
 <div class="row g-4 mb-5">
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header bg-transparent d-flex justify-content-between">
-                <span class="text-primary fw-bold">Affiliates</span>
-            </div>
-            <div class="card-body p-0 px-2">
-                <div class="table-responsive">
-                    <table class="table table-borderless">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Total Invites</th>
-                                <th>Total Earnings</th>
-                                <th>Conversion Rate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for affiliate in serverowner.get_affiliates %}
-                            <tr>
-                                <td>{{ affiliate.subscriber.username }}</td>
-                                <td>{{ affiliate.get_total_invitation_count }}</td>
-                                <td>${{ affiliate.total_commissions_paid }}</td>
-                                <td>{{ affiliate.calculate_conversion_rate }}%</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    {% for affiliate in serverowner.get_affiliates %}
+    <div class="col-lg-4 col-sm-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary py-2"></div>
+            <div class="card-body pb-2">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">USER:</p>
+                        <span>{{ affiliate.subscriber.username }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">TOTAL INVITES:</p>
+                        <span>{{ affiliate.get_total_invitation_count }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">TOTAL EARNINGS:</p>
+                        <span>${{ affiliate.total_commissions_paid|intcomma }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">CONVERSION RATE:</p>
+                        <span>{{ affiliate.calculate_conversion_rate }}%</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+    {% endfor %}
 </div>
 {% else %}
 <div class="text-center py-5 my-5">
