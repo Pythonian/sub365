@@ -44,7 +44,8 @@
     {% else %}
     <h3 class="text-dark">Generating affiliate link</h3>
     <p class="text-primary mb-4">Your affiliate link is being generated. Reload this page in a moment.</p>
-    <a href="" class="btn btn-primary btn-sm"><i class="fas fa-rotate me-1"></i> Reload Page</a>
+    <a href="{% url 'affiliate_dashboard' %}" class="btn btn-primary btn-sm"><i class="fas fa-rotate me-1"></i> Reload
+        Page</a>
     {% endif %}
 </div>
 {% endif %}

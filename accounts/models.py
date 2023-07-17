@@ -393,7 +393,7 @@ class Affiliate(models.Model):
         else:
             conversion_rate = 0
 
-        return conversion_rate
+        return round(conversion_rate, 2)
 
     def get_affiliate_payments(self):
         """

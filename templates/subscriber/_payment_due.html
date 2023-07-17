@@ -1,5 +1,5 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
 {% block data_title %}Next Payment Due{% endblock data_title %}
-{% block data_value %}{% if subscription.plan.status == 'A' %}{{ subscription.expiration_date|date:"F j" }}{% else %}Terminated{% endif %}{% endblock data_value %}
+{% block data_value %}{% if subscription.status == 'A' %}{{ subscription.expiration_date|date:"F j" }}{% elif subscription.status == 'C' %}Canceled{% else %}Terminated{% endif %}{% endblock data_value %}
 {% block data_icon %}fa-clock{% endblock data_icon %}

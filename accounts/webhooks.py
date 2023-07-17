@@ -40,15 +40,15 @@ def stripe_webhook(request):
         subscription_id = event.data.object.id
         # Retrieve the Subscription object from your database
         try:
-            subscription = Subscription.objects.get(
-                subscription_id=subscription_id
-            )  # noqa
+            subscription = Subscription.objects.get(subscription_id=subscription_id)
+            # Update the Subscription object
+            subscription.status = Subscription.SubscriptionStatus.CANCELED
+            subscription.save()
+        except Subscription.DoesNotExist:
+            logger.error(
+                "Subscription not found for subscription_id: %s", subscription_id
+            )
         except stripe.error.StripeError as e:
             logger.exception("An error occurred during a Stripe API call: %s", str(e))
-            pass
-
-        # Update the Subscription object
-        subscription.status = Subscription.SubscriptionStatus.CANCELED
-        subscription.save()
 
     return HttpResponse(status=200)

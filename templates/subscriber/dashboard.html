@@ -15,9 +15,11 @@
         <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#affiliateModal"><i
                 class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
         {% endif %}
+        {% if subscription.status == 'A' %}
         <a class="btn btn-danger btn-sm" data-bs-target="#cancelSubscription" data-bs-toggle="modal"><i
                 class="fas fa-ban me-1"></i> Cancel
             Subscription</a>
+        {% endif %}
     </div>
 </div>
 <div class="row mb-4">
@@ -26,49 +28,49 @@
     {% include 'subscriber/_current_plan.html' %}
 </div>
 
-<div class="row">
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header bg-transparent d-flex justify-content-between">
-                <span class="text-primary fw-bold">Subscription History</span>
-            </div>
-            <div class="card-body p-0 px-2">
-                <div class="table-responsive">
-                    <table class="table table-borderless">
-                        <thead>
-                            <tr>
-                                <th>Plan Name</th>
-                                <th>Amount</th>
-                                <th>Server</th>
-                                <th>Subscribed via</th>
-                                <th>Subscription date</th>
-                                <th>Expiry date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for subscription in subscriptions %}
-                            <tr>
-                                <td>{{ subscription.plan.name }}</td>
-                                <td>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
-                                    month{{ subscription.plan.interval_count|pluralize }}</td>
-                                <td>{{ subscription.subscribed_via.get_choice_server }}</td>
-                                <td>{{ subscription.subscribed_via }}</td>
-                                <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
-                                <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
-                                <td>
-                                    <span
-                                        class="badge py-2 px-3 rounded-pill text-bg-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+<h5 class="text-secondary mb-3">Subscription History</h5>
+
+<div class="row g-4 mb-5">
+    {% for subscription in subscriptions %}
+    <div class="col-lg-4 col-sm-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary py-2"></div>
+            <div class="card-body">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">PLAN:</p>
+                        <span>{{ subscription.plan }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
+                        <span>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
+                            month{{ subscription.plan.interval_count|pluralize }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">SUBSCRIPTION DATE:</p>
+                        <span>{{ subscription.subscription_date|date:"F j, Y" }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">EXPIRATION DATE:</p>
+                        <span>{{ subscription.expiration_date|date:"F j, Y" }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
+                        <p class="p-0 m-0 text-muted fs-6">STATUS</p>
+                        <span
+                            class="badge py-2 px-3 rounded-pill text-bg-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+    {% endfor %}
 </div>
+
 {% else %}
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
@@ -81,6 +83,8 @@
             class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
     {% endif %}
 </div>
+{% endif %}
+<h5 class="text-secondary mb-3">Subscription Plans</h5>
 <div class="row g-4 mb-5">
     {% for plan in plans %}
     <div class="col-lg-4">
@@ -114,51 +118,8 @@
                 class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
     </div>
     {% endfor %}
-    {% if subscriber.get_subscriptions %}
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header bg-transparent d-flex justify-content-between">
-                <span class="text-primary fw-bold">Subscription History</span>
-            </div>
-            <div class="card-body p-0 px-2">
-                <div class="table-responsive">
-                    <table class="table table-borderless">
-                        <thead>
-                            <tr>
-                                <th>Plan Name</th>
-                                <th>Amount</th>
-                                <th>Server</th>
-                                <th>Subscribed via</th>
-                                <th>Subscription date</th>
-                                <th>Expiry date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for subscription in subscriptions %}
-                            <tr>
-                                <td>{{ subscription.plan.name }}</td>
-                                <td>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
-                                    month{{ subscription.plan.interval_count|pluralize }}</td>
-                                <td>{{ subscription.subscribed_via.get_choice_server }}</td>
-                                <td>{{ subscription.subscribed_via }}</td>
-                                <td>{{ subscription.subscription_date|date:"F j, Y" }}</td>
-                                <td>{{ subscription.expiration_date|date:"F j, Y" }}</td>
-                                <td>
-                                    <span
-                                        class="badge py-2 px-3 rounded-pill text-bg-{% if subscription.status == 'A' %}success{% else %}danger opacity-75{% endif %}">{{ subscription.get_status_display }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
-{% endif %}
+
 
 <div class="modal fade" id="affiliateModal" tabindex="-1" role="dialog" aria-labelledby="affiliateModalLabel"
     aria-hidden="true">
@@ -195,6 +156,29 @@
     </div>
 </div>
 
-{% include "modals/_cancel_subscription.html" %}
+<div class="modal fade" id="cancelSubscription" tabindex="-1" role="dialog"
+    aria-labelledby="cancelSubscriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Cancel Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                <p>Are you sure you want to cancel your subscription?</p>
+                <p>Your subscription will not be renewed if you proceed and you will lose access to the server once your
+                    current subscription expires.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-outline-dark" type="button" data-bs-dismiss="modal">Close</button>
+                <form method="POST" action="{% url 'subscription_cancel' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-ban me-1"></i>
+                        Cancel Subscription</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
