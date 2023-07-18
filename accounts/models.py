@@ -307,7 +307,6 @@ class Subscriber(models.Model):
     username = models.CharField(max_length=255, unique=True)
     avatar = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField()
-    stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
     subscribed_via = models.ForeignKey(
         ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
     )

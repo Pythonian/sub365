@@ -195,7 +195,7 @@ def subscribe_redirect(request):
 
 @login_required
 def onboarding(request):
-    """Handle choosing a server and subdomain name."""
+    """Handle the onboarding of a Serverowner."""
     if request.user.serverowner.subdomain:
         return redirect("dashboard")
     if request.method == "POST":
@@ -270,14 +270,14 @@ def collect_user_info(request):
 def stripe_refresh(request):
     """Handle refreshing the Stripe account information."""
     # Get the logged-in user's profile
-    profile = ServerOwner.objects.get(user=request.user)
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     # Retrieve the Stripe account ID from the request or the Stripe API response
     stripe_account_id = request.GET.get("account_id")
 
     # Update the profile's stripe_account_id field
-    profile.stripe_account_id = stripe_account_id
-    profile.save()
+    serverowner.stripe_account_id = stripe_account_id
+    serverowner.save()
 
     # Redirect the user to the onboarding process
     return redirect("collect_user_info")
@@ -767,10 +767,6 @@ def subscription_cancel(request):
 
         # Cancel the subscription using the Stripe API
         stripe.Subscription.delete(subscription.subscription_id)
-
-        # Update the Subscription object
-        subscription.status = Subscription.SubscriptionStatus.CANCELED
-        subscription.save()
 
         # Add a success message
         messages.success(request, "Your subscription has been canceled successfully.")
