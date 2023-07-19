@@ -83,7 +83,7 @@
             class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
     {% endif %}
 </div>
-{% endif %}
+
 <h5 class="text-secondary mb-3">Subscription Plans</h5>
 <div class="row g-4 mb-5">
     {% for plan in plans %}
@@ -119,6 +119,54 @@
     </div>
     {% endfor %}
 </div>
+
+{% if subscriptions %}
+<h5 class="text-secondary mb-3">Subscription History</h5>
+
+<div class="row g-4 mb-5">
+    {% for subscription in subscriptions %}
+    <div class="col-lg-4 col-sm-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary py-2"></div>
+            <div class="card-body">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">PLAN:</p>
+                        <span>{{ subscription.plan }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
+                        <span>${{ subscription.plan.amount|intcomma }} /{{ subscription.plan.interval_count }}
+                            month{{ subscription.plan.interval_count|pluralize }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">SUBSCRIPTION DATE:</p>
+                        <span>{{ subscription.subscription_date|date:"F j, Y" }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">EXPIRATION DATE:</p>
+                        <span>{{ subscription.expiration_date|date:"F j, Y" }}</span>
+                    </li>
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
+                        <p class="p-0 m-0 text-muted fs-6">STATUS</p>
+                        <span
+                            class="badge py-2 px-3 rounded-pill bg-{% if subscription.status == 'A' %}success{% else %}danger{% endif %}">{{ subscription.get_status_display }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endif %}
+
 
 
 <div class="modal fade" id="affiliateModal" tabindex="-1" role="dialog" aria-labelledby="affiliateModalLabel"

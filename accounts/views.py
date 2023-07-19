@@ -616,11 +616,8 @@ def subscriber_dashboard(request):
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        # latest_subscription = Subscription.objects.filter(
-        #     subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
-        # ).latest()
         latest_subscription = Subscription.objects.filter(
-            subscriber=subscriber
+            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
         ).latest()
     except Subscription.DoesNotExist:
         latest_subscription = None
@@ -767,6 +764,9 @@ def subscription_cancel(request):
 
         # Cancel the subscription using the Stripe API
         stripe.Subscription.delete(subscription.subscription_id)
+        # Update the Subscription object
+        subscription.status = Subscription.SubscriptionStatus.CANCELED
+        subscription.save()
 
         # Add a success message
         messages.success(request, "Your subscription has been canceled successfully.")

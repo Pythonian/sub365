@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 import stripe
 
-from .models import Subscription
+from .models import Subscription  # noqa
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def stripe_webhook(request):
     event = None
 
     try:
-        event = stripe.Webhook.construct_event(
+        event = stripe.Webhook.construct_event(  # noqa
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
     except ValueError as e:
@@ -35,20 +35,20 @@ def stripe_webhook(request):
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
         return HttpResponse(status=400)
 
-    # Handle the (subscription.canceled) event
-    if event.type == "customer.subscription.deleted":
-        subscription_id = event.data.object.id
-        # Retrieve the Subscription object from your database
-        try:
-            subscription = Subscription.objects.get(subscription_id=subscription_id)
-            # Update the Subscription object
-            subscription.status = Subscription.SubscriptionStatus.CANCELED
-            subscription.save()
-        except Subscription.DoesNotExist:
-            logger.error(
-                "Subscription not found for subscription_id: %s", subscription_id
-            )
-        except stripe.error.StripeError as e:
-            logger.exception("An error occurred during a Stripe API call: %s", str(e))
+    # # Handle the (subscription.canceled) event
+    # if event.type == "customer.subscription.deleted":
+    #     subscription_id = event.data.object.id
+    #     # Retrieve the Subscription object from your database
+    #     try:
+    #         subscription = Subscription.objects.get(subscription_id=subscription_id)
+    #         # Update the Subscription object
+    #         subscription.status = Subscription.SubscriptionStatus.CANCELED
+    #         subscription.save()
+    #     except Subscription.DoesNotExist:
+    #         logger.error(
+    #             "Subscription not found for subscription_id: %s", subscription_id
+    #         )
+    #     except stripe.error.StripeError as e:
+    #         logger.exception("An error occurred during a Stripe API call: %s", str(e))
 
     return HttpResponse(status=200)
