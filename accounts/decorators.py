@@ -1,46 +1,23 @@
-from django.shortcuts import redirect
-import stripe
-from django.shortcuts import get_object_or_404
-from accounts.models import ServerOwner
 from functools import wraps
+
+from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import get_object_or_404, redirect
+
+import stripe
+
+from accounts.models import ServerOwner
 
 
 def redirect_if_no_subdomain(view_func):
-    """
-    Decorator to redirect if the server owner does not have a subdomain.
-
-    Args:
-        view_func (function): The view function to be wrapped.
-
-    Returns:
-        function: The wrapped view function.
-
-    Example Usage:
-        @redirect_if_no_subdomain
-        def my_view(request):
-            # Your view code here
-            ...
-    """
-
     def wrapped_view(request, *args, **kwargs):
-        """
-        Wrapped view function to check if the server owner has a subdomain.
-
-        If the server owner does not have a subdomain, redirects to the 'onboarding' view.
-
-        Args:
-            request (HttpRequest): The request object.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            HttpResponse: The response returned by the view function.
-
-        Raises:
-            None.
-        """
-        if not request.user.serverowner.subdomain:
-            return redirect("onboarding")
+        try:
+            if not request.user.serverowner.subdomain:
+                return redirect("onboarding")
+        except ObjectDoesNotExist:
+            # Handle the case where the ServerOwner object does not exist for the user
+            messages.error(request, "You have trespassed into forbidden territory.")
+            return redirect("index")
         return view_func(request, *args, **kwargs)
 
     return wrapped_view

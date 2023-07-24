@@ -8,13 +8,13 @@ from .models import (
     Affiliate,
     AffiliateInvitee,
     AffiliatePayment,
+    PaymentDetail,
     Server,
     ServerOwner,
     StripePlan,
     Subscriber,
     Subscription,
     User,
-    PaymentDetail,
 )
 
 

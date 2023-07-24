@@ -1,25 +1,26 @@
+import logging
 from datetime import datetime
 from decimal import Decimal
-import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import F, Sum
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.db.models import Sum, F
-from django.core.exceptions import ObjectDoesNotExist
 
 import requests
 import stripe
 from allauth.account.views import LogoutView
 from allauth.socialaccount.models import SocialAccount
 
-from .decorators import redirect_if_no_subdomain, check_stripe_onboarding
-from .forms import OnboardingForm, PlanForm, PaymentDetailForm
+from .decorators import check_stripe_onboarding, redirect_if_no_subdomain
+from .forms import OnboardingForm, PaymentDetailForm, PlanForm
 from .models import (
     Affiliate,
     AffiliateInvitee,
@@ -185,6 +186,8 @@ def discord_callback(request):
 
 def subscribe_redirect(request):
     """Redirect the user to Discord authentication."""
+    if request.user.is_authenticated:
+        return redirect("dashboard_view")
     subdomain = request.GET.get("ref")
     request.session["subdomain_redirect"] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
@@ -196,8 +199,14 @@ def subscribe_redirect(request):
 @login_required
 def onboarding(request):
     """Handle the onboarding of a Serverowner."""
-    if request.user.serverowner.subdomain:
-        return redirect("dashboard")
+    try:
+        serverowner = request.user.serverowner
+        if serverowner.subdomain:
+            return redirect("dashboard")
+    except ObjectDoesNotExist:
+        messages.error(request, "You have tresspassed to forbidden territory.")
+        return redirect("index")
+
     if request.method == "POST":
         form = OnboardingForm(request.POST, user=request.user)
         if form.is_valid():
@@ -240,10 +249,14 @@ def create_stripe_account(request):
     # Retrieve the Stripe account ID
     stripe_account_id = connected_account.id
 
-    # Update the Stripe account ID for the current user
-    serverowner = request.user.serverowner
-    serverowner.stripe_account_id = stripe_account_id
-    serverowner.save()
+    try:
+        # Update the Stripe account ID for the current user
+        serverowner = request.user.serverowner
+        serverowner.stripe_account_id = stripe_account_id
+        serverowner.save()
+    except ObjectDoesNotExist:
+        messages.error(request, "You have tresspassed to forbidden territory.")
+        return redirect("index")
 
     return redirect("collect_user_info")
 
@@ -251,8 +264,12 @@ def create_stripe_account(request):
 @login_required
 def collect_user_info(request):
     """Collect additional user info for Stripe onboarding."""
-    serverowner = request.user.serverowner
-    stripe_account_id = serverowner.stripe_account_id
+    try:
+        serverowner = request.user.serverowner
+        stripe_account_id = serverowner.stripe_account_id
+    except ObjectDoesNotExist:
+        messages.error(request, "You have tresspassed to forbidden territory.")
+        return redirect("index")
 
     # Generate an account link for the onboarding process
     account_link = stripe.AccountLink.create(
@@ -269,15 +286,18 @@ def collect_user_info(request):
 @login_required
 def stripe_refresh(request):
     """Handle refreshing the Stripe account information."""
-    # Get the logged-in user's profile
-    serverowner = get_object_or_404(ServerOwner, user=request.user)
+    try:
+        serverowner = request.user.serverowner
 
-    # Retrieve the Stripe account ID from the request or the Stripe API response
-    stripe_account_id = request.GET.get("account_id")
+        # Retrieve the Stripe account ID from the request or the Stripe API response
+        stripe_account_id = request.GET.get("account_id")
 
-    # Update the profile's stripe_account_id field
-    serverowner.stripe_account_id = stripe_account_id
-    serverowner.save()
+        # Update the profile's stripe_account_id field
+        serverowner.stripe_account_id = stripe_account_id
+        serverowner.save()
+    except ObjectDoesNotExist:
+        messages.error(request, "You have tresspassed to forbidden territory.")
+        return redirect("index")
 
     # Redirect the user to the onboarding process
     return redirect("collect_user_info")
@@ -422,26 +442,10 @@ def plan_detail(request, product_id):
     else:
         form = PlanForm(instance=plan)
 
-    subscribers = Subscription.objects.filter(
-        plan=plan, subscribed_via=request.user.serverowner
-    )
-    active_subscriptions = subscribers.filter(
-        status=Subscription.SubscriptionStatus.ACTIVE
-    ).count()
-    subscriptions_count = subscribers.count()
-
-    # Calculate the total earnings
-    total_earnings = subscribers.aggregate(total=Sum("plan__amount"))["total"]
-    total_earnings = Decimal(total_earnings) if total_earnings else Decimal(0)
-
     template = "serverowner/plan_detail.html"
     context = {
         "plan": plan,
         "form": form,
-        "subscribers": subscribers,
-        "subscriptions_count": subscriptions_count,
-        "active_subscriptions": active_subscriptions,
-        "total_earnings": total_earnings,
     }
     return render(request, template, context)
 
@@ -490,11 +494,10 @@ def deactivate_plan(request):
 @check_stripe_onboarding
 def subscribers(request):
     """Display the subscribers of a user's plans."""
-    # Retrieve the user's server owner profile
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     # Retrieve the subscribers for all plans created by the user
-    subscribers = Subscriber.objects.filter(subscribed_via=serverowner)
+    subscribers = serverowner.get_subscribed_users()
     subscribers = mk_paginator(request, subscribers, 9)
 
     template = "serverowner/subscribers.html"
@@ -532,9 +535,13 @@ def subscriber_detail(request, id):
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
+    affiliates = Affiliate.objects.filter(serverowner=serverowner)
+    affiliates = mk_paginator(request, affiliates, 9)
+
     template = "serverowner/affiliates.html"
     context = {
         "serverowner": serverowner,
+        "affiliates": affiliates,
     }
 
     return render(request, template, context)
@@ -544,7 +551,7 @@ def affiliates(request):
 @redirect_if_no_subdomain
 @check_stripe_onboarding
 def pending_affiliate_payment(request):
-    serverowner = ServerOwner.objects.get(user=request.user)
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     if request.method == "POST":
         affiliate_id = request.POST.get("affiliate_id")
@@ -575,24 +582,27 @@ def pending_affiliate_payment(request):
 
                 messages.success(request, "Payment confirmed.")
                 return redirect("pending_affiliate_payment")
+
+    template = "serverowner/pending_affiliate_payment.html"
     context = {
         "serverowner": serverowner,
     }
 
-    return render(request, "serverowner/pending_affiliate_payment.html", context)
+    return render(request, template, context)
 
 
 @login_required
 @redirect_if_no_subdomain
 @check_stripe_onboarding
 def confirmed_affiliate_payment(request):
-    serverowner = ServerOwner.objects.get(user=request.user)
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
+    template = "serverowner/confirmed_affiliate_payment.html"
     context = {
         "serverowner": serverowner,
     }
 
-    return render(request, "serverowner/confirmed_affiliate_payment.html", context)
+    return render(request, template, context)
 
 
 ##################################################
@@ -645,103 +655,127 @@ def subscriber_dashboard(request):
 def subscribe_to_plan(request, product_id):
     plan = get_object_or_404(StripePlan, id=product_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
+    if subscriber.stripe_customer_id:
+        try:
+            session = stripe.checkout.Session.create(
+                success_url=request.build_absolute_uri(reverse("subscription_success"))
+                + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
+                cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
+                payment_method_types=["us_bank_account"],
+                line_items=[
+                    {
+                        "price": plan.price_id,
+                        "quantity": 1,
+                    }
+                ],
+                mode="subscription",
+                customer=subscriber.stripe_customer_id,
+            )
 
-    try:
-        session = stripe.checkout.Session.create(
-            success_url=request.build_absolute_uri(reverse("subscription_success"))
-            + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
-            cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
-            payment_method_types=["us_bank_account"],
-            line_items=[
-                {
-                    "price": plan.price_id,
-                    "quantity": 1,
-                }
-            ],
-            mode="subscription",
-            customer_email=subscriber.email,
-        )
+        except stripe.error.StripeError as e:
+            logger.exception("An error occurred during a Stripe API call: %s", str(e))
+            messages.error(
+                request,
+                "An error occurred while processing your request. Please try again later.",
+            )
+            return redirect("subscriber_dashboard")
+    else:
+        try:
+            session = stripe.checkout.Session.create(
+                success_url=request.build_absolute_uri(reverse("subscription_success"))
+                + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
+                cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
+                payment_method_types=["us_bank_account"],
+                line_items=[
+                    {
+                        "price": plan.price_id,
+                        "quantity": 1,
+                    }
+                ],
+                mode="subscription",
+                customer_email=subscriber.email,
+            )
 
-    except stripe.error.StripeError as e:
-        logger.exception("An error occurred during a Stripe API call: %s", str(e))
-        messages.error(
-            request,
-            "An error occurred while processing your request. Please try again later.",
-        )
-        return redirect("subscriber_dashboard")
+        except stripe.error.StripeError as e:
+            logger.exception("An error occurred during a Stripe API call: %s", str(e))
+            messages.error(
+                request,
+                "An error occurred while processing your request. Please try again later.",
+            )
+            return redirect("subscriber_dashboard")
 
     return redirect(session.url)
 
 
 @login_required
 def subscription_success(request):
-    subscriber = get_object_or_404(Subscriber, user=request.user)
-    subscription = None
+    if request.method == "GET" and request.GET.get("session_id"):
+        subscriber = get_object_or_404(Subscriber, user=request.user)
+        subscription = None
 
-    try:
         session_id = request.GET.get("session_id")
         plan_id = request.GET.get("subscribed_plan")
         plan = get_object_or_404(StripePlan, id=plan_id)
-        if session_id:
-            session_info = stripe.checkout.Session.retrieve(session_id)
 
-            subscription_id = session_info.subscription
-            subscription_info = stripe.Subscription.retrieve(subscription_id)
+        if Subscription.objects.filter(session_id=session_id).exists():
+            return redirect("subscriber_dashboard")
 
-            current_period_end = subscription_info.current_period_end
-            expiration_date = datetime.fromtimestamp(current_period_end)
+        session_info = stripe.checkout.Session.retrieve(session_id)
 
-            subscription = Subscription.objects.create(
+        subscription_id = session_info.subscription
+        subscription_info = stripe.Subscription.retrieve(subscription_id)
+
+        current_period_end = subscription_info.current_period_end
+        expiration_date = datetime.fromtimestamp(current_period_end)
+
+        subscription = Subscription.objects.create(
+            subscriber=subscriber,
+            subscribed_via=subscriber.subscribed_via,
+            plan=plan,
+            subscription_date=timezone.now(),
+            expiration_date=expiration_date,
+            subscription_id=subscription_id,
+            session_id=session_id,
+            status=Subscription.SubscriptionStatus.ACTIVE,
+        )
+
+        try:
+            affiliateinvitee = AffiliateInvitee.objects.get(
+                invitee_discord_id=subscriber.discord_id
+            )
+            affiliatepayment = AffiliatePayment.objects.create(  # noqa
+                serverowner=subscriber.subscribed_via,
+                affiliate=affiliateinvitee.affiliate,
                 subscriber=subscriber,
-                subscribed_via=subscriber.subscribed_via,
-                plan=plan,
-                subscription_date=timezone.now(),
-                expiration_date=expiration_date,
-                subscription_id=subscription_id,
-                session_id=session_id,
-                customer_id=session_info.customer,
-                status=Subscription.SubscriptionStatus.ACTIVE,
+                amount=affiliateinvitee.get_affiliate_commission_payment(),
             )
 
-            try:
-                affiliateinvitee = AffiliateInvitee.objects.get(
-                    invitee_discord_id=subscriber.discord_id
-                )
-                affiliatepayment = AffiliatePayment.objects.create(  # noqa
-                    serverowner=subscriber.subscribed_via,
-                    affiliate=affiliateinvitee.affiliate,
-                    subscriber=subscriber,
-                    amount=affiliateinvitee.get_affiliate_commission_payment(),
-                )
+            affiliateinvitee.affiliate.update_last_payment_date()
+            affiliateinvitee.affiliate.pending_commissions = (
+                F("pending_commissions")
+                + affiliateinvitee.get_affiliate_commission_payment()
+            )
+            affiliateinvitee.affiliate.save()
 
-                affiliateinvitee.affiliate.update_last_payment_date()
-                affiliateinvitee.affiliate.pending_commissions = (
-                    F("pending_commissions")
-                    + affiliateinvitee.get_affiliate_commission_payment()
-                )
-                affiliateinvitee.affiliate.save()
+            subscriber.subscribed_via.total_pending_commissions = (
+                F("total_pending_commissions")
+                + affiliateinvitee.get_affiliate_commission_payment()
+            )
+            subscriber.subscribed_via.save()
 
-                subscriber.subscribed_via.total_pending_commissions = (
-                    F("total_pending_commissions")
-                    + affiliateinvitee.get_affiliate_commission_payment()
-                )
-                subscriber.subscribed_via.save()
+        except ObjectDoesNotExist:
+            affiliateinvitee = None
 
-            except ObjectDoesNotExist:
-                affiliateinvitee = None
+        # Increment the subscriber count for the plan
+        plan.subscriber_count = F("subscriber_count") + 1
+        plan.save()
 
-            # Increment the subscriber count for the plan
-            plan.subscriber_count = F("subscriber_count") + 1
-            plan.save()
+        # Save the customer ID to the subscriber
+        subscriber.stripe_customer_id = session_info.customer
+        subscriber.save()
 
-        else:
-            raise Http404()
-    except stripe.error.StripeError as e:
-        logger.exception("An error occurred during a Stripe API call: %s", str(e))
-        messages.error(
-            request,
-            "An error occurred while processing your request. Please try again later.",
-        )
+    else:
+        return redirect("subscriber_dashboard")
 
     template = "subscriber/success.html"
     context = {
@@ -758,8 +792,10 @@ def subscription_cancel(request):
 
     try:
         # Retrieve the active subscription for the subscriber
-        subscription = Subscription.objects.get(
-            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+        subscription = get_object_or_404(
+            Subscription,
+            subscriber=subscriber,
+            status=Subscription.SubscriptionStatus.ACTIVE,
         )
 
         # Cancel the subscription using the Stripe API
@@ -776,6 +812,12 @@ def subscription_cancel(request):
             request,
             "An error occurred while canceling your subscription. Please try again later.",
         )
+        return redirect("subscriber_dashboard")
+
+    except Http404:
+        # If the subscription is not found, it will raise a 404 error with a message
+        messages.error(request, "No active subscription found for cancellation.")
+        return redirect("subscriber_dashboard")
 
     except Exception as e:
         logger.exception("An unexpected error occurred: %s", str(e))
@@ -791,6 +833,12 @@ def subscription_cancel(request):
 @require_POST
 def upgrade_to_affiliate(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
+
+    # Check if the subscriber already has an affiliate object
+    if hasattr(subscriber, "affiliate"):
+        # Subscriber is already an affiliate, redirect to affiliate dashboard
+        messages.info(request, "You are already an Affiliate.")
+        return redirect("affiliate_dashboard")
 
     # Create an affiliate object for the subscriber
     affiliate = Affiliate.objects.create(  # noqa
@@ -809,11 +857,11 @@ def upgrade_to_affiliate(request):
         payment_detail = form.save(commit=False)
         payment_detail.affiliate = affiliate
         payment_detail.save()
+        messages.success(request, "You have upgraded to being an Affiliate.")
+        return redirect("affiliate_dashboard")
     else:
         messages.error(request, "An error occured while submitting your form.")
-
-    messages.success(request, "You have upgraded to being an Affiliate.")
-    return redirect("affiliate_dashboard")
+    return redirect("subscriber_dashboard")
 
 
 ##################################################
@@ -887,7 +935,7 @@ def error_403(request, exception):
 
 
 def error_405(request, exception):
-    return render(request, "405.html")
+    return render(request, "405.html", status=405)
 
 
 def error_404(request, exception):

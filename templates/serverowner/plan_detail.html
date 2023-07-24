@@ -20,10 +20,12 @@
             <i class="fas fa-ban me-1"></i> Deactivate Plan
         </a>
     </div>
+    {% else %}
+    <span class="badge p-2 bg-danger"><i class="fas fa-ban me-1"></i> Plan Deactivated</span>
     {% endif %}
 </div>
 
-{% if subscribers %}
+{% if plan.get_stripeplan_subscribers %}
 <div class="row mb-4">
     {% include 'serverowner/_plan_total_amount.html' %}
     {% include 'serverowner/_plan_total_subscriptions.html' %}
@@ -32,7 +34,7 @@
 
 <h5 class="text-secondary mb-3">Subscription History</h5>
 <div class="row g-4 mb-5">
-    {% for subscriber in subscribers %}
+    {% for subscriber in plan.get_stripeplan_subscribers %}
     <div class="col-lg-4 col-sm-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-primary py-2"></div>

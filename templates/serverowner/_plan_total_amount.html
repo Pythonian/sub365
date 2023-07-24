@@ -2,5 +2,5 @@
 {% load humanize %}
 
 {% block data_title %}Total Amount{% endblock data_title %}
-{% block data_value %}${{ total_earnings|intcomma }}{% endblock data_value %}
+{% block data_value %}${{ plan.total_earnings|intcomma }}{% endblock data_value %}
 {% block data_icon %}fa-sack-dollar{% endblock data_icon %}

@@ -3,7 +3,7 @@ from decimal import ROUND_DOWN, Decimal
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Sum, Q
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 
@@ -310,6 +310,7 @@ class Subscriber(models.Model):
     subscribed_via = models.ForeignKey(
         ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
     )
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -351,6 +352,9 @@ class Affiliate(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ["-created"]
+
     def __str__(self):
         return self.subscriber.username
 
@@ -383,6 +387,7 @@ class Affiliate(models.Model):
         successful_invitees_count = self.affiliateinvitee_set.filter(
             invitee_discord_id__in=Subscriber.objects.filter(
                 Q(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+                | Q(subscriptions__status=Subscription.SubscriptionStatus.CANCELED)
                 | Q(subscriptions__status=Subscription.SubscriptionStatus.EXPIRED)
             ).values("discord_id")
         ).count()
@@ -531,6 +536,27 @@ class StripePlan(models.Model):
     def __str__(self):
         return self.name
 
+    def total_earnings(self):
+        # Calculate the total earnings for this plan
+        subscribers = Subscription.objects.filter(plan=self, subscribed_via=self.user)
+        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
+        return total_earnings or Decimal(0)
+
+    def get_stripeplan_subscribers(self):
+        # Get all subscribers for this plan, filtered by the server owner
+        return Subscription.objects.filter(plan=self, subscribed_via=self.user)
+
+    def active_subscriptions_count(self):
+        # Count the number of active subscriptions for this plan
+        subscribers = self.get_stripeplan_subscribers()
+        active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE)
+        return active_subscriptions.count()
+
+    def total_subscriptions_count(self):
+        # Count the total number of subscriptions for this plan
+        subscribers = self.get_stripeplan_subscribers()
+        return subscribers.count()
+
 
 class Subscription(models.Model):
     """
@@ -552,7 +578,6 @@ class Subscription(models.Model):
     expiration_date = models.DateTimeField(blank=True, null=True)
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
     session_id = models.CharField(max_length=200, blank=True, null=True)
-    customer_id = models.CharField(max_length=200, blank=True, null=True)
     status = models.CharField(
         max_length=1,
         choices=SubscriptionStatus.choices,

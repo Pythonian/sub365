@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 import stripe
@@ -35,14 +36,18 @@ def stripe_webhook(request):
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
         return HttpResponse(status=400)
 
-    # # Handle the (subscription.canceled) event
-    # if event.type == "customer.subscription.deleted":
-    #     subscription_id = event.data.object.id
-    #     # Retrieve the Subscription object from your database
+    # if event.type == "invoice.payment_succeeded" or event.type == "invoice.paid":
+    #     # Invoice payment succeeded for the subscription renewal
+    #     subscription_id = event.data.object.lines.data[0].subscription
     #     try:
     #         subscription = Subscription.objects.get(subscription_id=subscription_id)
-    #         # Update the Subscription object
-    #         subscription.status = Subscription.SubscriptionStatus.CANCELED
+    #         # Update the Subscription object with the new expiration date and subscription_date
+    #         current_period_end = event.data.object.period_end
+    #         expiration_date = timezone.datetime.fromtimestamp(current_period_end)
+    #         subscription.expiration_date = expiration_date
+    #         subscription.subscription_date = (
+    #             expiration_date  # Update subscription_date with the renewal date
+    #         )
     #         subscription.save()
     #     except Subscription.DoesNotExist:
     #         logger.error(

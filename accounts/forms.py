@@ -2,7 +2,7 @@ import re
 
 from django import forms
 
-from .models import AccessCode, Server, ServerOwner, StripePlan, PaymentDetail
+from .models import AccessCode, PaymentDetail, Server, ServerOwner, StripePlan
 
 DISALLOWED_SUBDOMAINS = [
     "activate",

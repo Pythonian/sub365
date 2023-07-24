@@ -1,0 +1,44 @@
+{% load humanize %}
+{% if plans %}
+<h5 class="text-secondary mb-3">Subscription Plans</h5>
+<div class="row g-4 mb-5">
+    {% for plan in plans %}
+    <div class="col-lg-4">
+        <div class="card shadow h-100 pb-2">
+            <div class="card-header bg-primary py-2"></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-primary fw-bold">{{ plan.name }}</span>
+                    <span class="font-monospace">{{ plan.subscriber_count }}
+                        Subscription{{ plan.subscriber_count|pluralize }}</span>
+                </div>
+                <h5 class="fw-bold my-3">${{ plan.amount|intcomma }}<small> /{{ plan.interval_count }}
+                        month{{ plan.interval_count|pluralize }}</small></h5>
+                <p>{{ plan.description }}</p>
+                <form action="{% url 'subscribe_to_plan' product_id=plan.id %}" method="post">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-primary" type="submit"><i class="far fa-credit-card me-1"></i>
+                        Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <div class="d-flex justify-content-between mt-4">
+        <p class="text-body-secondary">Showing <span>{{ plans.start_index }}-{{ plans.end_index }}</span>
+            of <span>{{ plans.paginator.count }}</span>
+            plan{{ plans.paginator.count|pluralize }}</p>
+        <div>{% include '_pagination.html' with page_obj=plans %}</div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-ban fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">No subscription plan found.</h3>
+    <p class="mb-5">There are no Plans attached to this server <span
+            class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span> yet.</p>
+</div>
+{% endif %}
