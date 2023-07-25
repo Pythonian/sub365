@@ -211,6 +211,23 @@ class OnboardingForm(forms.Form):
         code.save()
 
 
+class CoinbaseOnboardingForm(forms.Form):
+    coinbase_api_secret_key = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={"placeholder": "Enter your Coinbase API secret key", "class": "form-control"}
+        ),
+        required=True,
+    )
+    coinbase_api_public_key = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={"placeholder": "Enter your Coinbase API public key", "class": "form-control"}
+        ),
+        required=True,
+    )
+
+
 class PlanForm(forms.ModelForm):
     """
     Form for creating a Stripe Product.

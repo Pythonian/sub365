@@ -39,6 +39,9 @@ class ServerOwner(models.Model):
         validators=[MinValueValidator(0)],
         help_text="Total pending commissions to be paid by the server owner",
     )
+    coinbase_api_secret_key = models.CharField(max_length=255, blank=True, null=True)
+    coinbase_api_public_key = models.CharField(max_length=255, blank=True, null=True)
+    coinbase_onboarding = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username

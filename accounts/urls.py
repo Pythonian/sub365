@@ -41,6 +41,7 @@ urlpatterns = [
     ),
     # Onboarding URLs
     path("onboarding/", views.onboarding, name="onboarding"),
+    path("onboarding-crypto/", views.onboarding_crypto, name="onboarding_crypto"),
     path(
         "create-stripe-account/",
         views.create_stripe_account,

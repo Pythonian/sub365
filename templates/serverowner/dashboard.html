@@ -72,6 +72,22 @@
         </div>
         <div class="card mb-3 shadow-sm">
             <div class="card-body pb-1">
+                {% if serverowner.coinbase_onboarding %}
+                <div class="d-flex justify-content-between">
+                    <div class="d-flex">
+                        <i class="fas fa-list-check lh-base fa-2x me-3 text-primary d-none d-md-block"></i>
+                        <div>
+                            <h5 class="m-0 mb-1 p-0">Setup your subscriptions for your Server</h5>
+                            <p class="text-secondary small">You'll need to create a subscription plan to activate your dashboard.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{% url 'plans' %}" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5">
+                            <i class="fa-solid fa-plus me-1"></i> Create a Subscription Plan
+                        </a>
+                    </div>
+                </div>
+                {% else %}
                 <div class="d-flex justify-content-between">
                     <div class="d-flex">
                         <i class="fas fa-list-check lh-base fa-2x me-3 text-primary d-none d-md-block"></i>
@@ -88,6 +104,7 @@
                         </a>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
         <div class="card mb-3 shadow-sm">

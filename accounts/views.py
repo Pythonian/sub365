@@ -18,9 +18,10 @@ import requests
 import stripe
 from allauth.account.views import LogoutView
 from allauth.socialaccount.models import SocialAccount
+from requests.exceptions import RequestException
 
 from .decorators import check_stripe_onboarding, redirect_if_no_subdomain
-from .forms import OnboardingForm, PaymentDetailForm, PlanForm
+from .forms import CoinbaseOnboardingForm, OnboardingForm, PaymentDetailForm, PlanForm
 from .models import (
     Affiliate,
     AffiliateInvitee,
@@ -210,12 +211,76 @@ def onboarding(request):
     if request.method == "POST":
         form = OnboardingForm(request.POST, user=request.user)
         if form.is_valid():
-            form.save(user=request.user)
-            return redirect("create_stripe_account")
+            # Check which button was clicked and set the appropriate session data
+            if "connect_stripe" in request.POST:
+                request.session["connect_with_crypto"] = False
+                form.save(user=request.user)
+                return redirect("create_stripe_account")
+            elif "connect_crypto" in request.POST:
+                request.session["connect_with_crypto"] = True
+                form.save(user=request.user)
+                return redirect("onboarding_crypto")
     else:
         form = OnboardingForm(user=request.user)
 
     template = "onboarding.html"
+    context = {
+        "form": form,
+    }
+
+    return render(request, template, context)
+
+
+@login_required
+def onboarding_crypto(request):
+    """Handle the onboarding process for connecting with crypto payments."""
+    try:
+        serverowner = request.user.serverowner
+        if serverowner.coinbase_onboarding:
+            return redirect("dashboard")
+    except ObjectDoesNotExist:
+        messages.error(request, "You have trespassed into forbidden territory.")
+        return redirect("index")
+
+    if request.method == "POST":
+        form = CoinbaseOnboardingForm(request.POST)
+        if form.is_valid():
+            # Get the API keys entered by the user
+            api_secret_key = form.cleaned_data["coinbase_api_secret_key"]
+            api_public_key = form.cleaned_data["coinbase_api_public_key"]
+            try:
+                # Make the API request to verify the API keys
+                endpoint = "https://www.coinpayments.net/api/v1/rates"
+                payload = {"version": 1, "key": api_public_key, "format": "json"}
+                response = requests.get(endpoint, params=payload)
+                # Raises an exception for non-200 status codes
+                response.raise_for_status()
+                # API request is successful
+                response_data = response.json()
+                # Check the response data to ensure that it contains account information
+                if "account_type" in response_data and "username" in response_data:
+                    # Save the form data to the ServerOwner model
+                    serverowner = request.user.serverowner
+                    serverowner.coinbase_api_secret_key = api_secret_key
+                    serverowner.coinbase_api_public_key = api_public_key
+                    serverowner.coinbase_onboarding = True
+                    serverowner.save()
+
+                    # Redirect to the appropriate view after successful onboarding
+                    return redirect("dashboard_view")
+                else:
+                    # The API keys are invalid
+                    form.add_error(None, "Invalid Coinbase API keys.")
+            except RequestException as e:
+                # RequestException includes various issues like network errors, invalid responses etc.
+                form.add_error(None, f"Failed to verify Coinbase API keys: {e}")
+            except ValueError as e:
+                # Raised if there is an issue with parsing JSON response
+                form.add_error(None, f"Failed to parse API response: {e}")
+    else:
+        form = CoinbaseOnboardingForm()
+
+    template = "onboarding_crypto.html"
     context = {
         "form": form,
     }
