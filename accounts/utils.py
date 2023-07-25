@@ -21,3 +21,13 @@ def mk_paginator(request, items, num_items):
         # If page is out of range, return the last page of results.
         items = paginator.page(paginator.num_pages)
     return items
+
+
+def create_hmac_signature(data, api_secret_key):
+    """Create the HMAC signature using the given data and API secret key."""
+    import hashlib
+    import hmac
+
+    post_data = "&".join([f"{key}={data[key]}" for key in sorted(data)])
+    signature = hmac.new(api_secret_key.encode("utf-8"), post_data.encode("utf-8"), hashlib.sha512)
+    return signature.hexdigest()

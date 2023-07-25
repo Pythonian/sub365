@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import F, Sum
+from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -33,7 +33,7 @@ from .models import (
     Subscription,
     User,
 )
-from .utils import mk_paginator
+from .utils import create_hmac_signature, mk_paginator
 
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -250,33 +250,48 @@ def onboarding_crypto(request):
             api_public_key = form.cleaned_data["coinbase_api_public_key"]
             try:
                 # Make the API request to verify the API keys
-                endpoint = "https://www.coinpayments.net/api/v1/rates"
-                payload = {"version": 1, "key": api_public_key, "format": "json"}
-                response = requests.get(endpoint, params=payload)
+                endpoint = "https://www.coinpayments.net/api.php"
+                data = {
+                    "version": 1,
+                    "cmd": "get_basic_info",
+                    "key": api_public_key,
+                    "format": "json",
+                }
+                headers = {"HMAC": create_hmac_signature(data, api_secret_key)}
+                response = requests.post(endpoint, data=data, headers=headers)
                 # Raises an exception for non-200 status codes
                 response.raise_for_status()
                 # API request is successful
                 response_data = response.json()
                 # Check the response data to ensure that it contains account information
-                if "account_type" in response_data and "username" in response_data:
-                    # Save the form data to the ServerOwner model
-                    serverowner = request.user.serverowner
-                    serverowner.coinbase_api_secret_key = api_secret_key
-                    serverowner.coinbase_api_public_key = api_public_key
-                    serverowner.coinbase_onboarding = True
-                    serverowner.save()
+                if "error" in response_data and response_data["error"] == "ok":
+                    account_info = response_data.get("result")
+                    if account_info:
+                        # Save the form data to the ServerOwner model
+                        serverowner = request.user.serverowner
+                        serverowner.coinbase_api_secret_key = api_secret_key
+                        serverowner.coinbase_api_public_key = api_public_key
+                        serverowner.coinbase_onboarding = True
+                        serverowner.save()
 
-                    # Redirect to the appropriate view after successful onboarding
-                    return redirect("dashboard_view")
+                        # Redirect to the appropriate view after successful onboarding
+                        return redirect("dashboard_view")
+                    else:
+                        form.add_error(None, "Invalid Coinbase API keys.")
                 else:
-                    # The API keys are invalid
                     form.add_error(None, "Invalid Coinbase API keys.")
             except RequestException as e:
                 # RequestException includes various issues like network errors, invalid responses etc.
+                logger.error(f"Failed to verify Coinbase API keys: {e}")
                 form.add_error(None, f"Failed to verify Coinbase API keys: {e}")
             except ValueError as e:
                 # Raised if there is an issue with parsing JSON response
+                logger.error(f"Failed to verify Coinbase API keys: {e}")
                 form.add_error(None, f"Failed to parse API response: {e}")
+            except Exception as e:
+                # Catch any other unexpected exceptions and log them
+                logger.exception(f"An unexpected error occurred: {e}")
+                form.add_error(None, "An unexpected error occurred. Please try again later.")
     else:
         form = CoinbaseOnboardingForm()
 
