@@ -39,8 +39,6 @@ def create_hmac_signature(data, api_secret_key):
     import hashlib
     import hmac
 
-    # Defined as a simple string.
-    # key = config.API_SECRET
     # Commonly 'latin-1' or 'utf-8'
     key_bytes = bytes(api_secret_key, "latin-1")
     # Assumes `data` is also a string.

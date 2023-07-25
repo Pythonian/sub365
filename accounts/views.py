@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -256,13 +257,14 @@ def onboarding_crypto(request):
                     "cmd": "get_basic_info",
                     "key": api_public_key,
                 }
+                data_json = json.dumps(data)
                 # headers = {"HMAC": create_hmac_signature(data, api_secret_key)}
                 headers = {
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "HMAC": create_hmac_signature(data, api_secret_key),
+                    "HMAC": create_hmac_signature(data_json, api_secret_key),
                 }
 
-                response = requests.post(endpoint, data=data, headers=headers)
+                response = requests.post(endpoint, data=data_json, headers=headers)
                 # Raises an exception for non-200 status codes
                 response.raise_for_status()
                 # API request is successful
