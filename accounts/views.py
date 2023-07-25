@@ -251,42 +251,45 @@ def onboarding_crypto(request):
             api_public_key = form.cleaned_data["coinbase_api_public_key"]
             try:
                 # Make the API request to verify the API keys
-                endpoint = "https://www.coinpayments.net/api.php"
-                data = {
-                    "version": 1,
-                    "cmd": "get_basic_info",
-                    "key": api_public_key,
-                }
-                data_json = json.dumps(data)
-                headers = {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "HMAC": create_hmac_signature(data_json, api_secret_key),
-                }
 
-                response = requests.post(endpoint, data=data_json, headers=headers)
-                # Raises an exception for non-200 status codes
+                # data = {
+                #     "version": 1,
+                #     "cmd": "get_basic_info",
+                #     "key": api_public_key,
+                # }
+                # data_json = json.dumps(data)
+                # headers = {
+                #     "Content-Type": "application/x-www-form-urlencoded",
+                #     "HMAC": create_hmac_signature(data_json, api_secret_key),
+                # }
+
+                endpoint = "https://www.coinpayments.net/api.php"
+                data = f"version=1&cmd=get_basic_info&key={api_public_key}&format=json"
+                header = {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "HMAC": create_hmac_signature(data, api_secret_key),
+                }
+                response = requests.post(endpoint, data=data, headers=header)
                 response.raise_for_status()
+                result = response.json()['result']
+
+                # response = requests.post(endpoint, data=data_json, headers=headers)
+                # Raises an exception for non-200 status codes
+                # response.raise_for_status()
                 # API request is successful
-                response_data = response.json()
+                # response_data = response.json()
                 # Check the response data to ensure that it contains account information
-                if "error" in response_data and response_data["error"] == "ok":
-                    # account_info = response_data.get("result")
-                    # if account_info:
-                    # Save the form data to the ServerOwner model
+                if result:
                     serverowner = request.user.serverowner
                     serverowner.coinbase_api_secret_key = api_secret_key
                     serverowner.coinbase_api_public_key = api_public_key
                     serverowner.coinbase_onboarding = True
                     serverowner.save()
-
-                    # Redirect to the appropriate view after successful onboarding
                     return redirect("dashboard_view")
-                    # else:
-                    #     form.add_error(None, "Invalid Coinbase API keys.")
                 else:
                     form.add_error(None, "Invalid Coinbase API keys.")
             except RequestException as e:
-                # RequestException includes various issues like network errors, invalid responses etc.
+                # RequestException includes issues like network errors, invalid responses etc.
                 logger.error(f"Failed to verify Coinbase API keys: {e}")
                 form.add_error(None, f"Failed to verify Coinbase API keys: {e}")
             except ValueError as e:
