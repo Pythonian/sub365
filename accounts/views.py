@@ -255,9 +255,13 @@ def onboarding_crypto(request):
                     "version": 1,
                     "cmd": "get_basic_info",
                     "key": api_public_key,
-                    "format": "json",
                 }
-                headers = {"HMAC": create_hmac_signature(data, api_secret_key)}
+                # headers = {"HMAC": create_hmac_signature(data, api_secret_key)}
+                headers = {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "HMAC": create_hmac_signature(data, api_secret_key),
+                }
+
                 response = requests.post(endpoint, data=data, headers=headers)
                 # Raises an exception for non-200 status codes
                 response.raise_for_status()
@@ -291,7 +295,9 @@ def onboarding_crypto(request):
             except Exception as e:
                 # Catch any other unexpected exceptions and log them
                 logger.exception(f"An unexpected error occurred: {e}")
-                form.add_error(None, "An unexpected error occurred. Please try again later.")
+                form.add_error(
+                    None, "An unexpected error occurred. Please try again later."
+                )
     else:
         form = CoinbaseOnboardingForm()
 
