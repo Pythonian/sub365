@@ -258,7 +258,6 @@ def onboarding_crypto(request):
                     "key": api_public_key,
                 }
                 data_json = json.dumps(data)
-                # headers = {"HMAC": create_hmac_signature(data, api_secret_key)}
                 headers = {
                     "Content-Type": "application/x-www-form-urlencoded",
                     "HMAC": create_hmac_signature(data_json, api_secret_key),
@@ -271,19 +270,19 @@ def onboarding_crypto(request):
                 response_data = response.json()
                 # Check the response data to ensure that it contains account information
                 if "error" in response_data and response_data["error"] == "ok":
-                    account_info = response_data.get("result")
-                    if account_info:
-                        # Save the form data to the ServerOwner model
-                        serverowner = request.user.serverowner
-                        serverowner.coinbase_api_secret_key = api_secret_key
-                        serverowner.coinbase_api_public_key = api_public_key
-                        serverowner.coinbase_onboarding = True
-                        serverowner.save()
+                    # account_info = response_data.get("result")
+                    # if account_info:
+                    # Save the form data to the ServerOwner model
+                    serverowner = request.user.serverowner
+                    serverowner.coinbase_api_secret_key = api_secret_key
+                    serverowner.coinbase_api_public_key = api_public_key
+                    serverowner.coinbase_onboarding = True
+                    serverowner.save()
 
-                        # Redirect to the appropriate view after successful onboarding
-                        return redirect("dashboard_view")
-                    else:
-                        form.add_error(None, "Invalid Coinbase API keys.")
+                    # Redirect to the appropriate view after successful onboarding
+                    return redirect("dashboard_view")
+                    # else:
+                    #     form.add_error(None, "Invalid Coinbase API keys.")
                 else:
                     form.add_error(None, "Invalid Coinbase API keys.")
             except RequestException as e:
