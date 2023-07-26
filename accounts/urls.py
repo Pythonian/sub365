@@ -9,6 +9,11 @@ urlpatterns = [
         "subscribe/<int:product_id>/", views.subscribe_to_plan, name="subscribe_to_plan"
     ),
     path(
+        "subscribe-to-coin/<int:plan_id>/",
+        views.subscribe_to_coin_plan,
+        name="subscribe_to_coin_plan",
+    ),
+    path(
         "subscription/success/", views.subscription_success, name="subscription_success"
     ),
     path("subscription/cancel/", views.subscription_cancel, name="subscription_cancel"),

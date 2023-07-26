@@ -8,6 +8,8 @@ from .models import (
     Affiliate,
     AffiliateInvitee,
     AffiliatePayment,
+    CoinPlan,
+    CoinSubscription,
     PaymentDetail,
     Server,
     ServerOwner,
@@ -45,6 +47,17 @@ class SubscriberAdmin(admin.ModelAdmin):
 class StripePlanAdmin(admin.ModelAdmin):
     list_display = ["name", "user", "amount", "subscriber_count"]
     search_fields = ["user__username"]
+
+
+@admin.register(CoinPlan)
+class CoinPlanAdmin(admin.ModelAdmin):
+    list_display = ["name", "serverowner", "amount", "subscriber_count"]
+    search_fields = ["serverowner__username"]
+
+
+@admin.register(CoinSubscription)
+class CoinSubscriptionAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Subscription)

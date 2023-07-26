@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -21,12 +20,20 @@ from allauth.account.views import LogoutView
 from allauth.socialaccount.models import SocialAccount
 from requests.exceptions import RequestException
 
-from .decorators import check_stripe_onboarding, redirect_if_no_subdomain
-from .forms import CoinbaseOnboardingForm, OnboardingForm, PaymentDetailForm, PlanForm
+from .decorators import onboarding_completed, redirect_if_no_subdomain
+from .forms import (
+    CoinbaseOnboardingForm,
+    CoinPlanForm,
+    OnboardingForm,
+    PaymentDetailForm,
+    PlanForm,
+)
 from .models import (
     Affiliate,
     AffiliateInvitee,
     AffiliatePayment,
+    CoinPlan,
+    CoinSubscription,
     Server,
     ServerOwner,
     StripePlan,
@@ -250,19 +257,7 @@ def onboarding_crypto(request):
             api_secret_key = form.cleaned_data["coinbase_api_secret_key"]
             api_public_key = form.cleaned_data["coinbase_api_public_key"]
             try:
-                # Make the API request to verify the API keys
-
-                # data = {
-                #     "version": 1,
-                #     "cmd": "get_basic_info",
-                #     "key": api_public_key,
-                # }
-                # data_json = json.dumps(data)
-                # headers = {
-                #     "Content-Type": "application/x-www-form-urlencoded",
-                #     "HMAC": create_hmac_signature(data_json, api_secret_key),
-                # }
-
+                # Make the API request to verify the coinbase API keys
                 endpoint = "https://www.coinpayments.net/api.php"
                 data = f"version=1&cmd=get_basic_info&key={api_public_key}&format=json"
                 header = {
@@ -271,14 +266,7 @@ def onboarding_crypto(request):
                 }
                 response = requests.post(endpoint, data=data, headers=header)
                 response.raise_for_status()
-                result = response.json()['result']
-
-                # response = requests.post(endpoint, data=data_json, headers=headers)
-                # Raises an exception for non-200 status codes
-                # response.raise_for_status()
-                # API request is successful
-                # response_data = response.json()
-                # Check the response data to ensure that it contains account information
+                result = response.json()["result"]
                 if result:
                     serverowner = request.user.serverowner
                     serverowner.coinbase_api_secret_key = api_secret_key
@@ -408,13 +396,17 @@ def delete_account(request):
 
 @login_required
 @redirect_if_no_subdomain
-@check_stripe_onboarding
+@onboarding_completed
 def dashboard(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     discord_client_id = settings.DISCORD_CLIENT_ID
 
-    template = "serverowner/dashboard.html"
+    if serverowner.coinbase_onboarding:
+        template = "serverowner/coin_dashboard.html"
+    else:
+        template = "serverowner/dashboard.html"
+
     context = {
         "serverowner": serverowner,
         "discord_client_id": discord_client_id,
@@ -425,68 +417,96 @@ def dashboard(request):
 
 @login_required
 @redirect_if_no_subdomain
-@check_stripe_onboarding
+@onboarding_completed
 def plans(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    if request.method == "POST":
-        form = PlanForm(request.POST)
+    if serverowner.coinbase_onboarding:
+        if request.method == "POST":
+            form = CoinPlanForm(request.POST)
 
-        if form.is_valid():
-            try:
-                interval_count = form.cleaned_data["interval_count"]
-                # Create a product on Stripe
-                product = stripe.Product.create(
-                    name=form.cleaned_data["name"],
-                    description=form.cleaned_data["description"],
-                    active=True,
-                )
-
-                # Create a price for the product
-                price = stripe.Price.create(
-                    product=product.id,
-                    unit_amount=int(form.cleaned_data["amount"] * 100),
-                    currency="usd",
-                    recurring={
-                        "interval": "month",
-                        "interval_count": interval_count,
-                    },
-                )
-
-                # Save the product and price details in your database
-                stripe_product = form.save(commit=False)
-                stripe_product.price_id = price.id
-                stripe_product.product_id = product.id
-                stripe_product.user = request.user.serverowner
-                stripe_product.save()
-
+            if form.is_valid():
+                coin_plan = form.save(commit=False)
+                coin_plan.serverowner = serverowner
+                coin_plan.save()
                 messages.success(
                     request, "Your Subscription Plan has been successfully created."
                 )
                 return redirect("plans")
-            except stripe.error.StripeError as e:
-                logger.exception(
-                    "An error occurred during a Stripe API call: %s", str(e)
-                )
-                messages.error(
-                    request,
-                    "An error occurred while processing your request. Please try again later.",
-                )
+            else:
+                messages.error(request, "An error occured while creating your Plan.")
         else:
-            messages.error(request, "An error occured while creating your Plan.")
+            form = CoinPlanForm()
+        coin_plans = serverowner.get_coin_plans()
+        coin_plans = mk_paginator(request, coin_plans, 9)
+
     else:
-        form = PlanForm()
+        if request.method == "POST":
+            form = PlanForm(request.POST)
 
-    # Retrieve the user's Stripe plans from the database and paginate
-    stripe_plans = serverowner.get_stripe_plans()
-    stripe_plans = mk_paginator(request, stripe_plans, 9)
+            if form.is_valid():
+                try:
+                    interval_count = form.cleaned_data["interval_count"]
+                    # Create a product on Stripe
+                    product = stripe.Product.create(
+                        name=form.cleaned_data["name"],
+                        description=form.cleaned_data["description"],
+                        active=True,
+                    )
 
-    template = "serverowner/plans.html"
-    context = {
-        "serverowner": serverowner,
-        "form": form,
-        "stripe_plans": stripe_plans,
-    }
+                    # Create a price for the product
+                    price = stripe.Price.create(
+                        product=product.id,
+                        unit_amount=int(form.cleaned_data["amount"] * 100),
+                        currency="usd",
+                        recurring={
+                            "interval": "month",
+                            "interval_count": interval_count,
+                        },
+                    )
+
+                    # Save the product and price details in your database
+                    stripe_product = form.save(commit=False)
+                    stripe_product.price_id = price.id
+                    stripe_product.product_id = product.id
+                    stripe_product.user = serverowner
+                    # stripe_product.user = request.user.serverowner
+                    stripe_product.save()
+
+                    messages.success(
+                        request, "Your Subscription Plan has been successfully created."
+                    )
+                    return redirect("plans")
+                except stripe.error.StripeError as e:
+                    logger.exception(
+                        "An error occurred during a Stripe API call: %s", str(e)
+                    )
+                    messages.error(
+                        request,
+                        "An error occurred while processing your request. Please try again later.",
+                    )
+            else:
+                messages.error(request, "An error occured while creating your Plan.")
+        else:
+            form = PlanForm()
+        # Retrieve the user's Stripe plans from the database and paginate
+        stripe_plans = serverowner.get_stripe_plans()
+        stripe_plans = mk_paginator(request, stripe_plans, 9)
+
+    if serverowner.coinbase_onboarding:
+        template = "serverowner/coin_plans.html"
+        context = {
+            "serverowner": serverowner,
+            "form": form,
+            "coin_plans": coin_plans,
+        }
+    else:
+        template = "serverowner/plans.html"
+        context = {
+            "serverowner": serverowner,
+            "form": form,
+            "stripe_plans": stripe_plans,
+        }
     return render(request, template, context)
 
 
@@ -494,49 +514,76 @@ def plans(request):
 @redirect_if_no_subdomain
 def plan_detail(request, product_id):
     """Display detailed information about a specific plan."""
-    plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
-
-    if request.method == "POST":
-        form = PlanForm(request.POST, instance=plan)
-
-        if form.is_valid():
-            try:
-                # Update the product on Stripe
-                product_params = {
-                    "name": form.cleaned_data["name"],
-                    "description": form.cleaned_data["description"],
-                    "active": True,
-                }
-
-                product = stripe.Product.modify(  # noqa
-                    plan.product_id, **product_params
-                )
-
-                # Save the updated plan details in the database
+    if request.user.serverowner.coinbase_onboarding:
+        plan = get_object_or_404(
+            CoinPlan, id=product_id, serverowner=request.user.serverowner
+        )
+        if request.method == "POST":
+            form = CoinPlanForm(request.POST, instance=plan)
+            if form.is_valid():
                 plan = form.save()
-
                 messages.success(
                     request, "Your Subscription Plan has been successfully updated."
                 )
                 return redirect("plan", product_id=plan.id)
-            except stripe.error.StripeError as e:
-                logger.exception(
-                    "An error occurred during a Stripe API call: %s", str(e)
-                )
-                messages.error(
-                    request,
-                    "An error occurred while processing your request. Please try again later.",
-                )
+            else:
+                messages.error(request, "An error occurred while updating your Plan.")
         else:
-            messages.error(request, "An error occurred while updating your Plan.")
-    else:
-        form = PlanForm(instance=plan)
+            form = CoinPlanForm(instance=plan)
 
-    template = "serverowner/plan_detail.html"
-    context = {
-        "plan": plan,
-        "form": form,
-    }
+    else:
+        plan = get_object_or_404(
+            StripePlan, id=product_id, user=request.user.serverowner
+        )
+
+        if request.method == "POST":
+            form = PlanForm(request.POST, instance=plan)
+
+            if form.is_valid():
+                try:
+                    # Update the product on Stripe
+                    product_params = {
+                        "name": form.cleaned_data["name"],
+                        "description": form.cleaned_data["description"],
+                        "active": True,
+                    }
+
+                    product = stripe.Product.modify(  # noqa
+                        plan.product_id, **product_params
+                    )
+
+                    # Save the updated plan details in the database
+                    plan = form.save()
+
+                    messages.success(
+                        request, "Your Subscription Plan has been successfully updated."
+                    )
+                    return redirect("plan", product_id=plan.id)
+                except stripe.error.StripeError as e:
+                    logger.exception(
+                        "An error occurred during a Stripe API call: %s", str(e)
+                    )
+                    messages.error(
+                        request,
+                        "An error occurred while processing your request. Please try again later.",
+                    )
+            else:
+                messages.error(request, "An error occurred while updating your Plan.")
+        else:
+            form = PlanForm(instance=plan)
+
+    if request.user.serverowner.coinbase_onboarding:
+        template = "serverowner/coinplan_detail.html"
+        context = {
+            "plan": plan,
+            "form": form,
+        }
+    else:
+        template = "serverowner/plan_detail.html"
+        context = {
+            "plan": plan,
+            "form": form,
+        }
     return render(request, template, context)
 
 
@@ -546,51 +593,70 @@ def plan_detail(request, product_id):
 def deactivate_plan(request):
     """Deactivate a plan."""
 
-    if request.method == "POST":
-        product_id = request.POST.get("product_id")
-        plan = get_object_or_404(
-            StripePlan, id=product_id, user=request.user.serverowner
-        )
-
-        try:
-            # Retrieve the product ID from the plan's StripeProduct object
-            product_id = plan.product_id
-
-            # Deactivate the product on Stripe
-            stripe.Product.modify(product_id, active=False)
-
-            # Deactivate the prices associated with the product
-            prices = stripe.Price.list(product=product_id, active=True, limit=100)
-            for price in prices:
-                stripe.Price.modify(price.id, active=False)
-
+    if request.user.serverowner.coinbase_onboarding:
+        if request.method == "POST":
+            product_id = request.POST.get("product_id")
+            plan = get_object_or_404(
+                CoinPlan, id=product_id, serverowner=request.user.serverowner
+            )
             # Update the plan status in the database
-            plan.status = StripePlan.PlanStatus.INACTIVE
+            plan.status = CoinPlan.PlanStatus.INACTIVE
             plan.save()
-
             messages.success(request, "Your plan has been successfully deactivated.")
-        except stripe.error.StripeError as e:
-            logger.exception("An error occurred during a Stripe API call: %s", str(e))
-            messages.error(
-                request,
-                "An error occurred while processing your request. Please try again later.",
+
+        return redirect("plan", plan.id)
+    else:
+        if request.method == "POST":
+            product_id = request.POST.get("product_id")
+            plan = get_object_or_404(
+                StripePlan, id=product_id, user=request.user.serverowner
             )
 
-    return redirect("plans")
+            try:
+                # Retrieve the product ID from the plan's StripePlan object
+                product_id = plan.product_id
+
+                # Deactivate the product on Stripe
+                stripe.Product.modify(product_id, active=False)
+
+                # Deactivate the prices associated with the product
+                prices = stripe.Price.list(product=product_id, active=True, limit=100)
+                for price in prices:
+                    stripe.Price.modify(price.id, active=False)
+
+                # Update the plan status in the database
+                plan.status = StripePlan.PlanStatus.INACTIVE
+                plan.save()
+
+                messages.success(
+                    request, "Your plan has been successfully deactivated."
+                )
+            except stripe.error.StripeError as e:
+                logger.exception(
+                    "An error occurred during a Stripe API call: %s", str(e)
+                )
+                messages.error(
+                    request,
+                    "An error occurred while processing your request. Please try again later.",
+                )
+        return redirect("plan", plan.id)
 
 
 @login_required
 @redirect_if_no_subdomain
-@check_stripe_onboarding
+@onboarding_completed
 def subscribers(request):
     """Display the subscribers of a user's plans."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    # Retrieve the subscribers for all plans created by the user
+    if serverowner.coinbase_onboarding:
+        template = "serverowner/coin_subscribers.html"
+    else:
+        template = "serverowner/subscribers.html"
+
     subscribers = serverowner.get_subscribed_users()
     subscribers = mk_paginator(request, subscribers, 9)
 
-    template = "serverowner/subscribers.html"
     context = {
         "serverowner": serverowner,
         "subscribers": subscribers,
@@ -602,13 +668,22 @@ def subscribers(request):
 @redirect_if_no_subdomain
 def subscriber_detail(request, id):
     subscriber = get_object_or_404(Subscriber, id=id)
-    try:
-        # Retrieve the latest active subscription for the subscriber
-        subscription = Subscription.objects.filter(
-            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
-        ).latest()
-    except Subscription.DoesNotExist:
-        subscription = None
+    if request.user.serverowner.coinbase_onboarding:
+        try:
+            # Retrieve the latest active subscription for the subscriber
+            subscription = CoinSubscription.objects.filter(
+                subscriber=subscriber, status=CoinSubscription.SubscriptionStatus.ACTIVE
+            ).latest()
+        except CoinSubscription.DoesNotExist:
+            subscription = None
+    else:
+        try:
+            # Retrieve the latest active subscription for the subscriber
+            subscription = Subscription.objects.filter(
+                subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+            ).latest()
+        except Subscription.DoesNotExist:
+            subscription = None
 
     template = "serverowner/subscriber_detail.html"
     context = {
@@ -621,7 +696,7 @@ def subscriber_detail(request, id):
 
 @login_required
 @redirect_if_no_subdomain
-@check_stripe_onboarding
+@onboarding_completed
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
@@ -639,7 +714,7 @@ def affiliates(request):
 
 @login_required
 @redirect_if_no_subdomain
-@check_stripe_onboarding
+@onboarding_completed
 def pending_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
@@ -683,7 +758,7 @@ def pending_affiliate_payment(request):
 
 @login_required
 @redirect_if_no_subdomain
-@check_stripe_onboarding
+@onboarding_completed
 def confirmed_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
@@ -708,26 +783,45 @@ def subscriber_dashboard(request):
     # Retrieve the server owner associated with the subscriber
     server_owner = subscriber.subscribed_via
 
-    # Retrieve the plans related to the ServerOwner
-    plans = StripePlan.objects.filter(
-        user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
-    )
-    plans = mk_paginator(request, plans, 9)
+    if server_owner.coinbase_onboarding:
+        plans = CoinPlan.objects.filter(
+            serverowner=server_owner, status=CoinPlan.PlanStatus.ACTIVE
+        )
+        plans = mk_paginator(request, plans, 9)
+        try:
+            # Retrieve the latest active subscription for the subscriber
+            latest_subscription = CoinSubscription.objects.filter(
+                subscriber=subscriber, status=CoinSubscription.SubscriptionStatus.ACTIVE
+            ).latest()
+        except CoinSubscription.DoesNotExist:
+            latest_subscription = None
+        # Retrieve all the subscriptions done by the subscriber
+        subscriptions = CoinSubscription.objects.filter(subscriber=subscriber)
+    else:
+        # Retrieve the plans related to the ServerOwner
+        plans = StripePlan.objects.filter(
+            user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
+        )
+        plans = mk_paginator(request, plans, 9)
 
-    try:
-        # Retrieve the latest active subscription for the subscriber
-        latest_subscription = Subscription.objects.filter(
-            subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
-        ).latest()
-    except Subscription.DoesNotExist:
-        latest_subscription = None
+        try:
+            # Retrieve the latest active subscription for the subscriber
+            latest_subscription = Subscription.objects.filter(
+                subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+            ).latest()
+        except Subscription.DoesNotExist:
+            latest_subscription = None
 
-    # Retrieve all the subscriptions done by the subscriber
-    subscriptions = Subscription.objects.filter(subscriber=subscriber)
+        # Retrieve all the subscriptions done by the subscriber
+        subscriptions = Subscription.objects.filter(subscriber=subscriber)
 
     form = PaymentDetailForm()
 
-    template = "subscriber/dashboard.html"
+    if server_owner.coinbase_onboarding:
+        template = "subscriber/coin_dashboard.html"
+    else:
+        template = "subscriber/dashboard.html"
+
     context = {
         "plans": plans,
         "subscriber": subscriber,
@@ -738,6 +832,51 @@ def subscriber_dashboard(request):
     }
 
     return render(request, template, context)
+
+
+@login_required
+@require_POST
+def subscribe_to_coin_plan(request, plan_id):
+    plan = get_object_or_404(CoinPlan, id=plan_id)
+    subscriber = get_object_or_404(Subscriber, user=request.user)
+
+    try:
+        endpoint = "https://www.coinpayments.net/api.php"
+        data = (
+            f"version=1&cmd=create_transaction&amount={plan.amount}&currency1=USD&currency2="
+            + settings.COINBASE_CURRENCY
+            + f"&buyer_email={subscriber.email}&key={subscriber.subscribed_via.coinbase_api_public_key}&format=json"
+        )
+        header = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "HMAC": create_hmac_signature(
+                data, subscriber.subscribed_via.coinbase_api_secret_key
+            ),
+        }
+        response = requests.post(endpoint, data=data, headers=header)
+        response.raise_for_status()
+        result = response.json()["result"]
+        if result:
+            checkout_url = result['checkout_url']
+            return redirect(checkout_url)
+        else:
+            messages.error(request, "An error occurred during the transaction. Please try again later.")
+            return redirect("subscriber_dashboard")
+    except requests.exceptions.RequestException as e:
+        # Handle request-related exceptions (e.g., network error, timeout)
+        logger.exception(f"Coinbase API request failed: {e}")
+        messages.error(request, "An error occurred while communicating with Coinbase. Please try again later.")
+        return redirect("subscriber_dashboard")
+    except (ValueError, KeyError) as e:
+        # Handle JSON parsing or missing key errors
+        logger.exception(f"Failed to parse Coinbase API response: {e}")
+        messages.error(request, "An unexpected error occurred while processing the response. Please try again later.")
+        return redirect("subscriber_dashboard")
+    except Exception as e:
+        # Catch any other unexpected exceptions and log them
+        logger.exception(f"An unexpected error occurred: {e}")
+        messages.error(request, "An unexpected error occurred. Please try again later.")
+        return redirect("subscriber_dashboard")
 
 
 @login_required

@@ -141,10 +141,10 @@ class ServerOwner(models.Model):
 
     def get_plan_count(self):
         """
-        Get the total count of plans created by the server owner.
+        Get the total count of stripe plans created by the server owner.
 
         Returns:
-            int: The total count of plans created by the server owner.
+            int: The total count of stripe plans created by the server owner.
         """
         return self.plans.count()
 
@@ -266,21 +266,74 @@ class ServerOwner(models.Model):
 
     def get_active_plans_count(self):
         """
-        Get the total number of active plans.
+        Get the total number of active stripe plans.
 
         Returns:
-            int: The total number of active plans.
+            int: The total number of active stripe plans.
         """
         return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE.value).count()
 
     def get_inactive_plans_count(self):
         """
-        Get the total number of inactive plans.
+        Get the total number of inactive stripe plans.
 
         Returns:
-            int: The total number of inactive plans.
+            int: The total number of inactive stripe plans.
         """
         return self.plans.filter(status=StripePlan.PlanStatus.INACTIVE.value).count()
+
+    def get_coin_plans(self):
+        """
+        Retrieve the server owner's coin plans from the database.
+
+        Returns:
+            QuerySet: QuerySet of CoinPlan objects belonging to the server owner.
+        """
+        return self.coin_plans.all()
+
+    def get_coin_activeplans(self):
+        return self.get_coin_plans().filter(status=CoinPlan.PlanStatus.ACTIVE)
+
+    def get_coinplans_count(self):
+        """
+        Get the total count of coin plans created by the server owner.
+
+        Returns:
+            int: The total count of coin plans created by the server owner.
+        """
+        return self.coin_plans.count()
+
+    def get_active_coinplans_count(self):
+        """
+        Get the total number of active coin plans.
+
+        Returns:
+            int: The total number of active coin plans.
+        """
+        return self.coin_plans.filter(status=CoinPlan.PlanStatus.ACTIVE.value).count()
+
+    def get_inactive_coinplans_count(self):
+        """
+        Get the total number of inactive coin plans.
+
+        Returns:
+            int: The total number of inactive coin plans.
+        """
+        return self.coin_plans.filter(status=CoinPlan.PlanStatus.INACTIVE.value).count()
+
+    def get_latest_coin_subscriptions(self, limit=3):
+        """
+        Retrieve the latest coin subscriptions for the ServerOwner.
+
+        Args:
+            limit (int): The maximum number of subscriptions to retrieve. Default is 3.
+
+        Returns:
+            QuerySet: QuerySet of Subscription objects ordered by creation date.
+        """
+        return CoinSubscription.objects.filter(
+            subscribed_via=self, status=CoinSubscription.SubscriptionStatus.ACTIVE
+        )[:limit]
 
 
 class Server(models.Model):
@@ -561,6 +614,69 @@ class StripePlan(models.Model):
         return subscribers.count()
 
 
+class CoinPlan(models.Model):
+    """
+    Model for Coin plans.
+    """
+
+    class PlanStatus(models.TextChoices):
+        ACTIVE = "A", "Active"
+        INACTIVE = "I", "Inactive"
+
+    serverowner = models.ForeignKey(
+        ServerOwner, on_delete=models.CASCADE, related_name="coin_plans")
+    name = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    interval_count = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(12)]
+    )
+    description = models.TextField(max_length=300, help_text="300 characters")
+    status = models.CharField(
+        max_length=1, choices=PlanStatus.choices, default=PlanStatus.ACTIVE
+    )
+    subscriber_count = models.IntegerField(default=0)
+    discord_role_id = models.CharField(
+        max_length=255, help_text="ID of Discord role to be assigned to subscribers"
+    )
+    permission_description = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Description of permissions to be given to subscribers",
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created"]
+
+    def __str__(self):
+        return self.name
+
+    def total_earnings(self):
+        # Calculate the total earnings for this plan
+        subscribers = CoinSubscription.objects.filter(
+            plan=self, subscribed_via=self.serverowner)
+        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
+        return total_earnings or Decimal(0)
+
+    def get_coinplan_subscribers(self):
+        # Get all subscribers for this plan, filtered by the server owner
+        return CoinSubscription.objects.filter(plan=self, subscribed_via=self.serverowner)
+
+    def active_subscriptions_count(self):
+        # Count the number of active subscriptions for this plan
+        subscribers = self.get_coinplan_subscribers()
+        active_subscriptions = subscribers.filter(
+            status=CoinSubscription.SubscriptionStatus.ACTIVE)
+        return active_subscriptions.count()
+
+    def total_subscriptions_count(self):
+        # Count the total number of subscriptions for this plan
+        subscribers = self.get_coinplan_subscribers()
+        return subscribers.count()
+
+
 class Subscription(models.Model):
     """
     Model for subscriptions.
@@ -597,6 +713,43 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f"Subscription #{self.id}"
+
+
+class CoinSubscription(models.Model):
+    """
+    Model for coin subscriptions.
+    """
+
+    class SubscriptionStatus(models.TextChoices):
+        ACTIVE = "A", "Active"
+        INACTIVE = "I", "Inactive"
+        EXPIRED = "E", "Expired"
+        CANCELED = "C", "Canceled"
+
+    subscriber = models.ForeignKey(
+        Subscriber, on_delete=models.CASCADE, related_name="coin_subscriptions"
+    )
+    subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
+    plan = models.ForeignKey(CoinPlan, on_delete=models.CASCADE)
+    subscription_date = models.DateTimeField()
+    # calculate date based on the interval, 1=30days, 2=60days etc.
+    expiration_date = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(
+        max_length=1,
+        choices=SubscriptionStatus.choices,
+        default=SubscriptionStatus.INACTIVE,
+    )
+    value = models.IntegerField(
+        default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
+    )
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created"]
+        get_latest_by = ["-created"]
+
+    def __str__(self):
+        return f"Coin Subscription #{self.id}"
 
 
 class PaymentDetail(models.Model):

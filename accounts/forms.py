@@ -2,7 +2,7 @@ import re
 
 from django import forms
 
-from .models import AccessCode, PaymentDetail, Server, ServerOwner, StripePlan
+from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, StripePlan
 
 DISALLOWED_SUBDOMAINS = [
     "activate",
@@ -227,6 +227,19 @@ class CoinbaseOnboardingForm(forms.Form):
         required=True,
     )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        api_secret_key = cleaned_data.get("coinbase_api_secret_key")
+        api_public_key = cleaned_data.get("coinbase_api_public_key")
+
+        # Check if the API keys already exist in the database
+        if ServerOwner.objects.filter(
+            coinbase_api_secret_key=api_secret_key
+        ).exists() or ServerOwner.objects.filter(
+            coinbase_api_public_key=api_public_key
+        ).exists():
+            raise forms.ValidationError("One or both of the API keys already exist.")
+
 
 class PlanForm(forms.ModelForm):
     """
@@ -291,6 +304,91 @@ class PlanForm(forms.ModelForm):
             # Plan name remains the same, no need for uniqueness check
             return name
         if StripePlan.objects.filter(name=name).exists():
+            raise forms.ValidationError("This name has already been chosen.")
+        return name
+
+    def clean_description(self):
+        """
+        Clean up the description field to remove excess whitespace.
+        """
+        description = self.cleaned_data.get("description")
+        if description:
+            description = re.sub(r"\s+", " ", description).strip()
+        return description
+
+    def clean_permission_description(self):
+        """
+        Clean up the permission_description field to remove excess whitespace.
+        """
+        permission_description = self.cleaned_data.get("permission_description")
+        if permission_description:
+            permission_description = re.sub(r"\s+", " ", permission_description).strip()
+        return permission_description
+
+
+class CoinPlanForm(forms.ModelForm):
+    """
+    Form for creating a Coin plan.
+    """
+
+    interval_count = forms.IntegerField(
+        label="Plan Duration in Months",
+        min_value=1,
+        max_value=12,
+        widget=forms.NumberInput(
+            attrs={
+                "placeholder": "Enter a value between 1 to 12",
+                "class": "form-control",
+            }
+        ),
+        required=True,
+    )
+
+    class Meta:
+        model = CoinPlan
+        fields = [
+            "name",
+            "amount",
+            "interval_count",
+            "description",
+            "discord_role_id",
+            "permission_description",
+        ]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "amount": forms.NumberInput(attrs={"class": "form-control"}),
+            "description": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+            "discord_role_id": forms.TextInput(attrs={"class": "form-control"}),
+            "permission_description": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def clean_amount(self):
+        """
+        Validate that the amount is a positive value.
+        """
+        amount = self.cleaned_data.get("amount")
+        if amount <= 0:
+            raise forms.ValidationError("Amount must be a positive value.")
+        return amount
+
+    def clean_interval_count(self):
+        """
+        Validate that the interval_count is a positive value.
+        """
+        interval_count = self.cleaned_data.get("interval_count")
+        if interval_count < 1 or interval_count > 12:
+            raise forms.ValidationError("Interval count must be between 1 and 12.")
+        return interval_count
+
+    def clean_name(self):
+        """
+        Validate that the Plan name is unique for the Serverowner.
+        """
+        name = self.cleaned_data.get("name")
+        if self.instance and self.instance.name == name:
+            # Plan name remains the same, no need for uniqueness check
+            return name
+        if CoinPlan.objects.filter(name=name).exists():
             raise forms.ValidationError("This name has already been chosen.")
         return name
 

@@ -203,3 +203,5 @@ if not DEBUG:
         # django.contrib.auth) you may enable sending PII data.
         send_default_pii=True,
     )
+
+COINBASE_CURRENCY = 'LTC'

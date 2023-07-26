@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}My Plans{% endblock title %}
+
+{% block content %}
+
+{% if coin_plans %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="h3 mb-0 text-secondary">Subscription Plans Overview</h1>
+        <small>Manage the subscription plans for your server</small>
+    </div>
+    <a data-bs-toggle="modal" data-bs-target="#createPlanModal" class="btn btn-sm btn-primary shadow-sm">
+        <i class="fas me-1 fa-plus"></i> New Plan
+    </a>
+</div>
+
+<div class="row mb-4">
+    {% include 'serverowner/_total_plans.html' %}
+    {% include 'serverowner/_total_active_plans.html' %}
+    {% include 'serverowner/_total_inactive_plans.html' %}
+</div>
+
+<h5 class="text-secondary mb-3">All Subscription Plans</h5>
+
+<div class="row g-4 mb-5">
+    {% for plan in coin_plans %}
+    <div class="col-lg-4 col-sm-6">
+        {% include 'serverowner/_plan_card.html' %}
+    </div>
+    {% endfor %}
+    <div class="d-flex justify-content-between mt-5">
+        <p class="text-body-secondary">Showing <span>{{ coin_plans.start_index }}-{{ coin_plans.end_index }}</span>
+            of <span>{{ coin_plans.paginator.count }}</span>
+            plan{{ coin_plans.paginator.count|pluralize }}</p>
+        <div>{% include '_pagination.html' with page_obj=coin_plans %}</div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5 my-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-cloud fa-stack-2x"></i>
+        <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">Start selling Subscriptions with your Plans</h3>
+    <p class="mb-5">You can create from one to an infinite number of plans, <br> and we provide you with the necessary features to manage them.</p>
+    <button type="button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5" data-bs-toggle="modal"
+        data-bs-target="#createPlanModal">
+        <i class="fa-solid fa-plus me-1"></i> Create a Subscription Plan
+    </button>
+</div>
+{% endif %}
+
+{% include 'modals/_create_plan_modal.html' %}
+{% endblock content %}
