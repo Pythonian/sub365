@@ -857,7 +857,7 @@ def subscribe_to_coin_plan(request, plan_id):
         response = requests.post(endpoint, data=data, headers=header)
         response.raise_for_status()
         result = response.json()["result"]
-        if result and result.get("status") == 1:
+        if result:
             checkout_url = result['checkout_url']
             # Transaction was successful, create CoinSubscription for the Subscriber
             txn_id = result['txn_id']
