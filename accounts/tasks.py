@@ -23,24 +23,29 @@ def check_coin_transaction_status(txn_id, api_secret_key, api_public_key, subscr
         }
         response = requests.post(endpoint, data=data, headers=header)
         result = response.json()['result']
-        if result and result.get('status') == 1:
-            # Transaction was successful, create CoinSubscription for the Subscriber
-            subscriber = Subscriber.objects.get(pk=subscriber_id)
-            subscribed_via = ServerOwner.objects.get(pk=subscribed_via_id)
-            plan = CoinPlan.objects.get(pk=plan_id)
+        logger.info(f"Response from API: {result}")
+        if isinstance(result, dict):
+            # if result and result.get('status') == 1:
+            if result.get('status') == 1:
+                # Transaction was successful, create CoinSubscription for the Subscriber
+                subscriber = Subscriber.objects.get(pk=subscriber_id)
+                subscribed_via = ServerOwner.objects.get(pk=subscribed_via_id)
+                plan = CoinPlan.objects.get(pk=plan_id)
 
-            CoinSubscription.objects.create(
-                subscriber=subscriber,
-                subscribed_via=subscribed_via,
-                plan=plan,
-                subscription_date=timezone.now(),
-                expiration_date=timezone.now() + timedelta(days=30),
-                status=CoinSubscription.SubscriptionStatus.ACTIVE,
-                value=1,
-            )
+                CoinSubscription.objects.create(
+                    subscriber=subscriber,
+                    subscribed_via=subscribed_via,
+                    plan=plan,
+                    subscription_date=timezone.now(),
+                    expiration_date=timezone.now() + timedelta(days=30),
+                    status=CoinSubscription.SubscriptionStatus.ACTIVE,
+                    value=1,
+                )
+            else:
+                logger.warning(
+                    f"Transaction status check failed for txn_id: {txn_id}, status: {result.get('status')}")
         else:
-            logger.warning(
-                f"Transaction status check failed for txn_id: {txn_id}, status: {result.get('status')}")
+            logger.warning(f"Unexpected format for 'result': {result}")
     except requests.exceptions.RequestException as e:
         logger.exception(f"Coinbase API request failed: {e}")
     except (ValueError, KeyError) as e:
