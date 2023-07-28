@@ -218,3 +218,6 @@ CELERYBEAT_SCHEDULE = {
         'args': ('txn_id', 'api_secret_key', 'api_public_key', 'subscriber_id', 'subscribed_via_id', 'plan_id'),
     },
 }
+CELERY_IMPORTS = [
+    'accounts.tasks.check_coin_transaction_status',
+]

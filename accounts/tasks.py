@@ -11,7 +11,7 @@ from .utils import create_hmac_signature
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name='check_coin_transaction_status')
+@shared_task
 def check_coin_transaction_status(txn_id, api_secret_key, api_public_key, subscriber_id, subscribed_via_id, plan_id):
 
     try:
