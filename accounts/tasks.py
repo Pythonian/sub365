@@ -12,11 +12,16 @@ from .utils import create_hmac_signature
 
 logger = logging.getLogger(__name__)
 
-# def check_coin_transaction_status(txn_id, api_secret_key, api_public_key):
-
 
 @shared_task
-def check_coin_transaction_status(txn_id, api_secret_key, api_public_key, subscriber_id, subscribed_via_id, plan_id):
+def check_coin_transaction_status(*args, **kwargs):
+    txn_id = kwargs["txn_id"]
+    api_secret_key = kwargs["api_secret_key"]
+    api_public_key = kwargs["api_public_key"]
+    subscriber_id = kwargs["subscriber_id"]
+    subscribed_via_id = kwargs["subscribed_via_id"]
+    plan_id = kwargs["plan_id"]
+
     try:
         endpoint = "https://www.coinpayments.net/api.php"
         data = f"version=1&cmd=get_tx_info&txid={txn_id}&key={api_public_key}&format=json"
