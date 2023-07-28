@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -41,6 +41,7 @@ from .models import (
     Subscription,
     User,
 )
+from .tasks import check_coin_transaction_status
 from .utils import create_hmac_signature, mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -856,24 +857,30 @@ def subscribe_to_coin_plan(request, plan_id):
         response = requests.post(endpoint, data=data, headers=header)
         response.raise_for_status()
         result = response.json()["result"]
-        if result:
+        if result and result.get("status") == 1:
             checkout_url = result['checkout_url']
+            # Transaction was successful, create CoinSubscription for the Subscriber
+            txn_id = result['txn_id']
+            api_secret_key = subscriber.subscribed_via.coinbase_api_secret_key
+            api_public_key = subscriber.subscribed_via.coinbase_api_public_key
+            # Schedule the task to check the transaction status after 30 seconds
+            check_coin_transaction_status.apply_async(
+                args=[txn_id, api_secret_key, api_public_key, subscriber.id, subscriber.subscribed_via.id, plan.id],
+                eta=timezone.now() + timedelta(seconds=30),
+            )
             return redirect(checkout_url)
         else:
             messages.error(request, "An error occurred during the transaction. Please try again later.")
             return redirect("subscriber_dashboard")
     except requests.exceptions.RequestException as e:
-        # Handle request-related exceptions (e.g., network error, timeout)
         logger.exception(f"Coinbase API request failed: {e}")
         messages.error(request, "An error occurred while communicating with Coinbase. Please try again later.")
         return redirect("subscriber_dashboard")
     except (ValueError, KeyError) as e:
-        # Handle JSON parsing or missing key errors
         logger.exception(f"Failed to parse Coinbase API response: {e}")
         messages.error(request, "An unexpected error occurred while processing the response. Please try again later.")
         return redirect("subscriber_dashboard")
     except Exception as e:
-        # Catch any other unexpected exceptions and log them
         logger.exception(f"An unexpected error occurred: {e}")
         messages.error(request, "An unexpected error occurred. Please try again later.")
         return redirect("subscriber_dashboard")
