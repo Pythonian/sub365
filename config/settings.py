@@ -213,11 +213,11 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERYBEAT_SCHEDULE = {
     'check_coin_transaction_status_every_30_seconds': {
-        'task': 'accounts.tasks.check_coin_transaction_status',
+        'task': 'check_coin_transaction_status',
         'schedule': 30.0,
         'args': ('txn_id', 'api_secret_key', 'api_public_key', 'subscriber_id', 'subscribed_via_id', 'plan_id'),
     },
 }
 CELERY_IMPORTS = [
-    'accounts.tasks.check_coin_transaction_status',
+    'accounts.tasks',
 ]
