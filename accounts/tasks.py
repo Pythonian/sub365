@@ -5,7 +5,7 @@ from celery import shared_task
 from datetime import timedelta
 from django.utils import timezone
 
-from config.celery import app
+# from config.celery import app
 
 from .models import CoinSubscription, Subscriber, ServerOwner, CoinPlan
 from .utils import create_hmac_signature
@@ -51,9 +51,9 @@ def check_coin_transaction_status(txn_id, api_secret_key, api_public_key, subscr
         logger.exception(f"An unexpected error occurred: {e}")
 
 
-app.conf.beat_schedule = {
-    'check_coin_transaction_status_every_30_seconds': {
-        'task': 'accounts.tasks.check_coin_transaction_status',
-        'schedule': timedelta(seconds=30),
-    },
-}
+# app.conf.beat_schedule = {
+#     'check_coin_transaction_status_every_30_seconds': {
+#         'task': 'accounts.tasks.check_coin_transaction_status',
+#         'schedule': timedelta(seconds=30),
+#     },
+# }

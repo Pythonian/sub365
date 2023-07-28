@@ -868,15 +868,7 @@ def subscribe_to_coin_plan(request, plan_id):
             plan_id = plan.id
             # Schedule the task to check the transaction status after 30 seconds
             check_coin_transaction_status.apply_async(
-                kwargs={
-                    'txn_id': txn_id,
-                    'api_secret_key': api_secret_key,
-                    'api_public_key': api_public_key,
-                    'subscriber_id': subscriber_id,
-                    'subscribed_via_id': subscribed_via_id,
-                    'plan_id': plan_id,
-                },
-                # args=[txn_id, api_secret_key, api_public_key, subscriber_id, subscribed_via_id, plan_id],
+                args=[txn_id, api_secret_key, api_public_key, subscriber_id, subscribed_via_id, plan_id],
                 eta=timezone.now() + timedelta(seconds=30),
             )
             return redirect(checkout_url)
