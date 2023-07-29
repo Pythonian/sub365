@@ -921,7 +921,7 @@ def subscribe_to_coin_plan(request, plan_id):
                 qrcode_url=result["qrcode_url"],
             )
             check_coin_transaction_status.apply_async(
-                args=[coin_subscription.pk],
+                args=(coin_subscription.pk,),
                 eta=timezone.now() + timedelta(seconds=30),
             )
             return redirect(checkout_url)
