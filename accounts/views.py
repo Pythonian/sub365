@@ -835,6 +835,57 @@ def subscriber_dashboard(request):
     return render(request, template, context)
 
 
+# @login_required
+# @require_POST
+# def subscribe_to_coin_plan(request, plan_id):
+#     plan = get_object_or_404(CoinPlan, id=plan_id)
+#     subscriber = get_object_or_404(Subscriber, user=request.user)
+
+#     try:
+#         endpoint = "https://www.coinpayments.net/api.php"
+#         data = (
+#             f"version=1&cmd=create_transaction&amount={plan.amount}&currency1=USD&currency2="
+#             + settings.COINBASE_CURRENCY
+#             + f"&buyer_email={subscriber.email}&key={subscriber.subscribed_via.coinbase_api_public_key}&format=json"
+#         )
+#         header = {
+#             "Content-Type": "application/x-www-form-urlencoded",
+#             "HMAC": create_hmac_signature(
+#                 data, subscriber.subscribed_via.coinbase_api_secret_key
+#             ),
+#         }
+#         response = requests.post(endpoint, data=data, headers=header)
+#         response.raise_for_status()
+#         result = response.json()["result"]
+#         if result:
+#             checkout_url = result['checkout_url']
+#             txn_id = result['txn_id']
+#             api_secret_key = subscriber.subscribed_via.coinbase_api_secret_key
+#             api_public_key = subscriber.subscribed_via.coinbase_api_public_key
+#             subscriber_id = subscriber.id
+#             plan_id = plan.id
+#             check_coin_transaction_status.apply_async(
+#                 args=[txn_id, api_secret_key, api_public_key, subscriber_id, plan_id],
+#                 eta=timezone.now() + timedelta(seconds=30),
+#             )
+#             return redirect(checkout_url)
+#         else:
+#             messages.error(request, "An error occurred during the transaction. Please try again later.")
+#             return redirect("subscriber_dashboard")
+#     except requests.exceptions.RequestException as e:
+#         logger.exception(f"Coinbase API request failed: {e}")
+#         messages.error(request, "An error occurred while communicating with Coinbase. Please try again later.")
+#         return redirect("subscriber_dashboard")
+#     except (ValueError, KeyError) as e:
+#         logger.exception(f"Failed to parse Coinbase API response: {e}")
+#         messages.error(request, "An unexpected error occurred while processing the response. Please try again later.")
+#         return redirect("subscriber_dashboard")
+#     except Exception as e:
+#         logger.exception(f"An unexpected error occurred: {e}")
+#         messages.error(request, "An unexpected error occurred. Please try again later.")
+#         return redirect("subscriber_dashboard")
+
+
 @login_required
 @require_POST
 def subscribe_to_coin_plan(request, plan_id):
@@ -858,30 +909,38 @@ def subscribe_to_coin_plan(request, plan_id):
         response.raise_for_status()
         result = response.json()["result"]
         if result:
-            checkout_url = result['checkout_url']
-            # Transaction was successful, create CoinSubscription for the Subscriber
-            txn_id = result['txn_id']
-            api_secret_key = subscriber.subscribed_via.coinbase_api_secret_key
-            api_public_key = subscriber.subscribed_via.coinbase_api_public_key
-            subscriber_id = subscriber.id
-            subscribed_via_id = subscriber.subscribed_via.id
-            plan_id = plan.id
-            # Schedule the task to check the transaction status after 30 seconds
-            check_coin_transaction_status.apply_async(
-                args=[txn_id, api_secret_key, api_public_key, subscriber_id, subscribed_via_id, plan_id],
-                eta=timezone.now() + timedelta(seconds=30),
+            checkout_url = result["checkout_url"]
+            coin_subscription = CoinSubscription.objects.create(
+                subscriber=subscriber,
+                subscribed_via=subscriber.subscribed_via,
+                plan=plan,
+                subscription_id=result["txn_id"],
+                address=result["address"],
+                checkout_url=result["checkout_url"],
+                status_url=result["status_url"],
+                qrcode_url=result["qrcode_url"],
             )
+            check_coin_transaction_status.delay(coin_subscription.pk)
             return redirect(checkout_url)
         else:
-            messages.error(request, "An error occurred during the transaction. Please try again later.")
+            messages.error(
+                request,
+                "An error occurred during the transaction. Please try again later.",
+            )
             return redirect("subscriber_dashboard")
     except requests.exceptions.RequestException as e:
         logger.exception(f"Coinbase API request failed: {e}")
-        messages.error(request, "An error occurred while communicating with Coinbase. Please try again later.")
+        messages.error(
+            request,
+            "An error occurred while communicating with Coinbase. Please try again later.",
+        )
         return redirect("subscriber_dashboard")
     except (ValueError, KeyError) as e:
         logger.exception(f"Failed to parse Coinbase API response: {e}")
-        messages.error(request, "An unexpected error occurred while processing the response. Please try again later.")
+        messages.error(
+            request,
+            "An unexpected error occurred while processing the response. Please try again later.",
+        )
         return redirect("subscriber_dashboard")
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")

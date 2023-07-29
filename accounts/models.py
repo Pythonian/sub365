@@ -595,7 +595,9 @@ class StripePlan(models.Model):
     def total_earnings(self):
         # Calculate the total earnings for this plan
         subscribers = Subscription.objects.filter(plan=self, subscribed_via=self.user)
-        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
+        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))[
+            "total"
+        ]
         return total_earnings or Decimal(0)
 
     def get_stripeplan_subscribers(self):
@@ -605,7 +607,9 @@ class StripePlan(models.Model):
     def active_subscriptions_count(self):
         # Count the number of active subscriptions for this plan
         subscribers = self.get_stripeplan_subscribers()
-        active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE)
+        active_subscriptions = subscribers.filter(
+            status=Subscription.SubscriptionStatus.ACTIVE
+        )
         return active_subscriptions.count()
 
     def total_subscriptions_count(self):
@@ -624,7 +628,8 @@ class CoinPlan(models.Model):
         INACTIVE = "I", "Inactive"
 
     serverowner = models.ForeignKey(
-        ServerOwner, on_delete=models.CASCADE, related_name="coin_plans")
+        ServerOwner, on_delete=models.CASCADE, related_name="coin_plans"
+    )
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
     interval_count = models.IntegerField(
@@ -656,19 +661,25 @@ class CoinPlan(models.Model):
     def total_earnings(self):
         # Calculate the total earnings for this plan
         subscribers = CoinSubscription.objects.filter(
-            plan=self, subscribed_via=self.serverowner)
-        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
+            plan=self, subscribed_via=self.serverowner
+        )
+        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))[
+            "total"
+        ]
         return total_earnings or Decimal(0)
 
     def get_coinplan_subscribers(self):
         # Get all subscribers for this plan, filtered by the server owner
-        return CoinSubscription.objects.filter(plan=self, subscribed_via=self.serverowner)
+        return CoinSubscription.objects.filter(
+            plan=self, subscribed_via=self.serverowner
+        )
 
     def active_subscriptions_count(self):
         # Count the number of active subscriptions for this plan
         subscribers = self.get_coinplan_subscribers()
         active_subscriptions = subscribers.filter(
-            status=CoinSubscription.SubscriptionStatus.ACTIVE)
+            status=CoinSubscription.SubscriptionStatus.ACTIVE
+        )
         return active_subscriptions.count()
 
     def total_subscriptions_count(self):
@@ -731,7 +742,7 @@ class CoinSubscription(models.Model):
     )
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(CoinPlan, on_delete=models.CASCADE)
-    subscription_date = models.DateTimeField()
+    subscription_date = models.DateTimeField(blank=True, null=True)
     # calculate date based on the interval, 1=30days, 2=60days etc.
     expiration_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(
@@ -739,6 +750,11 @@ class CoinSubscription(models.Model):
         choices=SubscriptionStatus.choices,
         default=SubscriptionStatus.INACTIVE,
     )
+    subscription_id = models.CharField(max_length=225, blank=True, null=True)
+    address = models.CharField(max_length=225, blank=True, null=True)
+    checkout_url = models.CharField(max_length=225, blank=True, null=True)
+    status_url = models.CharField(max_length=225, blank=True, null=True)
+    qrcode_url = models.CharField(max_length=225, blank=True, null=True)
     value = models.IntegerField(
         default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
