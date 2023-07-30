@@ -140,6 +140,8 @@ def check_coin_transaction_status(pk):
                 )
         else:
             logger.warning(f"Unexpected format for 'result': {result}")
+    except ObjectDoesNotExist:
+        coin_subscription = None
     except requests.exceptions.RequestException as e:
         logger.exception(f"Coinbase API request failed: {e}")
     except (ValueError, KeyError) as e:
