@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="check_coin_withdrawal_status")
 def check_coin_withdrawal_status(affiliate_id, serverowner_id):
-    affiliate = Affiliate.objects.get(id=affiliate_id)
+    affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
     serverowner = ServerOwner.objects.get(id=serverowner_id)
     try:
         endpoint = "https://www.coinpayments.net/api.php"
