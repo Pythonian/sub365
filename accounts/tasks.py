@@ -3,6 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.utils import timezone
 
@@ -23,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="check_coin_withdrawal_status")
 def check_coin_withdrawal_status(affiliate_id, serverowner_id):
-    affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
-    serverowner = ServerOwner.objects.get(id=serverowner_id)
     try:
+        affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
+        serverowner = ServerOwner.objects.get(id=serverowner_id)
         endpoint = "https://www.coinpayments.net/api.php"
         data = (
             f"version=1&cmd=create_withdrawal&amount={serverowner.total_pending_btc_commissions}&currency="
@@ -66,6 +67,9 @@ def check_coin_withdrawal_status(affiliate_id, serverowner_id):
                 logger.warning(f"Withdrawal status: {result.get('status')}")
         else:
             logger.warning(f"Unexpected format for 'result': {result}")
+    except ObjectDoesNotExist:
+        affiliate = None
+        serverowner = None
     except requests.exceptions.RequestException as e:
         logger.exception(f"Coinbase API request failed: {e}")
     except (ValueError, KeyError) as e:
