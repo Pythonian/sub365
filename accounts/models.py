@@ -750,6 +750,7 @@ class CoinSubscription(models.Model):
         choices=SubscriptionStatus.choices,
         default=SubscriptionStatus.INACTIVE,
     )
+    coin_amount = models.CharField(max_length=225, blank=True, null=True)
     subscription_id = models.CharField(max_length=225, blank=True, null=True)
     address = models.CharField(max_length=225, blank=True, null=True)
     checkout_url = models.CharField(max_length=225, blank=True, null=True)

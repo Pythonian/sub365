@@ -41,7 +41,7 @@ from .models import (
     Subscription,
     User,
 )
-from .tasks import check_coin_transaction_status
+from .tasks import check_coin_transaction_status, check_coin_withdrawal_status
 from .utils import create_hmac_signature, mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -718,36 +718,93 @@ def affiliates(request):
 @onboarding_completed
 def pending_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
+    serverowner_id = serverowner.id
 
-    if request.method == "POST":
-        affiliate_id = request.POST.get("affiliate_id")
-        if affiliate_id is not None:
-            affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
-            if affiliate is not None:
-                # Update the server owner's total_pending_commissions
-                serverowner.total_pending_commissions = (
-                    F("total_pending_commissions") - affiliate.pending_commissions
-                )
-                serverowner.save()
+    if serverowner.coinbase_onboarding:
+        if request.method == "POST":
+            affiliate_id = request.POST.get("affiliate_id")
+            if affiliate_id is not None:
+                affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
+                if affiliate is not None:
+                    try:
+                        endpoint = "https://www.coinpayments.net/api.php"
+                        data = (
+                            f"version=1&cmd=create_withdrawal&amount={serverowner.total_pending_btc_commissions}&currency="
+                            + settings.COINBASE_CURRENCY
+                            + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.body}&key={serverowner.coinbase_api_public_key}&format=json"
+                        )
+                        header = {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "HMAC": create_hmac_signature(
+                                data, serverowner.coinbase_api_secret_key
+                            ),
+                        }
+                        response = requests.post(endpoint, data=data, headers=header)
+                        response.raise_for_status()
+                        result = response.json()["result"]
+                        if result:
+                            check_coin_withdrawal_status.apply_async(
+                                args=(
+                                    affiliate_id,
+                                    serverowner_id,
+                                ),
+                            )
+                            messages.success(
+                                request,
+                                "Your coin payment is being sent to the affiliate. A confirmation will be sent soon.",
+                            )
+                            return redirect("pending_affiliate_payment")
+                    except requests.exceptions.RequestException as e:
+                        logger.exception(f"Coinbase API request failed: {e}")
+                        messages.error(
+                            request,
+                            "An error occurred while communicating with Coinbase. Please try again later.",
+                        )
+                        return redirect("pending_affiliate_payment")
+                    except (ValueError, KeyError) as e:
+                        logger.exception(f"Failed to parse Coinbase API response: {e}")
+                        messages.error(
+                            request,
+                            "An unexpected error occurred while processing the response. Please try again later.",
+                        )
+                        return redirect("pending_affiliate_payment")
+                    except Exception as e:
+                        logger.exception(f"An unexpected error occurred: {e}")
+                        messages.error(
+                            request,
+                            "An unexpected error occurred. Please try again later.",
+                        )
+                        return redirect("pending_affiliate_payment")
+    else:
+        if request.method == "POST":
+            affiliate_id = request.POST.get("affiliate_id")
+            if affiliate_id is not None:
+                affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
+                if affiliate is not None:
+                    # Update the server owner's total_pending_commissions
+                    serverowner.total_pending_commissions = (
+                        F("total_pending_commissions") - affiliate.pending_commissions
+                    )
+                    serverowner.save()
 
-                # Update the affiliate's pending_commissions and total_commissions_paid fields
-                affiliate.total_commissions_paid = (
-                    F("total_commissions_paid") + affiliate.pending_commissions
-                )
-                affiliate.pending_commissions = Decimal(0)
-                affiliate.last_payment_date = timezone.now()
-                affiliate.save()
+                    # Update the affiliate's pending_commissions and total_commissions_paid fields
+                    affiliate.total_commissions_paid = (
+                        F("total_commissions_paid") + affiliate.pending_commissions
+                    )
+                    affiliate.pending_commissions = Decimal(0)
+                    affiliate.last_payment_date = timezone.now()
+                    affiliate.save()
 
-                # Mark the associated AffiliatePayment instances as paid
-                affiliate_payments = AffiliatePayment.objects.filter(
-                    serverowner=serverowner, affiliate=affiliate, paid=False
-                )
-                affiliate_payments.update(
-                    paid=True, date_payment_confirmed=timezone.now()
-                )
+                    # Mark the associated AffiliatePayment instances as paid
+                    affiliate_payments = AffiliatePayment.objects.filter(
+                        serverowner=serverowner, affiliate=affiliate, paid=False
+                    )
+                    affiliate_payments.update(
+                        paid=True, date_payment_confirmed=timezone.now()
+                    )
 
-                messages.success(request, "Payment confirmed.")
-                return redirect("pending_affiliate_payment")
+                    messages.success(request, "Payment confirmed.")
+                    return redirect("pending_affiliate_payment")
 
     template = "serverowner/pending_affiliate_payment.html"
     context = {
@@ -835,57 +892,6 @@ def subscriber_dashboard(request):
     return render(request, template, context)
 
 
-# @login_required
-# @require_POST
-# def subscribe_to_coin_plan(request, plan_id):
-#     plan = get_object_or_404(CoinPlan, id=plan_id)
-#     subscriber = get_object_or_404(Subscriber, user=request.user)
-
-#     try:
-#         endpoint = "https://www.coinpayments.net/api.php"
-#         data = (
-#             f"version=1&cmd=create_transaction&amount={plan.amount}&currency1=USD&currency2="
-#             + settings.COINBASE_CURRENCY
-#             + f"&buyer_email={subscriber.email}&key={subscriber.subscribed_via.coinbase_api_public_key}&format=json"
-#         )
-#         header = {
-#             "Content-Type": "application/x-www-form-urlencoded",
-#             "HMAC": create_hmac_signature(
-#                 data, subscriber.subscribed_via.coinbase_api_secret_key
-#             ),
-#         }
-#         response = requests.post(endpoint, data=data, headers=header)
-#         response.raise_for_status()
-#         result = response.json()["result"]
-#         if result:
-#             checkout_url = result['checkout_url']
-#             txn_id = result['txn_id']
-#             api_secret_key = subscriber.subscribed_via.coinbase_api_secret_key
-#             api_public_key = subscriber.subscribed_via.coinbase_api_public_key
-#             subscriber_id = subscriber.id
-#             plan_id = plan.id
-#             check_coin_transaction_status.apply_async(
-#                 args=[txn_id, api_secret_key, api_public_key, subscriber_id, plan_id],
-#                 eta=timezone.now() + timedelta(seconds=30),
-#             )
-#             return redirect(checkout_url)
-#         else:
-#             messages.error(request, "An error occurred during the transaction. Please try again later.")
-#             return redirect("subscriber_dashboard")
-#     except requests.exceptions.RequestException as e:
-#         logger.exception(f"Coinbase API request failed: {e}")
-#         messages.error(request, "An error occurred while communicating with Coinbase. Please try again later.")
-#         return redirect("subscriber_dashboard")
-#     except (ValueError, KeyError) as e:
-#         logger.exception(f"Failed to parse Coinbase API response: {e}")
-#         messages.error(request, "An unexpected error occurred while processing the response. Please try again later.")
-#         return redirect("subscriber_dashboard")
-#     except Exception as e:
-#         logger.exception(f"An unexpected error occurred: {e}")
-#         messages.error(request, "An unexpected error occurred. Please try again later.")
-#         return redirect("subscriber_dashboard")
-
-
 @login_required
 @require_POST
 def subscribe_to_coin_plan(request, plan_id):
@@ -915,6 +921,7 @@ def subscribe_to_coin_plan(request, plan_id):
                 subscribed_via=subscriber.subscribed_via,
                 plan=plan,
                 subscription_id=result["txn_id"],
+                coin_amount=result["amount"],
                 address=result["address"],
                 checkout_url=result["checkout_url"],
                 status_url=result["status_url"],
@@ -1091,43 +1098,63 @@ def subscription_success(request):
 def subscription_cancel(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
-    try:
-        # Retrieve the active subscription for the subscriber
-        subscription = get_object_or_404(
-            Subscription,
-            subscriber=subscriber,
-            status=Subscription.SubscriptionStatus.ACTIVE,
-        )
-
-        # Cancel the subscription using the Stripe API
-        stripe.Subscription.delete(subscription.subscription_id)
-        # Update the Subscription object
-        subscription.status = Subscription.SubscriptionStatus.CANCELED
-        subscription.save()
-
-        # Add a success message
-        messages.success(request, "Your subscription has been canceled successfully.")
-    except stripe.error.StripeError as e:
-        logger.exception("An error occurred during a Stripe API call: %s", str(e))
-        messages.error(
-            request,
-            "An error occurred while canceling your subscription. Please try again later.",
-        )
+    if subscriber.subscribed_via.coinbase_onboarding:
+        try:
+            coin_subscription = get_object_or_404(
+                CoinSubscription,
+                subscriber=subscriber,
+                status=CoinSubscription.SubscriptionStatus.ACTIVE,
+            )
+            coin_subscription.status = CoinSubscription.SubscriptionStatus.CANCELED
+            coin_subscription.save()
+            messages.success(
+                request, "Your subscription has been canceled successfully."
+            )
+        except Http404:
+            # If the subscription is not found, it will raise a 404 error with a message
+            messages.error(request, "No active subscription found for cancellation.")
+            return redirect("subscriber_dashboard")
         return redirect("subscriber_dashboard")
+    else:
+        try:
+            # Retrieve the active subscription for the subscriber
+            subscription = get_object_or_404(
+                Subscription,
+                subscriber=subscriber,
+                status=Subscription.SubscriptionStatus.ACTIVE,
+            )
 
-    except Http404:
-        # If the subscription is not found, it will raise a 404 error with a message
-        messages.error(request, "No active subscription found for cancellation.")
+            # Cancel the subscription using the Stripe API
+            stripe.Subscription.delete(subscription.subscription_id)
+            # Update the Subscription object
+            subscription.status = Subscription.SubscriptionStatus.CANCELED
+            subscription.save()
+
+            # Add a success message
+            messages.success(
+                request, "Your subscription has been canceled successfully."
+            )
+        except stripe.error.StripeError as e:
+            logger.exception("An error occurred during a Stripe API call: %s", str(e))
+            messages.error(
+                request,
+                "An error occurred while canceling your subscription. Please try again later.",
+            )
+            return redirect("subscriber_dashboard")
+
+        except Http404:
+            # If the subscription is not found, it will raise a 404 error with a message
+            messages.error(request, "No active subscription found for cancellation.")
+            return redirect("subscriber_dashboard")
+
+        except Exception as e:
+            logger.exception("An unexpected error occurred: %s", str(e))
+            messages.error(
+                request,
+                "An unexpected error occurred while processing your request. Please try again later.",
+            )
+
         return redirect("subscriber_dashboard")
-
-    except Exception as e:
-        logger.exception("An unexpected error occurred: %s", str(e))
-        messages.error(
-            request,
-            "An unexpected error occurred while processing your request. Please try again later.",
-        )
-
-    return redirect("subscriber_dashboard")
 
 
 @login_required
