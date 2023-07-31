@@ -215,14 +215,20 @@ class CoinbaseOnboardingForm(forms.Form):
     coinbase_api_secret_key = forms.CharField(
         max_length=255,
         widget=forms.TextInput(
-            attrs={"placeholder": "Enter your Coinbase API secret key", "class": "form-control"}
+            attrs={
+                "placeholder": "Enter your Coinbase API secret key",
+                "class": "form-control",
+            }
         ),
         required=True,
     )
     coinbase_api_public_key = forms.CharField(
         max_length=255,
         widget=forms.TextInput(
-            attrs={"placeholder": "Enter your Coinbase API public key", "class": "form-control"}
+            attrs={
+                "placeholder": "Enter your Coinbase API public key",
+                "class": "form-control",
+            }
         ),
         required=True,
     )
@@ -233,11 +239,12 @@ class CoinbaseOnboardingForm(forms.Form):
         api_public_key = cleaned_data.get("coinbase_api_public_key")
 
         # Check if the API keys already exist in the database
-        if ServerOwner.objects.filter(
-            coinbase_api_secret_key=api_secret_key
-        ).exists() or ServerOwner.objects.filter(
-            coinbase_api_public_key=api_public_key
-        ).exists():
+        if (
+            ServerOwner.objects.filter(coinbase_api_secret_key=api_secret_key).exists()
+            or ServerOwner.objects.filter(
+                coinbase_api_public_key=api_public_key
+            ).exists()
+        ):
             raise forms.ValidationError("One or both of the API keys already exist.")
 
 
@@ -416,5 +423,27 @@ class PaymentDetailForm(forms.ModelForm):
         model = PaymentDetail
         fields = ["body"]
         widgets = {
-            "body": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+            "body": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "class": "form-control",
+                    "required": True,
+                    "placeholder": "Describe how you will like to be paid your commission.",
+                }
+            ),
+        }
+
+
+class CoinPaymentDetailForm(forms.ModelForm):
+    class Meta:
+        model = PaymentDetail
+        fields = ["litecoin_address"]
+        widgets = {
+            "litecoin_address": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "required": True,
+                    "placeholder": "Enter your Litecoin Address",
+                }
+            ),
         }

@@ -21,12 +21,13 @@
                             <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                         </div>
                         {% endfor %}
-                        {% if serverowner.coinbase_onboarding %}
-                            <label class="form-label" for="{{ form.body.id_for_label }}">Litecoin Address:</label>
-                            {% render_field form.body placeholder="Please enter your litecoin address" %}
+                        {% if server_owner.coinbase_onboarding %}
+                        <label class="form-label" for="{{ form.litecoin_address.id_for_label }}">Litecoin
+                            Address:</label>
+                        {% render_field form.litecoin_address %}
                         {% else %}
-                            <label class="form-label" for="{{ form.body.id_for_label }}">Payment Method:</label>
-                            {% render_field form.body placeholder="Describe how you will like to be paid your commission" %}
+                        <label class="form-label" for="{{ form.body.id_for_label }}">Payment Method:</label>
+                        {% render_field form.body %}
                         {% endif %}
                     </div>
                 </div>

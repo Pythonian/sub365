@@ -896,7 +896,8 @@ class CoinSubscription(models.Model):
 
 class PaymentDetail(models.Model):
     affiliate = models.OneToOneField(Affiliate, on_delete=models.CASCADE)
-    body = models.TextField()
+    litecoin_address = models.CharField(max_length=255, blank=True, null=True)
+    body = models.TextField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 

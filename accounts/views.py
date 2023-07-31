@@ -24,6 +24,7 @@ from .decorators import onboarding_completed, redirect_if_no_subdomain
 from .forms import (
     CoinbaseOnboardingForm,
     CoinPlanForm,
+    CoinPaymentDetailForm,
     OnboardingForm,
     PaymentDetailForm,
     PlanForm,
@@ -845,6 +846,7 @@ def subscriber_dashboard(request):
             latest_subscription = None
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = CoinSubscription.objects.filter(subscriber=subscriber)
+        form = CoinPaymentDetailForm()
     else:
         # Retrieve the plans related to the ServerOwner
         plans = StripePlan.objects.filter(
@@ -862,13 +864,9 @@ def subscriber_dashboard(request):
 
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = Subscription.objects.filter(subscriber=subscriber)
+        form = PaymentDetailForm()
 
-    form = PaymentDetailForm()
-
-    if server_owner.coinbase_onboarding:
-        template = "subscriber/coin_dashboard.html"
-    else:
-        template = "subscriber/dashboard.html"
+    template = "subscriber/dashboard.html"
 
     context = {
         "plans": plans,
@@ -1170,16 +1168,28 @@ def upgrade_to_affiliate(request):
     subscriber.user.is_affiliate = True
     subscriber.user.save()
 
-    form = PaymentDetailForm(request.POST)
-    if form.is_valid():
-        payment_detail = form.save(commit=False)
-        payment_detail.affiliate = affiliate
-        payment_detail.save()
-        messages.success(request, "You have upgraded to being an Affiliate.")
-        return redirect("affiliate_dashboard")
+    if subscriber.subscribed_via.coinbase_onboarding:
+        form = CoinPaymentDetailForm(request.POST)
+        if form.is_valid():
+            payment_detail = form.save(commit=False)
+            payment_detail.affiliate = affiliate
+            payment_detail.save()
+            messages.success(request, "You have upgraded to being an Affiliate.")
+            return redirect("affiliate_dashboard")
+        else:
+            messages.error(request, "An error occured while submitting your form.")
+        return redirect("subscriber_dashboard")
     else:
-        messages.error(request, "An error occured while submitting your form.")
-    return redirect("subscriber_dashboard")
+        form = PaymentDetailForm(request.POST)
+        if form.is_valid():
+            payment_detail = form.save(commit=False)
+            payment_detail.affiliate = affiliate
+            payment_detail.save()
+            messages.success(request, "You have upgraded to being an Affiliate.")
+            return redirect("affiliate_dashboard")
+        else:
+            messages.error(request, "An error occured while submitting your form.")
+        return redirect("subscriber_dashboard")
 
 
 ##################################################
@@ -1193,17 +1203,30 @@ def affiliate_dashboard(request):
     invitations = affiliate.get_affiliate_invitees()
     payment_detail = affiliate.paymentdetail
 
-    if request.method == "POST":
-        form = PaymentDetailForm(request.POST, instance=payment_detail)
-        if form.is_valid():
-            payment_detail = form.save(commit=False)
-            payment_detail.save()
-            messages.success(request, "Your payment detail has been updated.")
-            return redirect("affiliate_dashboard")
+    if affiliate.serverowner.coinbase_onboarding:
+        if request.method == "POST":
+            form = CoinPaymentDetailForm(request.POST, instance=payment_detail)
+            if form.is_valid():
+                payment_detail = form.save(commit=False)
+                payment_detail.save()
+                messages.success(request, "Your payment detail has been updated.")
+                return redirect("affiliate_dashboard")
+            else:
+                messages.error(request, "An error occured while submitting your form.")
         else:
-            messages.error(request, "An error occured while submitting your form.")
+            form = CoinPaymentDetailForm(instance=payment_detail)
     else:
-        form = PaymentDetailForm(instance=payment_detail)
+        if request.method == "POST":
+            form = PaymentDetailForm(request.POST, instance=payment_detail)
+            if form.is_valid():
+                payment_detail = form.save(commit=False)
+                payment_detail.save()
+                messages.success(request, "Your payment detail has been updated.")
+                return redirect("affiliate_dashboard")
+            else:
+                messages.error(request, "An error occured while submitting your form.")
+        else:
+            form = PaymentDetailForm(instance=payment_detail)
 
     template = "affiliate/dashboard.html"
     context = {
