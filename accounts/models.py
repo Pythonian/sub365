@@ -37,31 +37,151 @@ class ServerOwner(models.Model):
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Total pending commissions to be paid by the server owner",
+        help_text="Total pending dollar commissions to be paid by the server owner",
+    )
+    total_coin_pending_commissions = models.DecimalField(
+        max_digits=20,
+        decimal_places=8,
+        default=0,
+        help_text="Total pending coin commissions to be paid by the server owner",
     )
     coinbase_api_secret_key = models.CharField(max_length=255, blank=True, null=True)
     coinbase_api_public_key = models.CharField(max_length=255, blank=True, null=True)
     coinbase_onboarding = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.username
+
+    def get_choice_server(self):
+        """
+        Retrieve the choice server marked as True for the ServerOwner.
+
+        Returns:
+            Server: The choice server of the ServerOwner marked as True.
+        """
+        return self.servers.filter(choice_server=True).first()
+
+    #####===== SERVEROWNER PLAN METHODS =====#####
+
+    def get_plans(self):
+        """
+        Retrieve the server owner's plans from the database.
+
+        Returns:
+            QuerySet: QuerySet of Plan objects belonging to the server owner.
+        """
+        if self.coinbase_onboarding:
+            return self.coin_plans.all()
+        else:
+            return self.plans.all()
+
+    def get_plan_count(self):
+        """
+        Get the total count of plans created by the server owner.
+
+        Returns:
+            int: The total count of plans created by the server owner.
+        """
+        if self.coinbase_onboarding:
+            return self.coin_plans.count()
+        else:
+            return self.plans.count()
+
+    def get_active_plans(self, limit=3):
+        """
+        Get the active plans created by the ServerOwner.
+
+        Returns:
+            Queryset: QuerySet of Plan objects set to a limit.
+        """
+        if self.coinbase_onboarding:
+            return self.get_plans().filter(status=CoinPlan.PlanStatus.ACTIVE)[:limit]
+        else:
+            return self.get_plans().filter(status=StripePlan.PlanStatus.ACTIVE)[:limit]
+
+    def get_active_plans_count(self):
+        """
+        Get the total number of active plans.
+
+        Returns:
+            int: The total number of active plans.
+        """
+        if self.coinbase_onboarding:
+            return (
+                self.get_plans().filter(status=CoinPlan.PlanStatus.ACTIVE.value).count()
+            )
+        else:
+            return (
+                self.get_plans()
+                .filter(status=StripePlan.PlanStatus.ACTIVE.value)
+                .count()
+            )
+
+    def get_inactive_plans_count(self):
+        """
+        Get the total number of inactive plans.
+
+        Returns:
+            int: The total number of inactive plans.
+        """
+        if self.coinbase_onboarding:
+            return self.coin_plans.filter(
+                status=CoinPlan.PlanStatus.INACTIVE.value
+            ).count()
+        else:
+            return self.plans.filter(
+                status=StripePlan.PlanStatus.INACTIVE.value
+            ).count()
+
+    def get_popular_plans(self, limit=3):
+        """
+        Get the popular plans created by the ServerOwner based on number of subscribers.
+
+        Returns:
+            QuerySet: QuerySet of Plan objects ordered by subscriber count
+                      in descending order excluding plans with no subscribers.
+        """
+        # TODO: Can i use self.get_plans().filter()
+        if self.coinbase_onboarding:
+            return self.coin_plans.filter(
+                status=CoinPlan.PlanStatus.ACTIVE, subscriber_count__gt=0
+            ).order_by("-subscriber_count")[:limit]
+        else:
+            return self.plans.filter(
+                status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0
+            ).order_by("-subscriber_count")[:limit]
+
+    #####===== SERVEROWNER AFFILIATE METHODS =====#####
 
     def get_total_payments_to_affiliates(self):
         """
         Get the total payments the server owner has paid to affiliates.
         """
-        return (
-            self.affiliate_set.aggregate(
-                total_payments=Sum("total_commissions_paid")
-            ).get("total_payments")
-            or 0
-        )
+        if self.coinbase_onboarding:
+            return (
+                self.affiliate_set.aggregate(
+                    total_coin_payments=Sum("total_coin_commissions_paid")
+                ).get("total_coin_payments")
+                or 0
+            )
+        else:
+            return (
+                self.affiliate_set.aggregate(
+                    total_payments=Sum("total_commissions_paid")
+                ).get("total_payments")
+                or 0
+            )
 
     def get_pending_affiliates(self):
         """
         Get a list of pending affiliates that the server owner is to pay.
         """
-        return self.affiliate_set.exclude(pending_commissions=0)
+        if self.coinbase_onboarding:
+            return self.affiliate_set.exclude(pending_coin_commissions=0)
+        else:
+            return self.affiliate_set.exclude(pending_commissions=0)
 
     def get_pending_affiliates_count(self):
         """
@@ -97,12 +217,14 @@ class ServerOwner(models.Model):
         """
         Get the total number of affiliates who have been paid by serverowner.
         """
+        # TODO: change to get_affiliates_confirmed_payment_count
         return self.get_confirmed_affiliate_payments().count()
 
     def get_confirmed_payment_amount(self):
         """
         Get the total amount of confirmed payments the server owner is to pay affiliates.
         """
+        # TODO: for coin payments
         confirmed_payments = self.get_confirmed_affiliate_payments()
         total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
         if total_amount is None:
@@ -120,55 +242,6 @@ class ServerOwner(models.Model):
 
         commission_amount = (subscription_amount * commission_percentage) / 100
         return commission_amount
-
-    def get_choice_server(self):
-        """
-        Retrieve the choice server marked as True for the ServerOwner.
-
-        Returns:
-            Server: The choice server of the ServerOwner marked as True.
-        """
-        return self.servers.filter(choice_server=True).first()
-
-    def get_stripe_plans(self):
-        """
-        Retrieve the server owner's Stripe plans from the database.
-
-        Returns:
-            QuerySet: QuerySet of StripePlan objects belonging to the server owner.
-        """
-        return self.plans.all()
-
-    def get_plan_count(self):
-        """
-        Get the total count of stripe plans created by the server owner.
-
-        Returns:
-            int: The total count of stripe plans created by the server owner.
-        """
-        return self.plans.count()
-
-    def get_popular_plans(self, limit=3):
-        """
-        Get the popular plans created by the ServerOwner based on number of subscribers.
-
-        Returns:
-            QuerySet: QuerySet of StripePlan objects ordered by subscriber count
-                      in descending order excluding plans with no subscribers.
-        """
-        return self.plans.filter(
-            status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0
-        ).order_by("-subscriber_count")[:limit]
-
-    def get_subscribed_users(self):
-        """
-        Retrieve the subscribers who subscribed to any of the plans created by the
-        ServerOwner.
-
-        Returns:
-            QuerySet: QuerySet of Subscriber objects who subscribed via the ServerOwner.
-        """
-        return Subscriber.objects.filter(subscribed_via=self)
 
     def get_affiliate_users(self):
         """
@@ -195,19 +268,17 @@ class ServerOwner(models.Model):
         """
         return self.get_affiliates().count()
 
-    def get_latest_subscriptions(self, limit=3):
-        """
-        Retrieve the latest subscriptions for the ServerOwner.
+    #####===== SERVEROWNER SUBSCRIBER METHODS =====#####
 
-        Args:
-            limit (int): The maximum number of subscriptions to retrieve. Default is 3.
+    def get_subscribed_users(self):
+        """
+        Retrieve the subscribers who subscribed to any of the plans created by the
+        ServerOwner.
 
         Returns:
-            QuerySet: QuerySet of Subscription objects ordered by creation date.
+            QuerySet: QuerySet of Subscriber objects who subscribed via the ServerOwner.
         """
-        return Subscription.objects.filter(
-            subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE
-        )[:limit]
+        return Subscriber.objects.filter(subscribed_via=self)
 
     def get_total_subscribers(self):
         """
@@ -218,6 +289,27 @@ class ServerOwner(models.Model):
         """
         return self.get_subscribed_users().count()
 
+    #####===== SERVEROWNER SUBSCRIPTION METHODS =====#####
+
+    def get_latest_subscriptions(self, limit=3):
+        """
+        Retrieve the latest subscriptions for the ServerOwner.
+
+        Args:
+            limit (int): The maximum number of subscriptions to retrieve. Default is 3.
+
+        Returns:
+            QuerySet: QuerySet of Subscription objects ordered by creation date.
+        """
+        if self.coinbase_onboarding:
+            return CoinSubscription.objects.filter(
+                subscribed_via=self, status=CoinSubscription.SubscriptionStatus.ACTIVE
+            )[:limit]
+        else:
+            return Subscription.objects.filter(
+                subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE
+            )[:limit]
+
     def get_total_earnings(self):
         """
         Calculate the total earnings of the ServerOwner based on subscriptions.
@@ -225,18 +317,30 @@ class ServerOwner(models.Model):
         Returns:
             Decimal: The total earnings amount formatted with two decimal places.
         """
-        total_earnings = (
-            Subscription.objects.filter(subscribed_via=self)
-            .aggregate(total=Sum("plan__amount"))
-            .get("total")
-        )
-        if total_earnings is not None:
-            total_earnings = Decimal(total_earnings).quantize(
-                Decimal("0.00"), rounding=ROUND_DOWN
+        if self.coinbase_onboarding:
+            total_earnings = (
+                CoinSubscription.objects.filter(subscribed_via=self)
+                .aggregate(total=Sum("plan__amount"))
+                .get("total")
             )
+            if total_earnings is not None:
+                total_earnings = Decimal(total_earnings)
+            else:
+                total_earnings = Decimal(0)
+            return total_earnings
         else:
-            total_earnings = Decimal(0)
-        return total_earnings
+            total_earnings = (
+                Subscription.objects.filter(subscribed_via=self)
+                .aggregate(total=Sum("plan__amount"))
+                .get("total")
+            )
+            if total_earnings is not None:
+                total_earnings = Decimal(total_earnings).quantize(
+                    Decimal("0.00"), rounding=ROUND_DOWN
+                )
+            else:
+                total_earnings = Decimal(0)
+            return total_earnings
 
     def get_active_subscribers_count(self):
         """
@@ -245,11 +349,20 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with active subscriptions.
         """
-        return (
-            self.get_subscribed_users()
-            .filter(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
-            .count()
-        )
+        if self.coinbase_onboarding:
+            return (
+                self.get_subscribed_users()
+                .filter(
+                    coin_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE
+                )
+                .count()
+            )
+        else:
+            return (
+                self.get_subscribed_users()
+                .filter(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+                .count()
+            )
 
     def get_inactive_subscribers_count(self):
         """
@@ -258,82 +371,20 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with inactive subscriptions.
         """
-        return (
-            self.get_subscribed_users()
-            .exclude(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
-            .count()
-        )
-
-    def get_active_plans_count(self):
-        """
-        Get the total number of active stripe plans.
-
-        Returns:
-            int: The total number of active stripe plans.
-        """
-        return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE.value).count()
-
-    def get_inactive_plans_count(self):
-        """
-        Get the total number of inactive stripe plans.
-
-        Returns:
-            int: The total number of inactive stripe plans.
-        """
-        return self.plans.filter(status=StripePlan.PlanStatus.INACTIVE.value).count()
-
-    def get_coin_plans(self):
-        """
-        Retrieve the server owner's coin plans from the database.
-
-        Returns:
-            QuerySet: QuerySet of CoinPlan objects belonging to the server owner.
-        """
-        return self.coin_plans.all()
-
-    def get_coin_activeplans(self):
-        return self.get_coin_plans().filter(status=CoinPlan.PlanStatus.ACTIVE)
-
-    def get_coinplans_count(self):
-        """
-        Get the total count of coin plans created by the server owner.
-
-        Returns:
-            int: The total count of coin plans created by the server owner.
-        """
-        return self.coin_plans.count()
-
-    def get_active_coinplans_count(self):
-        """
-        Get the total number of active coin plans.
-
-        Returns:
-            int: The total number of active coin plans.
-        """
-        return self.coin_plans.filter(status=CoinPlan.PlanStatus.ACTIVE.value).count()
-
-    def get_inactive_coinplans_count(self):
-        """
-        Get the total number of inactive coin plans.
-
-        Returns:
-            int: The total number of inactive coin plans.
-        """
-        return self.coin_plans.filter(status=CoinPlan.PlanStatus.INACTIVE.value).count()
-
-    def get_latest_coin_subscriptions(self, limit=3):
-        """
-        Retrieve the latest coin subscriptions for the ServerOwner.
-
-        Args:
-            limit (int): The maximum number of subscriptions to retrieve. Default is 3.
-
-        Returns:
-            QuerySet: QuerySet of Subscription objects ordered by creation date.
-        """
-        return CoinSubscription.objects.filter(
-            subscribed_via=self, status=CoinSubscription.SubscriptionStatus.ACTIVE
-        )[:limit]
+        if self.coinbase_onboarding:
+            return (
+                self.get_subscribed_users()
+                .exclude(
+                    coin_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE
+                )
+                .count()
+            )
+        else:
+            return (
+                self.get_subscribed_users()
+                .exclude(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+                .count()
+            )
 
 
 class Server(models.Model):
@@ -348,6 +399,8 @@ class Server(models.Model):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=255, blank=True, null=True)
     choice_server = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -377,13 +430,22 @@ class Subscriber(models.Model):
         return self.username
 
     def has_active_subscription(self):
-        return self.subscriptions.filter(
-            status=Subscription.SubscriptionStatus.ACTIVE,
-            expiration_date__gt=timezone.now(),
-        ).exists()
+        if self.subscribed_via.coinbase_onboarding:
+            return self.coin_subscriptions.filter(
+                status=CoinSubscription.SubscriptionStatus.ACTIVE,
+                expiration_date__gt=timezone.now(),
+            ).exists()
+        else:
+            return self.subscriptions.filter(
+                status=Subscription.SubscriptionStatus.ACTIVE,
+                expiration_date__gt=timezone.now(),
+            ).exists()
 
     def get_subscriptions(self):
-        return self.subscriptions.all()
+        if self.subscribed_via.coinbase_onboarding:
+            return self.coin_subscriptions.all()
+        else:
+            return self.subscriptions.all()
 
 
 class Affiliate(models.Model):
@@ -404,7 +466,16 @@ class Affiliate(models.Model):
         validators=[MinValueValidator(0)],
         help_text="Total commissions paid to the affiliate",
     )
+    total_coin_commissions_paid = models.DecimalField(
+        max_digits=20,
+        decimal_places=8,
+        default=0,
+        help_text="Total coin commissions paid to the affiliate",
+    )
     pending_commissions = models.DecimalField(max_digits=9, decimal_places=2, default=0)
+    pending_coin_commissions = models.DecimalField(
+        max_digits=20, decimal_places=8, default=0
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -428,25 +499,48 @@ class Affiliate(models.Model):
         """
         Get the count of invitees with active subscriptions.
         """
-        invitees_with_active_subscriptions = self.affiliateinvitee_set.filter(
-            invitee_discord_id__in=Subscriber.objects.filter(
-                subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
-            ).values("discord_id")
-        )
-        return invitees_with_active_subscriptions.count()
+        if self.serverowner.coinbase_onboarding:
+            invitees_with_active_coin_subscriptions = self.affiliateinvitee_set.filter(
+                invitee_discord_id__in=Subscriber.objects.filter(
+                    coin_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE
+                ).values("discord_id")
+            )
+            return invitees_with_active_coin_subscriptions.count()
+        else:
+            invitees_with_active_subscriptions = self.affiliateinvitee_set.filter(
+                invitee_discord_id__in=Subscriber.objects.filter(
+                    subscriptions__status=Subscription.SubscriptionStatus.ACTIVE
+                ).values("discord_id")
+            )
+            return invitees_with_active_subscriptions.count()
 
     def calculate_conversion_rate(self):
         """
         Calculate the conversion rate of the affiliate.
         """
         invitees_count = self.affiliateinvitee_set.count()
-        successful_invitees_count = self.affiliateinvitee_set.filter(
-            invitee_discord_id__in=Subscriber.objects.filter(
-                Q(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
-                | Q(subscriptions__status=Subscription.SubscriptionStatus.CANCELED)
-                | Q(subscriptions__status=Subscription.SubscriptionStatus.EXPIRED)
-            ).values("discord_id")
-        ).count()
+        if self.serverowner.coinbase_onboarding:
+            successful_invitees_count = self.affiliateinvitee_set.filter(
+                invitee_discord_id__in=Subscriber.objects.filter(
+                    Q(
+                        coin_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE
+                    )
+                    | Q(
+                        coin_subscriptions__status=CoinSubscription.SubscriptionStatus.CANCELED
+                    )
+                    | Q(
+                        coin_subscriptions__status=CoinSubscription.SubscriptionStatus.EXPIRED
+                    )
+                ).values("discord_id")
+            ).count()
+        else:
+            successful_invitees_count = self.affiliateinvitee_set.filter(
+                invitee_discord_id__in=Subscriber.objects.filter(
+                    Q(subscriptions__status=Subscription.SubscriptionStatus.ACTIVE)
+                    | Q(subscriptions__status=Subscription.SubscriptionStatus.CANCELED)
+                    | Q(subscriptions__status=Subscription.SubscriptionStatus.EXPIRED)
+                ).values("discord_id")
+            ).count()
 
         if invitees_count > 0:
             conversion_rate = (successful_invitees_count / invitees_count) * 100
@@ -497,14 +591,26 @@ class AffiliateInvitee(models.Model):
             discord_id=self.invitee_discord_id
         ).first()
         if subscriber:
-            subscription = subscriber.subscriptions.order_by("-created").first()
-            if subscription:
-                subscription_amount = subscription.plan.amount
-                server_owner = self.affiliate.serverowner
-                commission_payment = server_owner.calculate_affiliate_commission(
-                    subscription_amount
-                )
-                return commission_payment
+            if self.affiliate.serverowner.coinbase_onboarding:
+                subscription = subscriber.coin_subscriptions.order_by(
+                    "-created"
+                ).first()
+                if subscription:
+                    subscription_amount = subscription.coin_amount
+                    server_owner = self.affiliate.serverowner
+                    commission_payment = server_owner.calculate_affiliate_commission(
+                        subscription_amount
+                    )
+                    return commission_payment
+            else:
+                subscription = subscriber.subscriptions.order_by("-created").first()
+                if subscription:
+                    subscription_amount = subscription.plan.amount
+                    server_owner = self.affiliate.serverowner
+                    commission_payment = server_owner.calculate_affiliate_commission(
+                        subscription_amount
+                    )
+                    return commission_payment
         return 0
 
     def calculate_affiliate_payment_commission(self):
@@ -516,10 +622,16 @@ class AffiliateInvitee(models.Model):
             subscriber__discord_id=self.invitee_discord_id,
             paid=True,
         )
-        total_commission = affiliate_payments.aggregate(
-            total_commission=Sum("amount")
-        ).get("total_commission")
-        return total_commission or 0
+        if self.affiliate.serverowner.coinbase_onboarding:
+            total_commission = affiliate_payments.aggregate(
+                total_commission=Sum("coin_amount")
+            ).get("total_commission")
+            return total_commission or 0
+        else:
+            total_commission = affiliate_payments.aggregate(
+                total_commission=Sum("amount")
+            ).get("total_commission")
+            return total_commission or 0
 
 
 class AffiliatePayment(models.Model):
@@ -536,7 +648,16 @@ class AffiliatePayment(models.Model):
         max_digits=9,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        help_text="The commission to be paid.",
+        blank=True,
+        null=True,
+        help_text="The dollar commission to be paid.",
+    )
+    coin_amount = models.DecimalField(
+        max_digits=20,
+        decimal_places=8,
+        blank=True,
+        null=True,
+        help_text="The coin commission to be paid.",
     )
     paid = models.BooleanField(default=False)
     date_payment_confirmed = models.DateTimeField(blank=True, null=True)
@@ -559,6 +680,7 @@ class StripePlan(models.Model):
         ACTIVE = "A", "Active"
         INACTIVE = "I", "Inactive"
 
+    # TODO: change user to serverowner
     user = models.ForeignKey(
         ServerOwner, on_delete=models.CASCADE, related_name="plans"
     )
@@ -567,6 +689,7 @@ class StripePlan(models.Model):
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
     description = models.TextField(max_length=300, help_text="300 characters")
+    # TODO: currency field redundant?
     currency = models.CharField(max_length=3, default="usd")
     interval_count = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(12)]
@@ -585,6 +708,7 @@ class StripePlan(models.Model):
         help_text="Description of permissions to be given to subscribers",
     )
     created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created"]
@@ -704,7 +828,7 @@ class Subscription(models.Model):
     )
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
-    subscription_date = models.DateTimeField()
+    subscription_date = models.DateTimeField(blank=True, null=True)
     expiration_date = models.DateTimeField(blank=True, null=True)
     subscription_id = models.CharField(max_length=200, blank=True, null=True)
     session_id = models.CharField(max_length=200, blank=True, null=True)
@@ -717,6 +841,7 @@ class Subscription(models.Model):
         default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
     created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created"]
@@ -743,7 +868,6 @@ class CoinSubscription(models.Model):
     subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
     plan = models.ForeignKey(CoinPlan, on_delete=models.CASCADE)
     subscription_date = models.DateTimeField(blank=True, null=True)
-    # calculate date based on the interval, 1=30days, 2=60days etc.
     expiration_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(
         max_length=1,
@@ -760,6 +884,7 @@ class CoinSubscription(models.Model):
         default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
     created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created"]

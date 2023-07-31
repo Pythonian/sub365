@@ -34,7 +34,13 @@ class ServerAdmin(admin.ModelAdmin):
 
 @admin.register(ServerOwner)
 class ServerOwnerAdmin(admin.ModelAdmin):
-    list_display = ["username", "subdomain", "email", "affiliate_commission"]
+    list_display = [
+        "username",
+        "subdomain",
+        "email",
+        "affiliate_commission",
+        "coinbase_onboarding",
+    ]
     search_fields = ["username", "subdomain", "email"]
 
 

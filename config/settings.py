@@ -135,6 +135,7 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+# TODO: Remove this
 SOCIALACCOUNT_PROVIDERS = {
     "discord": {
         "SCOPE": ["email", "identify", "connections", "guilds"],

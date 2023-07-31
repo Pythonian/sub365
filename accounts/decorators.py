@@ -27,19 +27,16 @@ def onboarding_completed(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         serverowner = get_object_or_404(ServerOwner, user=request.user)
-        if not serverowner.coinbase_onboarding:
-            return redirect("onboarding_crypto")
-        else:
-            stripe_account_id = serverowner.stripe_account_id
+        stripe_account_id = serverowner.stripe_account_id
 
-            if stripe_account_id:
-                # Retrieve the user's Stripe account
-                stripe_account = stripe.Account.retrieve(stripe_account_id)
-                # Check if charges are enabled and details are submitted
-                charges_enabled = stripe_account.charges_enabled
-                details_submitted = stripe_account.details_submitted
-                if not charges_enabled and not details_submitted:
-                    return redirect("collect_user_info")
+        if stripe_account_id:
+            # Retrieve the user's Stripe account
+            stripe_account = stripe.Account.retrieve(stripe_account_id)
+            # Check if charges are enabled and details are submitted
+            charges_enabled = stripe_account.charges_enabled
+            details_submitted = stripe_account.details_submitted
+            if not charges_enabled and not details_submitted:
+                return redirect("collect_user_info")
 
         return view_func(request, *args, **kwargs)
 

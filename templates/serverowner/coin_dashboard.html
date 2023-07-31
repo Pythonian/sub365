@@ -4,7 +4,7 @@
 
 {% block content %}
 
-{% if serverowner.get_coinplans_count %}
+{% if serverowner.get_plan_count %}
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
         <h3 class="mb-0 text-secondary">Welcome back!</h3>
@@ -21,10 +21,10 @@
     {% include 'serverowner/_pending_payments.html' %}
 </div>
 
-{% if serverowner.get_coin_activeplans %}
+{% if serverowner.get_active_plans %}
 <h5 class="text-secondary mb-3">Subscription Plans</h5>
 <div class="row g-4 mb-5">
-    {% for plan in serverowner.get_coin_activeplans %}
+    {% for plan in serverowner.get_active_plans %}
     <div class="col-xl-4 col-lg-5">
         {% include 'serverowner/_plan_card.html' %}
     </div>
@@ -32,10 +32,10 @@
 </div>
 {% endif %}
 
-{% if serverowner.get_latest_coin_subscriptions %}
+{% if serverowner.get_latest_subscriptions %}
 <h5 class="text-secondary mb-3">Latest Subscriptions</h5>
 <div class="row g-4 mb-5">
-    {% for subscriber in serverowner.get_latest_coin_subscriptions.all %}
+    {% for subscriber in serverowner.get_latest_subscriptions.all %}
     <div class="col-lg-4">
         {% include 'serverowner/_subscriber_card.html' %}
     </div>
@@ -77,7 +77,8 @@
                         <i class="fas fa-list-check lh-base fa-2x me-3 text-primary d-none d-md-block"></i>
                         <div>
                             <h5 class="m-0 mb-1 p-0">Setup your subscriptions for your Server</h5>
-                            <p class="text-secondary small">You'll need to create a subscription plan to activate your dashboard.</p>
+                            <p class="text-secondary small">You'll need to create a subscription plan to activate your
+                                dashboard.</p>
                         </div>
                     </div>
                     <div>

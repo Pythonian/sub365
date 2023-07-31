@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 from decimal import Decimal
+from dateutil.relativedelta import relativedelta
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -29,7 +30,7 @@ def check_coin_withdrawal_status(affiliate_id, serverowner_id):
         serverowner = ServerOwner.objects.get(id=serverowner_id)
         endpoint = "https://www.coinpayments.net/api.php"
         data = (
-            f"version=1&cmd=create_withdrawal&amount={serverowner.total_pending_btc_commissions}&currency="
+            f"version=1&cmd=create_withdrawal&amount={serverowner.total_coin_pending_commissions}&currency="
             + settings.COINBASE_CURRENCY
             + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.body}&key={serverowner.coinbase_api_public_key}&format=json"
         )
@@ -42,17 +43,19 @@ def check_coin_withdrawal_status(affiliate_id, serverowner_id):
         if isinstance(result, dict):
             if result.get("status") == 1:
                 # Affiliate payment was successful
-                # Update the server owner's total_pending_commissions
-                serverowner.total_pending_commissions = (
-                    F("total_pending_commissions") - affiliate.pending_commissions
+                # Update the server owner's total_coin_pending_commissions
+                serverowner.total_coin_pending_commissions = (
+                    F("total_coin_pending_commissions")
+                    - affiliate.pending_coin_commissions
                 )
                 serverowner.save()
 
-                # Update the affiliate's pending_commissions and total_commissions_paid fields
-                affiliate.total_commissions_paid = (
-                    F("total_commissions_paid") + affiliate.pending_commissions
+                # Update the affiliate's pending_commissions and total_coin_commissions_paid fields
+                affiliate.total_coin_commissions_paid = (
+                    F("total_coin_commissions_paid")
+                    + affiliate.pending_coin_commissions
                 )
-                affiliate.pending_commissions = Decimal(0)
+                affiliate.pending_coin_commissions = Decimal(0)
                 affiliate.last_payment_date = timezone.now()
                 affiliate.save()
 
@@ -94,11 +97,15 @@ def check_coin_transaction_status(pk):
         result = response.json()["result"]
         logger.info(f"Response from API: {result}")
         if isinstance(result, dict):
-            if result.get("status") == 1:
+            if result.get("status") == 100:
                 # Transaction was successful
                 coin_subscription.status = CoinSubscription.SubscriptionStatus.ACTIVE
                 coin_subscription.subscription_date = timezone.now()
-                coin_subscription.expiration_date = timezone.now() + timedelta(days=30)
+                # Calculate the expiration_date based on the interval_count
+                interval_count = coin_subscription.plan.interval_count
+                coin_subscription.expiration_date = timezone.now() + relativedelta(
+                    months=interval_count
+                )
 
                 subscriber = coin_subscription.subscriber
 
@@ -110,19 +117,19 @@ def check_coin_transaction_status(pk):
                         serverowner=subscriber.subscribed_via,
                         affiliate=affiliateinvitee.affiliate,
                         subscriber=subscriber,
-                        amount=affiliateinvitee.get_affiliate_commission_payment(),
+                        amount=affiliateinvitee.get_affiliate_coin_commission_payment(),
                     )
 
                     affiliateinvitee.affiliate.update_last_payment_date()
-                    affiliateinvitee.affiliate.pending_commissions = (
-                        F("pending_commissions")
-                        + affiliateinvitee.get_affiliate_commission_payment()
+                    affiliateinvitee.affiliate.pending_coin_commissions = (
+                        F("pending_coin_commissions")
+                        + affiliateinvitee.get_affiliate_coin_commission_payment()
                     )
                     affiliateinvitee.affiliate.save()
 
-                    subscriber.subscribed_via.total_pending_commissions = (
-                        F("total_pending_commissions")
-                        + affiliateinvitee.get_affiliate_commission_payment()
+                    subscriber.subscribed_via.total_coin_pending_commissions = (
+                        F("total_coin_pending_commissions")
+                        + affiliateinvitee.get_affiliate_coin_commission_payment()
                     )
                     subscriber.subscribed_via.save()
 
@@ -136,7 +143,7 @@ def check_coin_transaction_status(pk):
 
             else:
                 logger.warning(
-                    f"Transaction status: {coin_subscription.subscription_id}, status: {result.get('status')}"
+                    f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}"
                 )
         else:
             logger.warning(f"Unexpected format for 'result': {result}")

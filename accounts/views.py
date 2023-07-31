@@ -60,6 +60,7 @@ def discord_callback(request):
 
     if code:
         # Prepare the payload for the token request
+        # TODO: include email to scope and remove settings
         redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
         payload = {
             "client_id": settings.DISCORD_CLIENT_ID,
@@ -209,13 +210,9 @@ def subscribe_redirect(request):
 @login_required
 def onboarding(request):
     """Handle the onboarding of a Serverowner."""
-    try:
-        serverowner = request.user.serverowner
-        if serverowner.subdomain:
-            return redirect("dashboard")
-    except ObjectDoesNotExist:
-        messages.error(request, "You have tresspassed to forbidden territory.")
-        return redirect("index")
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
+    if serverowner.stripe_account_id or serverowner.coinbase_onboarding:
+        return redirect("dashboard")
 
     if request.method == "POST":
         form = OnboardingForm(request.POST, user=request.user)
@@ -403,11 +400,7 @@ def dashboard(request):
 
     discord_client_id = settings.DISCORD_CLIENT_ID
 
-    if serverowner.coinbase_onboarding:
-        template = "serverowner/coin_dashboard.html"
-    else:
-        template = "serverowner/dashboard.html"
-
+    template = "serverowner/dashboard.html"
     context = {
         "serverowner": serverowner,
         "discord_client_id": discord_client_id,
@@ -425,7 +418,6 @@ def plans(request):
     if serverowner.coinbase_onboarding:
         if request.method == "POST":
             form = CoinPlanForm(request.POST)
-
             if form.is_valid():
                 coin_plan = form.save(commit=False)
                 coin_plan.serverowner = serverowner
@@ -438,13 +430,12 @@ def plans(request):
                 messages.error(request, "An error occured while creating your Plan.")
         else:
             form = CoinPlanForm()
-        coin_plans = serverowner.get_coin_plans()
+        coin_plans = serverowner.get_plans()
         coin_plans = mk_paginator(request, coin_plans, 9)
 
     else:
         if request.method == "POST":
             form = PlanForm(request.POST)
-
             if form.is_valid():
                 try:
                     interval_count = form.cleaned_data["interval_count"]
@@ -471,7 +462,6 @@ def plans(request):
                     stripe_product.price_id = price.id
                     stripe_product.product_id = product.id
                     stripe_product.user = serverowner
-                    # stripe_product.user = request.user.serverowner
                     stripe_product.save()
 
                     messages.success(
@@ -491,7 +481,7 @@ def plans(request):
         else:
             form = PlanForm()
         # Retrieve the user's Stripe plans from the database and paginate
-        stripe_plans = serverowner.get_stripe_plans()
+        stripe_plans = serverowner.get_plans()
         stripe_plans = mk_paginator(request, stripe_plans, 9)
 
     if serverowner.coinbase_onboarding:
