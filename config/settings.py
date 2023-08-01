@@ -3,6 +3,7 @@ from pathlib import Path
 from django.contrib.messages import constants as messages
 
 import sentry_sdk
+from celery.schedules import crontab
 from decouple import Csv, config
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -225,6 +226,10 @@ CELERY_BEAT_SCHEDULE = {
             1,
             1,
         ),
+    },
+    "update_expired_subscription_every_midnight": {
+        "task": "update_expired_subscriptions",
+        "schedule": crontab(hour=0, minute=0),
     },
 }
 CELERY_IMPORTS = [

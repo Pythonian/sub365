@@ -861,6 +861,7 @@ class CoinSubscription(models.Model):
         INACTIVE = "I", "Inactive"
         EXPIRED = "E", "Expired"
         CANCELED = "C", "Canceled"
+        FAILED = "F", "Failed"
 
     subscriber = models.ForeignKey(
         Subscriber, on_delete=models.CASCADE, related_name="coin_subscriptions"

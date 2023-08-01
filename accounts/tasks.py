@@ -11,6 +11,7 @@ from django.utils import timezone
 import requests
 from celery import shared_task
 
+from .emails import send_coin_subscription_failure_email
 from .models import (
     Affiliate,
     AffiliateInvitee,
@@ -141,6 +142,13 @@ def check_coin_transaction_status(pk):
                 plan.subscriber_count = F("subscriber_count") + 1
                 plan.save()
 
+            elif result.get("status") == -1:
+                # Transaction failed, Send email notification to subscriber
+                send_coin_subscription_failure_email(coin_subscription)
+
+                # Update the coin_subscription status to mark it as failed
+                coin_subscription.status = CoinSubscription.SubscriptionStatus.FAILED
+                coin_subscription.save()
             else:
                 logger.warning(
                     f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}"
@@ -155,3 +163,10 @@ def check_coin_transaction_status(pk):
         logger.exception(f"Failed to parse Coinbase API response: {e}")
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")
+
+
+@shared_task(name="update_expired_subscriptions")
+def update_expired_subscriptions():
+    from django.core.management import call_command
+
+    call_command("update_expired_subscriptions")
