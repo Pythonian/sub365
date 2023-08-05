@@ -16,9 +16,9 @@
 </div>
 
 <div class="row mb-4">
-    {% include 'serverowner/_total_subscribers.html' %}
-    {% include 'serverowner/_active_subscribers.html' %}
-    {% include 'serverowner/_inactive_subscribers.html' %}
+    {% include 'serverowner/subscribers/partials/_total_subscribers.html' %}
+    {% include 'serverowner/subscribers/partials/_active_subscribers.html' %}
+    {% include 'serverowner/subscribers/partials/_inactive_subscribers.html' %}
 </div>
 
 <h5 class="text-secondary mb-3">All Subscribers</h5>
@@ -68,7 +68,7 @@
             <span>{{ subscribers.paginator.count }}</span>
             subscriber{{ subscribers.paginator.count|pluralize }}
         </p>
-        <div>{% include '_pagination.html' with page_obj=subscribers %}</div>
+        <div>{% include 'partials/_pagination.html' with page_obj=subscribers %}</div>
     </div>
 </div>
 

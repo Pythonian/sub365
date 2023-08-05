@@ -16,9 +16,9 @@
 </div>
 
 <div class="row mb-4">
-    {% include 'serverowner/_total_plans.html' %}
-    {% include 'serverowner/_total_active_plans.html' %}
-    {% include 'serverowner/_total_inactive_plans.html' %}
+    {% include 'serverowner/plans/partials/_total_plans.html' %}
+    {% include 'serverowner/plans/partials/_active_plans.html' %}
+    {% include 'serverowner/plans/partials/_inactive_plans.html' %}
 </div>
 
 <h5 class="text-secondary mb-3">All Subscription Plans</h5>
@@ -26,14 +26,14 @@
 <div class="row g-4 mb-5">
     {% for plan in stripe_plans %}
     <div class="col-lg-4 col-sm-6">
-        {% include 'serverowner/_plan_card.html' %}
+        {% include 'serverowner/plans/partials/_plan_card.html' %}
     </div>
     {% endfor %}
     <div class="d-flex justify-content-between mt-5">
         <p class="text-body-secondary">Showing <span>{{ stripe_plans.start_index }}-{{ stripe_plans.end_index }}</span>
             of <span>{{ stripe_plans.paginator.count }}</span>
             plan{{ stripe_plans.paginator.count|pluralize }}</p>
-        <div>{% include '_pagination.html' with page_obj=stripe_plans %}</div>
+        <div>{% include 'partials/_pagination.html' with page_obj=stripe_plans %}</div>
     </div>
 </div>
 {% else %}
@@ -52,5 +52,6 @@
 </div>
 {% endif %}
 
-{% include 'modals/_create_plan_modal.html' %}
+{% include 'serverowner/plans/modals/_create_plan.html' %}
+
 {% endblock content %}

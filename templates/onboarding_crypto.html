@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Crypto Onboarding Process | Sub365.co</title>
+    <title>Coinbase Onboarding Process | Sub365.co</title>
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="{% static 'styles/bootstrap-5.3.0.css' %}" rel="stylesheet">
@@ -23,13 +23,15 @@
                         <div class="bg-white justify-content-center px-5 pt-5 pb-3 text-center shadow-lg rounded-4">
                             <a href="{% url 'index' %}"><img src="{% static 'img/sub365-logo.svg' %}"
                                     alt="sub365-logo"></a>
-                            <h6 class="my-4 text-dark">Enter the information below to connect your account with Coinbase</h6>
+                            <h6 class="my-4 text-dark">Enter the information below to connect your account with Coinbase
+                            </h6>
                             <div class="text-start mb-3">
                                 <form action="" method="post">
                                     {% csrf_token %}
 
                                     {% for error in form.non_field_errors %}
-                                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1" role="alert">
+                                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                                        role="alert">
                                         <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                                     </div>
                                     {% endfor %}

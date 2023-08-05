@@ -14,11 +14,11 @@
 {% if subscriber.get_subscriptions %}
 
 <div class="row mb-4">
-    {% include 'subscriber/_subscriber_info.html' %}
+    {% include 'subscriber/partials/_subscriber_info.html' %}
     {% if subscription %}
-    {% include 'subscriber/_payment_due.html' %}
-    {% include 'subscriber/_current_bill.html' %}
-    {% include 'subscriber/_current_plan.html' %}
+    {% include "subscriber/partials/_payment_due.html" %}
+    {% include "subscriber/partials/_current_bill.html" %}
+    {% include "subscriber/partials/_current_plan.html" %}
     {% endif %}
 </div>
 

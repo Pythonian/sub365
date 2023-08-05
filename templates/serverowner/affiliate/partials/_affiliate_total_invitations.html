@@ -1,0 +1,5 @@
+{% extends "serverowner/_base_dashboard_data.html" %}
+
+{% block data_title %}Total Invitees{% endblock data_title %}
+{% block data_value %}{{ affiliate.get_total_invitation_count }}{% endblock data_value %}
+{% block data_icon %}fa-users{% endblock data_icon %}

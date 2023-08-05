@@ -34,6 +34,8 @@ urlpatterns = [
         name="subscriber_detail",
     ),
     path("serverowner/affiliates/", views.affiliates, name="affiliates"),
+    path("serverowner/affiliate/<int:id>/",
+         views.affiliate_detail, name="affiliate_detail"),
     path(
         "serverowner/affiliates/payments/pending/",
         views.pending_affiliate_payment,
@@ -46,15 +48,15 @@ urlpatterns = [
     ),
     # Onboarding URLs
     path("onboarding/", views.onboarding, name="onboarding"),
-    path("onboarding-crypto/", views.onboarding_crypto, name="onboarding_crypto"),
+    path("onboarding/coinbase/", views.onboarding_crypto, name="onboarding_crypto"),
     path(
-        "create-stripe-account/",
+        "onboarding/stripe/",
         views.create_stripe_account,
         name="create_stripe_account",
     ),
+    path("onboarding/stripe/userinfo/", views.collect_user_info, name="collect_user_info"),
+    path("onboarding/stripe/refresh/", views.stripe_refresh, name="stripe_refresh"),
     path("subscribe/", views.subscribe_redirect, name="subscribe_redirect"),
-    path("collect-user-info/", views.collect_user_info, name="collect_user_info"),
-    path("stripe-refresh/", views.stripe_refresh, name="stripe_refresh"),
     # General URLs
     path("webhook/", webhooks.stripe_webhook, name="stripe_webhook"),
     path("dashboard/", views.dashboard_view, name="dashboard_view"),

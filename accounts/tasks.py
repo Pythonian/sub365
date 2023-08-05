@@ -67,6 +67,9 @@ def check_coin_withdrawal_status(affiliate_id, serverowner_id):
                 affiliate_payments.update(
                     paid=True, date_payment_confirmed=timezone.now()
                 )
+            elif result.get("status") == 1:
+                # TODO: Payment failed, send a mail to serverowner making an attempt
+                pass
             else:
                 logger.warning(f"Withdrawal status: {result.get('status')}")
         else:

@@ -23,8 +23,8 @@ from requests.exceptions import RequestException
 from .decorators import onboarding_completed, redirect_if_no_subdomain
 from .forms import (
     CoinbaseOnboardingForm,
-    CoinPlanForm,
     CoinPaymentDetailForm,
+    CoinPlanForm,
     OnboardingForm,
     PaymentDetailForm,
     PlanForm,
@@ -220,11 +220,9 @@ def onboarding(request):
         if form.is_valid():
             # Check which button was clicked and set the appropriate session data
             if "connect_stripe" in request.POST:
-                request.session["connect_with_crypto"] = False
                 form.save(user=request.user)
                 return redirect("create_stripe_account")
-            elif "connect_crypto" in request.POST:
-                request.session["connect_with_crypto"] = True
+            elif "connect_coinbase" in request.POST:
                 form.save(user=request.user)
                 return redirect("onboarding_crypto")
     else:
@@ -240,7 +238,7 @@ def onboarding(request):
 
 @login_required
 def onboarding_crypto(request):
-    """Handle the onboarding process for connecting with crypto payments."""
+    """Handle the onboarding process for connecting with coinbase payments."""
     try:
         serverowner = request.user.serverowner
         if serverowner.coinbase_onboarding:
@@ -486,14 +484,14 @@ def plans(request):
         stripe_plans = mk_paginator(request, stripe_plans, 9)
 
     if serverowner.coinbase_onboarding:
-        template = "serverowner/coin_plans.html"
+        template = "serverowner/plans/coinbase/list.html"
         context = {
             "serverowner": serverowner,
             "form": form,
             "coin_plans": coin_plans,
         }
     else:
-        template = "serverowner/plans.html"
+        template = "serverowner/plans/stripe/list.html"
         context = {
             "serverowner": serverowner,
             "form": form,
@@ -565,13 +563,13 @@ def plan_detail(request, product_id):
             form = PlanForm(instance=plan)
 
     if request.user.serverowner.coinbase_onboarding:
-        template = "serverowner/coinplan_detail.html"
+        template = "serverowner/plans/coinbase/detail.html"
         context = {
             "plan": plan,
             "form": form,
         }
     else:
-        template = "serverowner/plan_detail.html"
+        template = "serverowner/plans/stripe/detail.html"
         context = {
             "plan": plan,
             "form": form,
@@ -642,9 +640,9 @@ def subscribers(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     if serverowner.coinbase_onboarding:
-        template = "serverowner/coin_subscribers.html"
+        template = "serverowner/subscribers/coinbase/list.html"
     else:
-        template = "serverowner/subscribers.html"
+        template = "serverowner/subscribers/stripe/list.html"
 
     subscribers = serverowner.get_subscribed_users()
     subscribers = mk_paginator(request, subscribers, 9)
@@ -677,7 +675,7 @@ def subscriber_detail(request, id):
         except Subscription.DoesNotExist:
             subscription = None
 
-    template = "serverowner/subscriber_detail.html"
+    template = "serverowner/subscribers/detail.html"
     context = {
         "subscriber": subscriber,
         "subscription": subscription,
@@ -695,10 +693,23 @@ def affiliates(request):
     affiliates = Affiliate.objects.filter(serverowner=serverowner)
     affiliates = mk_paginator(request, affiliates, 9)
 
-    template = "serverowner/affiliates.html"
+    template = "serverowner/affiliate/list.html"
     context = {
         "serverowner": serverowner,
         "affiliates": affiliates,
+    }
+
+    return render(request, template, context)
+
+
+@login_required
+def affiliate_detail(request, id):
+    subscriber = get_object_or_404(Subscriber, id=id)
+    affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
+
+    template = "serverowner/affiliate/detail.html"
+    context = {
+        "affiliate": affiliate,
     }
 
     return render(request, template, context)
@@ -797,7 +808,7 @@ def pending_affiliate_payment(request):
                     messages.success(request, "Payment confirmed.")
                     return redirect("pending_affiliate_payment")
 
-    template = "serverowner/pending_affiliate_payment.html"
+    template = "serverowner/affiliate/payment_pending.html"
     context = {
         "serverowner": serverowner,
     }
@@ -811,7 +822,7 @@ def pending_affiliate_payment(request):
 def confirmed_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    template = "serverowner/confirmed_affiliate_payment.html"
+    template = "serverowner/affiliate/payment_confirmed.html"
     context = {
         "serverowner": serverowner,
     }

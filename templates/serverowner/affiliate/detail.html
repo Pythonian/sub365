@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Affiliate: {{ affiliate.subscriber.username }}{% endblock title %}
+
+{% block content %}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+        <a href="{% url 'affiliates' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Affiliates</a>
+    </div>
+</div>
+
+{% if affiliate.get_affiliate_invitees %}
+
+<div class="row mb-4">
+    {% include 'serverowner/affiliate/partials/_affiliate_name.html' %}
+    {% if affiliate %}
+    {% include 'serverowner/affiliate/partials/_affiliate_total_invitations.html' %}
+    {% include 'serverowner/affiliate/partials/_affiliate_total_earnings.html' %}
+    {% include 'serverowner/affiliate/partials/_affiliate_conversion_rate.html' %}
+    {% endif %}
+</div>
+
+<h5 class="text-secondary mb-3">Affiliate Invitees</h5>
+
+<div class="row g-4 mb-5">
+    {% for invitation in affiliate.get_affiliate_invitees %}
+    <div class="col-lg-4 col-sm-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary py-2"></div>
+            <div class="card-body">
+                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">INVITEE:</p>
+                        <span>{{ invitation.get_affiliateinvitee_name }}</span>
+                    </li>
+                    <!-- <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
+                        <span>${{ invitation.plan.amount|intcomma }} /{{ invitation.plan.interval_count }}
+                            month{{ invitation.plan.interval_count|pluralize }}</span>
+                    </li> -->
+                    <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        <p class="p-0 m-0 text-muted fs-6">INVITATION DATE:</p>
+                        <span>{{ invitation.created|date:"F j, Y" }}</span>
+                    </li>
+                    <!-- <li
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
+                        <p class="p-0 m-0 text-muted fs-6">SUBSCRIPTION STATUS</p>
+                        <span
+                            class="badge py-2 px-3 rounded-pill bg-{% if invitation.status == 'A' %}success{% else %}danger{% endif %}">{{ invitation.get_status_display }}</span>
+                    </li> -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <span class="text-primary fa-stack fa-4x mb-3">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-face-frown fa-stack-1x fa-inverse"></i>
+    </span>
+    <h3 class="text-dark">{{ affiliate.subscriber.username }} is yet to invite any subscriber to your server.</h3>
+    <p class="mb-5">Maybe you should personally reach out to {{ affiliate.subscriber.username }}, <br> to encourage them to invite subscribers to your server and earn commissions.</p>
+    <a target="_blank" href="mailto:{{ affiliate.subscriber.email }}" class="btn btn-primary rounded-5 py-2 px-4 shadow-sm"><i
+            class="far fa-envelope me-1"></i> Send a Mail</a>
+</div>
+{% endif %}
+
+{% endblock content %}

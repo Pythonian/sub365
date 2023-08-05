@@ -20,11 +20,12 @@ class Command(BaseCommand):
 
         while len(generated_codes) < num_codes:
             code = "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
-            generated_codes.add(code)
+            if not AccessCode.objects.filter(code=code).exists() and code not in generated_codes:
+                generated_codes.add(code)
 
         for code in generated_codes:
             AccessCode.objects.create(code=code)
 
         self.stdout.write(
-            self.style.SUCCESS(f"Successfully generated {num_codes} access codes.")
+            self.style.SUCCESS(f"Successfully generated {len(generated_codes)} access codes.")
         )

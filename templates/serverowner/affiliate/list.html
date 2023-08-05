@@ -21,9 +21,9 @@
 </div>
 
 <div class="row mb-4">
-    {% include 'serverowner/partials/_total_affiliates.html' %}
-    {% include 'serverowner/partials/_total_payments_made.html' %}
-    {% include 'serverowner/_pending_payments.html' %}
+    {% include 'serverowner/affiliate/partials/_serverowner_total_affiliates.html' %}
+    {% include 'serverowner/affiliate/partials/_serverowner_total_payments_made.html' %}
+    {% include 'serverowner/partials/_total_pending_payments.html' %}
 </div>
 
 <h5 class="text-secondary mb-3">All Affiliates</h5>
@@ -37,8 +37,8 @@
                 <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">USER:</p>
-                        <span>{{ affiliate.subscriber.username }}</span>
+                        <p class="p-0 m-0 text-muted fs-6">NAME:</p>
+                        <a href="{% url 'affiliate_detail' affiliate.subscriber.id %}">{{ affiliate.subscriber.username }}</a>
                     </li>
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
@@ -66,7 +66,7 @@
             <span>{{ affiliates.paginator.count }}</span>
             affiliate{{ affiliates.paginator.count|pluralize }}
         </p>
-        <div>{% include '_pagination.html' with page_obj=affiliates %}</div>
+        <div>{% include 'partials/_pagination.html' with page_obj=affiliates %}</div>
     </div>
 </div>
 {% else %}

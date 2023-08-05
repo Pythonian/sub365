@@ -1,0 +1,5 @@
+{% extends "serverowner/_base_dashboard_data.html" %}
+
+{% block data_title %}Conversion Rate{% endblock data_title %}
+{% block data_value %}{{ affiliate.calculate_conversion_rate }}{% endblock data_value %}
+{% block data_icon %}fa-percent{% endblock data_icon %}

@@ -27,9 +27,9 @@
 
 {% if plan.get_coinplan_subscribers %}
 <div class="row mb-4">
-    {% include 'serverowner/_plan_total_amount.html' %}
-    {% include 'serverowner/_plan_total_subscriptions.html' %}
-    {% include 'serverowner/_plan_active_subscriptions.html' %}
+    {% include 'serverowner/plans/partials/_plan_total_amount.html' %}
+    {% include 'serverowner/plans/partials/_plan_total_subscriptions.html' %}
+    {% include 'serverowner/plans/partials/_plan_active_subscriptions.html' %}
 </div>
 
 <h5 class="text-secondary mb-3">Subscription History</h5>

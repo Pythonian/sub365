@@ -28,7 +28,7 @@
         <p class="text-body-secondary">Showing <span>{{ plans.start_index }}-{{ plans.end_index }}</span>
             of <span>{{ plans.paginator.count }}</span>
             plan{{ plans.paginator.count|pluralize }}</p>
-        <div>{% include '_pagination.html' with page_obj=plans %}</div>
+        <div>{% include 'partials/_pagination.html' with page_obj=plans %}</div>
     </div>
 </div>
 {% else %}
