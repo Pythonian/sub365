@@ -63,7 +63,7 @@ class ServerOwner(models.Model):
         """
         return self.servers.filter(choice_server=True).first()
 
-    #####===== SERVEROWNER PLAN METHODS =====#####
+    # ===== SERVEROWNER PLAN METHODS ===== #
 
     def get_plans(self):
         """
@@ -153,7 +153,7 @@ class ServerOwner(models.Model):
                 status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0
             ).order_by("-subscriber_count")[:limit]
 
-    #####===== SERVEROWNER AFFILIATE METHODS =====#####
+    # ===== SERVEROWNER AFFILIATE METHODS ===== #
 
     def get_total_payments_to_affiliates(self):
         """
@@ -268,7 +268,7 @@ class ServerOwner(models.Model):
         """
         return self.get_affiliates().count()
 
-    #####===== SERVEROWNER SUBSCRIBER METHODS =====#####
+    # ===== SERVEROWNER SUBSCRIBER METHODS ===== #
 
     def get_subscribed_users(self):
         """
@@ -289,7 +289,7 @@ class ServerOwner(models.Model):
         """
         return self.get_subscribed_users().count()
 
-    #####===== SERVEROWNER SUBSCRIPTION METHODS =====#####
+    # ===== SERVEROWNER SUBSCRIPTION METHODS ===== #
 
     def get_latest_subscriptions(self, limit=3):
         """
