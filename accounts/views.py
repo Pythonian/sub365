@@ -873,6 +873,7 @@ def subscriber_dashboard(request):
             latest_subscription = None
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = CoinSubscription.objects.filter(subscriber=subscriber)
+        subscriptions = mk_paginator(request, subscriptions, 12)
         form = CoinPaymentDetailForm()
     else:
         # Retrieve the plans related to the ServerOwner
@@ -891,6 +892,7 @@ def subscriber_dashboard(request):
 
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = Subscription.objects.filter(subscriber=subscriber)
+        subscriptions = mk_paginator(request, subscriptions, 12)
         form = PaymentDetailForm()
 
     template = "subscriber/dashboard.html"
@@ -1227,8 +1229,6 @@ def upgrade_to_affiliate(request):
 @login_required
 def affiliate_dashboard(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
-    invitations = affiliate.get_affiliate_invitees()
-    invitations = mk_paginator(request, invitations, 12)
     payment_detail = affiliate.paymentdetail
 
     if affiliate.serverowner.coinbase_onboarding:
@@ -1259,7 +1259,6 @@ def affiliate_dashboard(request):
     template = "affiliate/dashboard.html"
     context = {
         "affiliate": affiliate,
-        "invitations": invitations,
         "form": form,
     }
 
@@ -1269,10 +1268,13 @@ def affiliate_dashboard(request):
 @login_required
 def affiliate_payments(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+    payments = affiliate.get_affiliate_payments()
+    payments = mk_paginator(request, payments, 12)
 
     template = "affiliate/payments.html"
     context = {
         "affiliate": affiliate,
+        "payments": payments,
     }
 
     return render(request, template, context)
@@ -1281,10 +1283,13 @@ def affiliate_payments(request):
 @login_required
 def affiliate_invitees(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+    invitations = affiliate.get_affiliate_invitees()
+    invitations = mk_paginator(request, invitations, 12)
 
     template = "affiliate/invitees.html"
     context = {
         "affiliate": affiliate,
+        "invitations": invitations,
     }
 
     return render(request, template, context)
