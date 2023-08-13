@@ -143,7 +143,6 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Plan objects ordered by subscriber count
                       in descending order excluding plans with no subscribers.
         """
-        # TODO: Can i use self.get_plans().filter()
         if self.coinbase_onboarding:
             return self.coin_plans.filter(
                 status=CoinPlan.PlanStatus.ACTIVE, subscriber_count__gt=0
@@ -571,6 +570,9 @@ class AffiliateInvitee(models.Model):
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-id"]
 
     def __str__(self):
         return self.invitee_discord_id

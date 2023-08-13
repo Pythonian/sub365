@@ -1,79 +1,94 @@
 import re
 
 from django import forms
+from django.core.exceptions import ValidationError
 
 from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, StripePlan
 
-DISALLOWED_SUBDOMAINS = [
-    "activate",
-    "account",
-    "accounts",
-    "admin",
-    "about",
-    "administrator",
-    "activity",
-    "affiliate",
-    "auth",
-    "authentication",
-    "blogs",
-    "blog",
-    "billing",
-    "create",
-    "cookie",
-    "contact",
-    "config",
-    "contribute",
-    "disable",
-    "delete",
-    "download",
-    "downloads",
-    "delete",
-    "edit",
-    "explore",
-    "email",
-    "feedback",
-    "follow",
-    "feed",
-    "intranet",
-    "jobs",
-    "join",
-    "login",
-    "logout",
-    "media",
-    "mail",
-    "news",
-    "newsletter",
-    "help",
-    "home",
-    "privacy",
-    "profile",
-    "plan",
-    "registration",
-    "register",
-    "remove",
-    "root",
-    "reviews",
-    "review",
-    "signin",
-    "signup",
-    "signout",
-    "settings",
-    "setting",
-    "static",
-    "support",
-    "status",
-    "search",
-    "subscribe",
-    "shop",
-    "sub365",
-    "subscriber",
-    "terms",
-    "term",
-    "update",
-    "username",
-    "user",
-    "users",
-]
+# DISALLOWED_SUBDOMAINS = [
+#     "activate",
+#     "account",
+#     "accounts",
+#     "admin",
+#     "about",
+#     "administrator",
+#     "activity",
+#     "affiliate",
+#     "auth",
+#     "authentication",
+#     "blogs",
+#     "blog",
+#     "billing",
+#     "create",
+#     "cookie",
+#     "contact",
+#     "config",
+#     "contribute",
+#     "disable",
+#     "delete",
+#     "download",
+#     "downloads",
+#     "delete",
+#     "edit",
+#     "explore",
+#     "email",
+#     "feedback",
+#     "follow",
+#     "feed",
+#     "intranet",
+#     "jobs",
+#     "join",
+#     "login",
+#     "logout",
+#     "media",
+#     "mail",
+#     "news",
+#     "newsletter",
+#     "help",
+#     "home",
+#     "privacy",
+#     "profile",
+#     "plan",
+#     "registration",
+#     "register",
+#     "remove",
+#     "root",
+#     "reviews",
+#     "review",
+#     "signin",
+#     "signup",
+#     "signout",
+#     "settings",
+#     "setting",
+#     "static",
+#     "support",
+#     "status",
+#     "search",
+#     "subscribe",
+#     "shop",
+#     "sub365",
+#     "subscriber",
+#     "terms",
+#     "term",
+#     "update",
+#     "username",
+#     "user",
+#     "users",
+# ]
+
+
+def ForbiddenSubdomainValidator(value):
+    forbidden_subdomain = ['admin', 'settings', 'news', 'about', 'help', 'signin', 'signup',
+                           'signout', 'terms', 'privacy', 'cookie', 'new', 'login', 'logout', 'administrator',
+                           'join', 'account', 'username', 'root', 'blog', 'user', 'users', 'billing', 'subscribe',
+                           'reviews', 'review', 'blog', 'blogs', 'edit', 'mail', 'email', 'home', 'job', 'jobs',
+                           'contribute', 'newsletter', 'shop', 'profile', 'register', 'auth', 'authentication',
+                           'campaign', 'config', 'delete', 'remove', 'forum', 'forums', 'download', 'downloads',
+                           'contact', 'blogs', 'feed', 'faq', 'intranet', 'logs', 'registration', 'search',
+                           'explore', 'rss', 'support', 'status', 'static', 'media', 'setting', 'sub365',
+                           'follow', 'activity', 'library']
+    if value.lower() in forbidden_subdomain:
+        raise ValidationError("You are not allowed to use this name.")
 
 
 class Lowercase(forms.CharField):
@@ -129,6 +144,7 @@ class OnboardingForm(forms.Form):
         Initialize the form with the user and populate the server choices with
         servers of the current user.
         """
+        self.fields['subdomain'].validators.append(ForbiddenSubdomainValidator)
         user = kwargs.pop("user", None)
         super(OnboardingForm, self).__init__(*args, **kwargs)
         if user:
@@ -140,10 +156,8 @@ class OnboardingForm(forms.Form):
         Validate that the subdomain is unique.
         """
         subdomain = self.cleaned_data.get("subdomain")
-        if ServerOwner.objects.filter(subdomain=subdomain).exists():
+        if ServerOwner.objects.filter(subdomain__iexact=subdomain).exists():
             raise forms.ValidationError("This subdomain has already been chosen.")
-        if subdomain in DISALLOWED_SUBDOMAINS:
-            raise forms.ValidationError("You are not allowed to use this name.")
         if not re.match(r"^[a-z0-9_]+$", subdomain):
             raise forms.ValidationError(
                 "Subdomain can only contain lowercase letters, numbers, and hyphens."
@@ -310,7 +324,7 @@ class PlanForm(forms.ModelForm):
         if self.instance and self.instance.name == name:
             # Plan name remains the same, no need for uniqueness check
             return name
-        if StripePlan.objects.filter(name=name).exists():
+        if StripePlan.objects.filter(name__iexact=name).exists():
             raise forms.ValidationError("This name has already been chosen.")
         return name
 
@@ -395,7 +409,7 @@ class CoinPlanForm(forms.ModelForm):
         if self.instance and self.instance.name == name:
             # Plan name remains the same, no need for uniqueness check
             return name
-        if CoinPlan.objects.filter(name=name).exists():
+        if CoinPlan.objects.filter(name__iexact=name).exists():
             raise forms.ValidationError("This name has already been chosen.")
         return name
 

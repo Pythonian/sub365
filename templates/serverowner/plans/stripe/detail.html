@@ -34,7 +34,7 @@
 
 <h5 class="text-secondary mb-3">Subscription History</h5>
 <div class="row g-4 mb-5">
-    {% for subscriber in plan.get_stripeplan_subscribers %}
+    {% for subscriber in subscribers %}
     <div class="col-lg-4 col-sm-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-primary py-2"></div>
@@ -71,6 +71,12 @@
         </div>
     </div>
     {% endfor %}
+    <div class="d-flex justify-content-between">
+        <p class="text-body-secondary">Showing <span>{{ subscribers.start_index }}-{{ subscribers.end_index }}</span>
+            of <span>{{ subscribers.paginator.count }}</span>
+            subscriber{{ subscribers.paginator.count|pluralize }}</p>
+        <div>{% include 'partials/_pagination.html' with page_obj=subscribers %}</div>
+    </div>
 </div>
 {% else %}
 {% if plan.status == 'I' %}

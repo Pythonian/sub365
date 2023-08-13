@@ -25,7 +25,7 @@
 <h5 class="text-secondary mb-3">Affiliate Invitees</h5>
 
 <div class="row g-4 mb-5">
-    {% for invitation in affiliate.get_affiliate_invitees %}
+    {% for invitation in invitations %}
     <div class="col-lg-4 col-sm-6">
         <div class="card shadow">
             <div class="card-header bg-primary py-2"></div>
@@ -36,28 +36,23 @@
                         <p class="p-0 m-0 text-muted fs-6">INVITEE:</p>
                         <span>{{ invitation.get_affiliateinvitee_name }}</span>
                     </li>
-                    <!-- <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                        <span>${{ invitation.plan.amount|intcomma }} /{{ invitation.plan.interval_count }}
-                            month{{ invitation.plan.interval_count|pluralize }}</span>
-                    </li> -->
+                    <!-- TODO: Get the total amount an Affiliate has earned from this invitee -->
                     <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
                         <p class="p-0 m-0 text-muted fs-6">INVITATION DATE:</p>
                         <span>{{ invitation.created|date:"F j, Y" }}</span>
                     </li>
-                    <!-- <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
-                        <p class="p-0 m-0 text-muted fs-6">SUBSCRIPTION STATUS</p>
-                        <span
-                            class="badge py-2 px-3 rounded-pill bg-{% if invitation.status == 'A' %}success{% else %}danger{% endif %}">{{ invitation.get_status_display }}</span>
-                    </li> -->
                 </ul>
             </div>
         </div>
     </div>
     {% endfor %}
+    <div class="d-flex justify-content-between">
+        <p class="text-body-secondary">Showing <span>{{ invitations.start_index }}-{{ invitations.end_index }}</span>
+            of <span>{{ invitations.paginator.count }}</span>
+            invitation{{ invitations.paginator.count|pluralize }}</p>
+        <div>{% include 'partials/_pagination.html' with page_obj=invitations %}</div>
+    </div>
 </div>
 {% else %}
 <div class="text-center py-5">

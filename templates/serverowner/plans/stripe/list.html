@@ -29,7 +29,7 @@
         {% include 'serverowner/plans/partials/_plan_card.html' %}
     </div>
     {% endfor %}
-    <div class="d-flex justify-content-between mt-5">
+    <div class="d-flex justify-content-between">
         <p class="text-body-secondary">Showing <span>{{ stripe_plans.start_index }}-{{ stripe_plans.end_index }}</span>
             of <span>{{ stripe_plans.paginator.count }}</span>
             plan{{ stripe_plans.paginator.count|pluralize }}</p>

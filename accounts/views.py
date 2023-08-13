@@ -508,6 +508,9 @@ def plan_detail(request, product_id):
         plan = get_object_or_404(
             CoinPlan, id=product_id, serverowner=request.user.serverowner
         )
+        subscribers = plan.get_coinplan_subscribers()
+        subscribers = mk_paginator(request, subscribers, 12)
+
         if request.method == "POST":
             form = CoinPlanForm(request.POST, instance=plan)
             if form.is_valid():
@@ -525,6 +528,8 @@ def plan_detail(request, product_id):
         plan = get_object_or_404(
             StripePlan, id=product_id, user=request.user.serverowner
         )
+        subscribers = plan.get_stripeplan_subscribers()
+        subscribers = mk_paginator(request, subscribers, 12)
 
         if request.method == "POST":
             form = PlanForm(request.POST, instance=plan)
@@ -564,16 +569,14 @@ def plan_detail(request, product_id):
 
     if request.user.serverowner.coinbase_onboarding:
         template = "serverowner/plans/coinbase/detail.html"
-        context = {
-            "plan": plan,
-            "form": form,
-        }
     else:
         template = "serverowner/plans/stripe/detail.html"
-        context = {
-            "plan": plan,
-            "form": form,
-        }
+    context = {
+        "plan": plan,
+        "form": form,
+        "subscribers": subscribers,
+    }
+
     return render(request, template, context)
 
 
@@ -645,7 +648,7 @@ def subscribers(request):
         template = "serverowner/subscribers/stripe/list.html"
 
     subscribers = serverowner.get_subscribed_users()
-    subscribers = mk_paginator(request, subscribers, 9)
+    subscribers = mk_paginator(request, subscribers, 12)
 
     context = {
         "serverowner": serverowner,
@@ -658,6 +661,9 @@ def subscribers(request):
 @redirect_if_no_subdomain
 def subscriber_detail(request, id):
     subscriber = get_object_or_404(Subscriber, id=id)
+    subscriptions = subscriber.get_subscriptions()
+    subscriptions = mk_paginator(request, subscriptions, 12)
+
     if request.user.serverowner.coinbase_onboarding:
         try:
             # Retrieve the latest active subscription for the subscriber
@@ -679,6 +685,7 @@ def subscriber_detail(request, id):
     context = {
         "subscriber": subscriber,
         "subscription": subscription,
+        "subscriptions": subscriptions,
     }
 
     return render(request, template, context)
@@ -706,10 +713,13 @@ def affiliates(request):
 def affiliate_detail(request, id):
     subscriber = get_object_or_404(Subscriber, id=id)
     affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
+    invitations = affiliate.get_affiliate_invitees()
+    invitations = mk_paginator(request, invitations, 12)
 
     template = "serverowner/affiliate/detail.html"
     context = {
         "affiliate": affiliate,
+        "invitations": invitations,
     }
 
     return render(request, template, context)
@@ -721,6 +731,8 @@ def affiliate_detail(request, id):
 def pending_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     serverowner_id = serverowner.id
+    affiliates = serverowner.get_pending_affiliates()
+    affiliates = mk_paginator(request, affiliates, 20)
 
     if serverowner.coinbase_onboarding:
         if request.method == "POST":
@@ -811,6 +823,7 @@ def pending_affiliate_payment(request):
     template = "serverowner/affiliate/payment_pending.html"
     context = {
         "serverowner": serverowner,
+        "affiliates": affiliates,
     }
 
     return render(request, template, context)
@@ -821,10 +834,13 @@ def pending_affiliate_payment(request):
 @onboarding_completed
 def confirmed_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
+    affiliates = serverowner.get_confirmed_affiliate_payments()
+    affiliates = mk_paginator(request, affiliates, 12)
 
     template = "serverowner/affiliate/payment_confirmed.html"
     context = {
         "serverowner": serverowner,
+        "affiliates": affiliates,
     }
 
     return render(request, template, context)
@@ -1212,6 +1228,7 @@ def upgrade_to_affiliate(request):
 def affiliate_dashboard(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     invitations = affiliate.get_affiliate_invitees()
+    invitations = mk_paginator(request, invitations, 12)
     payment_detail = affiliate.paymentdetail
 
     if affiliate.serverowner.coinbase_onboarding:
