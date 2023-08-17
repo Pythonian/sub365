@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "feedback.apps.FeedbackConfig",
     "widget_tweaks",
     "storages",
+    # "django_celery_results",
+    # "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -72,12 +74,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": config("DB_ENGINE"),
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST"),
-        "PORT": config("DB_PORT"),
+        "ENGINE": config("SQL_ENGINE"),
+        "NAME": config("SQL_DATABASE"),
+        "USER": config("SQL_USER"),
+        "PASSWORD": config("SQL_PASSWORD"),
+        "HOST": config("SQL_HOST"),
+        "PORT": config("SQL_PORT"),
     }
 }
 
@@ -137,11 +139,11 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # TODO: Remove this
-SOCIALACCOUNT_PROVIDERS = {
-    "discord": {
-        "SCOPE": ["email", "identify", "connections", "guilds"],
-    }
-}
+# SOCIALACCOUNT_PROVIDERS = {
+#     "discord": {
+#         "SCOPE": ["email", "identify", "connections", "guilds"],
+#     }
+# }
 
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.DiscordAdapter"
 
@@ -208,11 +210,13 @@ if not DEBUG:
 
 COINBASE_CURRENCY = "LTC"
 
-CELERY_BROKER_URL = config("REDIS_URL")
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_BROKER_URL = config("CELERY_BROKER")
+CELERY_RESULT_BACKEND = config("CELERY_BACKEND")
+# CELERY_RESULT_BACKEND = "django-db"
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+# CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "check_coin_transaction_status_every_30_seconds": {
         "task": "check_coin_transaction_status",

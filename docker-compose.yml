@@ -1,0 +1,89 @@
+version: "3.8"
+
+services:
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.db
+    container_name: postgres
+
+  redis:
+    image: redis:7.0.11-alpine
+    container_name: redis
+
+  web:
+    build:
+      context: .
+    image: sub365_web
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/home/app/web
+      - static_volume:/home/app/web/staticfiles
+    expose:
+      - 8000
+    container_name: sub365
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    restart: always
+    build:
+      context: .
+    image: sub365_celery_worker
+    command: celery -A config.celery worker -l INFO
+    volumes:
+      - .:/home/app/web
+    container_name: celery
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+      - db
+
+  celery_beat:
+    build:
+      context: .
+    image: sub365_celery_beat
+    command: celery -A config.celery beat -l INFO
+    volumes:
+      - .:/home/app/web
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+      - db
+
+  flower:
+    build:
+      context: .
+    image: sub365_flower
+    command: celery -A config.celery flower
+    volumes:
+      - .:/home/app/web
+    env_file:
+      - ./.env
+    ports:
+      - 5557:5555
+    depends_on:
+      - redis
+      - db
+
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+    ports:
+      - 1337:80
+    depends_on:
+      - web
+    restart: 'on-failure'
+
+volumes:
+  postgres_data:
+  static_volume:

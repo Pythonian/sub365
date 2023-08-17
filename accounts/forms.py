@@ -144,12 +144,12 @@ class OnboardingForm(forms.Form):
         Initialize the form with the user and populate the server choices with
         servers of the current user.
         """
-        self.fields['subdomain'].validators.append(ForbiddenSubdomainValidator)
         user = kwargs.pop("user", None)
         super(OnboardingForm, self).__init__(*args, **kwargs)
         if user:
             self.fields["server"].queryset = Server.objects.filter(owner__user=user)
             self.fields["server"].empty_label = "Choose a server"
+            self.fields['subdomain'].validators.append(ForbiddenSubdomainValidator)
 
     def clean_subdomain(self):
         """

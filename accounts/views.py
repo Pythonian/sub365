@@ -61,7 +61,6 @@ def discord_callback(request):
 
     if code:
         # Prepare the payload for the token request
-        # TODO: include email to scope and remove settings
         redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
         payload = {
             "client_id": settings.DISCORD_CLIENT_ID,
@@ -69,7 +68,7 @@ def discord_callback(request):
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": redirect_uri,
-            "scope": "identify guilds",
+            "scope": "email identify connections guilds",
         }
 
         # Make the POST request to obtain the access token
@@ -314,6 +313,18 @@ def dashboard_view(request):
         return redirect("index")
 
 
+def create_webhook_endpoint(request):
+    webhook_endpoint = stripe.WebhookEndpoint.create(
+        url=request.build_absolute_uri(reverse("stripe_webhook")),
+        enabled_events=[
+            "invoice.payment_succeeded", "invoice.paid",
+            "checkout.session.async_payment_succeeded",
+            "checkout.session.async_payment_failed",
+        ],
+    )
+    return webhook_endpoint
+
+
 @login_required
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
@@ -329,6 +340,8 @@ def create_stripe_account(request):
         serverowner = request.user.serverowner
         serverowner.stripe_account_id = stripe_account_id
         serverowner.save()
+        # Create a webhook endpoint for the newly created connected account
+        create_webhook_endpoint(request)
     except ObjectDoesNotExist:
         messages.error(request, "You have tresspassed to forbidden territory.")
         return redirect("index")
