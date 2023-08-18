@@ -13,11 +13,6 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # app.conf.enable_utc = False
 # app.conf.update(timezone="Africa/Lagos")
 
-# Celery Beat Settings
-# app.conf.beat_schedule = {
-
-# }
-
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 

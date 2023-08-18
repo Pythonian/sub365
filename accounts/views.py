@@ -770,12 +770,7 @@ def pending_affiliate_payment(request):
                         response.raise_for_status()
                         result = response.json()["result"]
                         if result:
-                            check_coin_withdrawal_status.apply_async(
-                                args=(
-                                    affiliate_id,
-                                    serverowner_id,
-                                ),
-                            )
+                            check_coin_withdrawal_status.apply_async()
                             messages.success(
                                 request,
                                 "Your coin payment is being sent to the affiliate. A confirmation will be sent soon.",

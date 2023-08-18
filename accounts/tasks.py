@@ -24,7 +24,19 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(name="check_coin_withdrawal_status")
-def check_coin_withdrawal_status(affiliate_id, serverowner_id):
+def check_coin_withdrawal_status():
+    affiliates = Affiliate.objects.all()  # Adjust this query to fetch the affiliates you need
+    serverowners = ServerOwner.objects.all()  # Adjust this query to fetch the serverowners you need
+    
+    for affiliate in affiliates:
+        for serverowner in serverowners:
+            try:
+                check_coin_withdrawal_status_internal(affiliate.id, serverowner.id)
+            except Exception as e:
+                logger.exception(f"An unexpected error occurred: {e}")
+
+
+def check_coin_withdrawal_status_internal(affiliate_id, serverowner_id):
     try:
         affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
         serverowner = ServerOwner.objects.get(id=serverowner_id)
@@ -172,3 +184,64 @@ def update_expired_subscriptions():
     from django.core.management import call_command
 
     call_command("update_expired_subscriptions")
+
+
+# @shared_task(name="check_coin_withdrawal_status")
+# def check_coin_withdrawal_status(affiliate_id, serverowner_id):
+#     try:
+#         affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
+#         serverowner = ServerOwner.objects.get(id=serverowner_id)
+#         endpoint = "https://www.coinpayments.net/api.php"
+#         data = (
+#             f"version=1&cmd=create_withdrawal&amount={serverowner.total_coin_pending_commissions}&currency="
+#             + settings.COINBASE_CURRENCY
+#             + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.body}&key={serverowner.coinbase_api_public_key}&format=json"
+#         )
+#         header = {
+#             "Content-Type": "application/x-www-form-urlencoded",
+#             "HMAC": create_hmac_signature(data, serverowner.coinbase_api_secret_key),
+#         }
+#         response = requests.post(endpoint, data=data, headers=header)
+#         result = response.json()["result"]
+#         if isinstance(result, dict):
+#             if result.get("status") == 1:
+#                 # Affiliate payment was successful
+#                 # Update the server owner's total_coin_pending_commissions
+#                 serverowner.total_coin_pending_commissions = (
+#                     F("total_coin_pending_commissions")
+#                     - affiliate.pending_coin_commissions
+#                 )
+#                 serverowner.save()
+
+#                 # Update the affiliate's pending_commissions and total_coin_commissions_paid fields
+#                 affiliate.total_coin_commissions_paid = (
+#                     F("total_coin_commissions_paid")
+#                     + affiliate.pending_coin_commissions
+#                 )
+#                 affiliate.pending_coin_commissions = Decimal(0)
+#                 affiliate.last_payment_date = timezone.now()
+#                 affiliate.save()
+
+#                 # Mark the associated AffiliatePayment instances as paid
+#                 affiliate_payments = AffiliatePayment.objects.filter(
+#                     serverowner=serverowner, affiliate=affiliate, paid=False
+#                 )
+#                 affiliate_payments.update(
+#                     paid=True, date_payment_confirmed=timezone.now()
+#                 )
+#             elif result.get("status") == 1:
+#                 # TODO: Payment failed, send a mail to serverowner making an attempt
+#                 pass
+#             else:
+#                 logger.warning(f"Withdrawal status: {result.get('status')}")
+#         else:
+#             logger.warning(f"Unexpected format for 'result': {result}")
+#     except ObjectDoesNotExist:
+#         affiliate = None
+#         serverowner = None
+#     except requests.exceptions.RequestException as e:
+#         logger.exception(f"Coinbase API request failed: {e}")
+#     except (ValueError, KeyError) as e:
+#         logger.exception(f"Failed to parse Coinbase API response: {e}")
+#     except Exception as e:
+#         logger.exception(f"An unexpected error occurred: {e}")

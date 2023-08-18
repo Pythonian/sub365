@@ -45,11 +45,13 @@ services:
     depends_on:
       - redis
       - db
+      - web
 
   celery_beat:
     build:
       context: .
     image: sub365_celery_beat
+    user: root
     command: celery -A config.celery beat -l INFO
     volumes:
       - .:/home/app/web
@@ -58,6 +60,7 @@ services:
     depends_on:
       - redis
       - db
+      - web
 
   flower:
     build:

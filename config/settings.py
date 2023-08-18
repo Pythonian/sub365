@@ -108,7 +108,7 @@ USE_TZ = True
 
 if DEBUG:
     STATIC_URL = "/static/"
-    STATIC_ROOT = BASE_DIR / "assets"
+    STATIC_ROOT = BASE_DIR / "staticfiles"
 else:
     # aws settings
     AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
@@ -210,8 +210,8 @@ if not DEBUG:
 
 COINBASE_CURRENCY = "LTC"
 
-CELERY_BROKER_URL = config("CELERY_BROKER")
-CELERY_RESULT_BACKEND = config("CELERY_BACKEND")
+CELERY_BROKER_URL = config("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 # CELERY_RESULT_BACKEND = "django-db"
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -226,10 +226,11 @@ CELERY_BEAT_SCHEDULE = {
     "check_coin_withdrawal_status_every_30_seconds": {
         "task": "check_coin_withdrawal_status",
         "schedule": 30.0,
-        "args": (
-            1,
-            1,
-        ),
+        # TODO: remove
+        # "args": (
+        #     1,
+        #     1,
+        # ),
     },
     "update_expired_subscription_every_midnight": {
         "task": "update_expired_subscriptions",
