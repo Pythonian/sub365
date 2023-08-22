@@ -3,11 +3,13 @@ version: "3.8"
 services:
 
   db:
-    image: postgres:15
+    build:
+      context: ./docker/postgres/
+      dockerfile: dockerfile
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
-      - ./.env.db
+      - ./docker/postgres/.env
     container_name: postgres
 
   redis:
@@ -23,6 +25,7 @@ services:
       - static_volume:/home/app/web/staticfiles
     expose:
       - 8000
+    restart: always
     container_name: sub365
     env_file:
       - ./.env
@@ -90,7 +93,14 @@ services:
       - 8000:80
     depends_on:
       - web
-    restart: 'on-failure'
+    restart: always
+
+  stripe-cli:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+    command: "listen --api-key $${STRIPE_API_KEY} --device-name $${STRIPE_DEVICE_NAME} --forward-to localhost:8000/webhook/"
+    env_file:
+      - stripe_cli.env
 
 volumes:
   postgres_data:

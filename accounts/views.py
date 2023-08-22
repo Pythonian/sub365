@@ -341,7 +341,7 @@ def create_stripe_account(request):
         serverowner.stripe_account_id = stripe_account_id
         serverowner.save()
         # Create a webhook endpoint for the newly created connected account
-        create_webhook_endpoint(request)
+        # create_webhook_endpoint(request)
     except ObjectDoesNotExist:
         messages.error(request, "You have tresspassed to forbidden territory.")
         return redirect("index")
