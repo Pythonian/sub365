@@ -86,7 +86,10 @@ services:
       - db
 
   nginx:
-    build: ./nginx
+    build:
+      context: ./docker/nginx/
+      dockerfile: dockerfile
+    container_name: nginx
     volumes:
       - static_volume:/home/app/web/staticfiles
     ports:
