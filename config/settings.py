@@ -226,11 +226,7 @@ CELERY_BEAT_SCHEDULE = {
     "check_coin_withdrawal_status_every_30_seconds": {
         "task": "check_coin_withdrawal_status",
         "schedule": 30.0,
-        # TODO: remove
-        # "args": (
-        #     1,
-        #     1,
-        # ),
+        "args": (1, 1,),
     },
     "update_expired_subscription_every_midnight": {
         "task": "update_expired_subscriptions",
@@ -240,5 +236,3 @@ CELERY_BEAT_SCHEDULE = {
 CELERY_IMPORTS = [
     "accounts.tasks",
 ]
-
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000']

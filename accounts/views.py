@@ -342,7 +342,7 @@ def create_stripe_account(request):
         serverowner.stripe_account_id = stripe_account_id
         serverowner.save()
         # Create a webhook endpoint for the newly created connected account
-        # create_webhook_endpoint(request)
+        create_webhook_endpoint(request)
     except ObjectDoesNotExist:
         messages.error(request, "You have tresspassed to forbidden territory.")
         return redirect("index")
@@ -771,7 +771,13 @@ def pending_affiliate_payment(request):
                         response.raise_for_status()
                         result = response.json()["result"]
                         if result:
-                            check_coin_withdrawal_status.apply_async()
+                            # check_coin_withdrawal_status.apply_async()
+                            check_coin_withdrawal_status.apply_async(
+                                args=(
+                                    affiliate_id,
+                                    serverowner_id,
+                                ),
+                            )
                             messages.success(
                                 request,
                                 "Your coin payment is being sent to the affiliate. A confirmation will be sent soon.",
