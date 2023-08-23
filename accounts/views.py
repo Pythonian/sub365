@@ -321,6 +321,7 @@ def create_webhook_endpoint(request):
             "checkout.session.async_payment_succeeded",
             "checkout.session.async_payment_failed",
         ],
+        connect=True,
     )
     return webhook_endpoint
 
