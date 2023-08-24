@@ -34,8 +34,7 @@ INSTALLED_APPS = [
     "feedback.apps.FeedbackConfig",
     "widget_tweaks",
     "storages",
-    # "django_celery_results",
-    # "django_celery_beat",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -216,7 +215,6 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-# CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "check_coin_transaction_status_every_30_seconds": {
         "task": "check_coin_transaction_status",

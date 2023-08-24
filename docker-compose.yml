@@ -60,8 +60,7 @@ services:
     build:
       context: .
     image: sub365_celery_beat
-    user: root
-    command: celery -A config.celery beat -l INFO
+    entrypoint: /home/app/web/docker/beat-entrypoint.sh
     volumes:
       - .:/home/app/web
     env_file:
@@ -75,7 +74,7 @@ services:
     build:
       context: .
     image: sub365_flower
-    command: celery -A config.celery flower
+    entrypoint: /home/app/web/docker/flower-entrypoint.sh
     volumes:
       - .:/home/app/web
     env_file:
