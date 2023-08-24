@@ -20,14 +20,12 @@ services:
     build:
       context: .
     image: sub365_web
-    command: >
-      sh -c "python manage.py migrate &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    entrypoint: /home/app/web/docker/web-entrypoint.sh
     volumes:
       - static_volume:/home/app/web/staticfiles
     expose:
       - 8000
-    restart: always
+    restart: unless-stopped
     container_name: sub365
     env_file:
       - ./.env
@@ -46,7 +44,7 @@ services:
     build:
       context: .
     image: sub365_celery_worker
-    command: celery -A config.celery worker -l INFO
+    entrypoint: /home/app/web/docker/worker-entrypoint.sh
     volumes:
       - .:/home/app/web
     container_name: celery
