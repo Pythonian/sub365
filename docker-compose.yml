@@ -11,6 +11,7 @@ services:
     env_file:
       - ./docker/postgres/.env
     container_name: postgres
+    restart: unless-stopped
 
   redis:
     image: redis:7.0.11-alpine

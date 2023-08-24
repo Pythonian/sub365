@@ -1,5 +1,5 @@
-FROM nginx:1.25
+# Dockerfile for NGINX image
+FROM nginx:1.23-alpine
 
-# Inside nginx/default.conf
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy server configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
