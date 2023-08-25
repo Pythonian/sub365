@@ -57,6 +57,7 @@ services:
       - web
 
   celery_beat:
+    restart: always
     build:
       context: .
     image: sub365_celery_beat

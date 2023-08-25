@@ -313,15 +313,17 @@ def dashboard_view(request):
         return redirect("index")
 
 
-def create_webhook_endpoint(request):
+def create_webhook_endpoint(request, stripe_account_id):
     webhook_endpoint = stripe.WebhookEndpoint.create(
-        url=request.build_absolute_uri(reverse("stripe_webhook")),
+        # url=request.build_absolute_uri(reverse("stripe_webhook")),
+        url="http://web:8000/webhook/",
         enabled_events=[
             "invoice.payment_succeeded", "invoice.paid",
             "checkout.session.async_payment_succeeded",
             "checkout.session.async_payment_failed",
         ],
         connect=True,
+        account=stripe_account_id,
     )
     return webhook_endpoint
 
@@ -342,7 +344,7 @@ def create_stripe_account(request):
         serverowner.stripe_account_id = stripe_account_id
         serverowner.save()
         # Create a webhook endpoint for the newly created connected account
-        create_webhook_endpoint(request)
+        # create_webhook_endpoint(request, stripe_account_id)
     except ObjectDoesNotExist:
         messages.error(request, "You have tresspassed to forbidden territory.")
         return redirect("index")
