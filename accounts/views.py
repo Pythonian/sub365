@@ -46,7 +46,7 @@ from .tasks import check_coin_transaction_status, check_coin_withdrawal_status
 from .utils import create_hmac_signature, mk_paginator
 
 logger = logging.getLogger(__name__)
-stripe.api_key = settings.STRIPE_SECRET_KEY
+stripe.api_key = settings.STRIPE_API_KEY
 
 
 def index(request):
@@ -323,7 +323,6 @@ def create_webhook_endpoint(request, stripe_account_id):
             "checkout.session.async_payment_failed",
         ],
         connect=True,
-        account=stripe_account_id,
     )
     return webhook_endpoint
 

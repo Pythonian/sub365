@@ -137,20 +137,13 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-# TODO: Remove this
-# SOCIALACCOUNT_PROVIDERS = {
-#     "discord": {
-#         "SCOPE": ["email", "identify", "connections", "guilds"],
-#     }
-# }
-
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.DiscordAdapter"
 
 LOGIN_REDIRECT_URL = "dashboard_view"
 LOGOUT_REDIRECT_URL = "/"
 
 STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY")
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY")
+STRIPE_API_KEY = config("STRIPE_API_KEY")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET")
 
 DISCORD_CLIENT_ID = config("DISCORD_CLIENT_ID")
@@ -211,7 +204,6 @@ COINBASE_CURRENCY = "LTC"
 
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-# CELERY_RESULT_BACKEND = "django-db"
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
