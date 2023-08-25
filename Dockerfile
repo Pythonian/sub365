@@ -24,6 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
+# cleaning up unused files
+RUN apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && rm -rf /var/lib/apt/lists/*
+
 #########
 # FINAL #
 #########
