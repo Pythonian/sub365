@@ -18,4 +18,4 @@ celery -A config.celery  \
        flower
 
 # NOTE: Update the file permissions locally
-# chmod +x docker/flower-entrypoint.sh
+# chmod +x docker/entrypoints/flower.sh

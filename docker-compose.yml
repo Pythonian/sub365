@@ -21,7 +21,7 @@ services:
     build:
       context: .
     image: sub365_web
-    entrypoint: /home/app/web/docker/web-entrypoint.sh
+    entrypoint: /home/app/web/docker/entrypoints/web.sh
     volumes:
       - static_volume:/home/app/web/staticfiles
     expose:
@@ -45,7 +45,7 @@ services:
     build:
       context: .
     image: sub365_celery_worker
-    entrypoint: /home/app/web/docker/worker-entrypoint.sh
+    entrypoint: /home/app/web/docker/entrypoints/celery.sh
     volumes:
       - .:/home/app/web
     container_name: celery
@@ -61,7 +61,7 @@ services:
     build:
       context: .
     image: sub365_celery_beat
-    entrypoint: /home/app/web/docker/beat-entrypoint.sh
+    entrypoint: /home/app/web/docker/entrypoints/beat.sh
     volumes:
       - .:/home/app/web
     env_file:
@@ -75,7 +75,7 @@ services:
     build:
       context: .
     image: sub365_flower
-    entrypoint: /home/app/web/docker/flower-entrypoint.sh
+    entrypoint: /home/app/web/docker/entrypoints/flower.sh
     volumes:
       - .:/home/app/web
     env_file:

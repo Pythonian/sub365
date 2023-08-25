@@ -8,4 +8,4 @@ done
 celery -A config.celery worker -l INFO --concurrency 4 -E
 
 # NOTE: Update the file permissions locally
-# chmod +x docker/worker-entrypoint.sh
+# chmod +x docker/entrypoints/celery.sh
