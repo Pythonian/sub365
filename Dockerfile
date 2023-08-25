@@ -15,17 +15,15 @@ ENV PYTHONUNBUFFERED 1
 # disable pip version check
 ENV PIP_DISABLE_PIP_VERSION_CHECK 1
 
-# install system dependencies
+# copy requirements.txt
+COPY ./requirements.txt .
+
+# install system dependencies and clean up
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpq-dev
-
-# install python dependencies
-COPY ./requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
-
-# cleaning up unused files
-RUN apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    libpq-dev \
+    && pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
 #########
@@ -51,11 +49,13 @@ RUN mkdir $APP_HOME/celerybeat-schedule
 # Set work directory
 WORKDIR $APP_HOME
 
-# install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev curl
+# install dependencies and clean up
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev curl \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --no-cache /wheels/*
+RUN pip install --no-cache /wheels/* \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 # copy entrypoint.sh
 COPY ./entrypoint.sh .
