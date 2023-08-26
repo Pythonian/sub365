@@ -1203,39 +1203,37 @@ def upgrade_to_affiliate(request):
         messages.info(request, "You are already an Affiliate.")
         return redirect("affiliate_dashboard")
 
-    # Create an affiliate object for the subscriber
-    affiliate = Affiliate.objects.create(  # noqa
-        subscriber=subscriber,
-        serverowner=subscriber.subscribed_via,
-        discord_id=subscriber.discord_id,
-        server_id=subscriber.subscribed_via.get_choice_server().server_id,
-    )
-
-    # Update the user's role to be an affiliate
-    subscriber.user.is_affiliate = True
-    subscriber.user.save()
+    affiliate = None
 
     if subscriber.subscribed_via.coinbase_onboarding:
         form = CoinPaymentDetailForm(request.POST)
-        if form.is_valid():
-            payment_detail = form.save(commit=False)
-            payment_detail.affiliate = affiliate
-            payment_detail.save()
-            messages.success(request, "You have upgraded to being an Affiliate.")
-            return redirect("affiliate_dashboard")
-        else:
-            messages.error(request, "An error occured while submitting your form.")
-        return redirect("subscriber_dashboard")
     else:
         form = PaymentDetailForm(request.POST)
-        if form.is_valid():
-            payment_detail = form.save(commit=False)
-            payment_detail.affiliate = affiliate
-            payment_detail.save()
-            messages.success(request, "You have upgraded to being an Affiliate.")
-            return redirect("affiliate_dashboard")
-        else:
-            messages.error(request, "An error occured while submitting your form.")
+
+    if form.is_valid():
+        # Form is valid, create affiliate and update user role
+        affiliate = Affiliate.objects.create(
+            subscriber=subscriber,
+            serverowner=subscriber.subscribed_via,
+            discord_id=subscriber.discord_id,
+            server_id=subscriber.subscribed_via.get_choice_server().server_id,
+        )
+
+        payment_detail = form.save(commit=False)
+        payment_detail.affiliate = affiliate
+        payment_detail.save()
+
+        # Update the user's role to be an affiliate
+        subscriber.user.is_affiliate = True
+        subscriber.user.save()
+
+        messages.success(request, "You have upgraded to being an Affiliate.")
+        return redirect("affiliate_dashboard")
+    else:
+        # Form is invalid, display error message
+        messages.error(
+            request,
+            "An error occurred while submitting your form. Please cross-check your address.")
         return redirect("subscriber_dashboard")
 
 
