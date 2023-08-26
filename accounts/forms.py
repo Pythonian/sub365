@@ -3,90 +3,24 @@ import re
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, StripePlan
+import coinaddrvalidator
 
-# DISALLOWED_SUBDOMAINS = [
-#     "activate",
-#     "account",
-#     "accounts",
-#     "admin",
-#     "about",
-#     "administrator",
-#     "activity",
-#     "affiliate",
-#     "auth",
-#     "authentication",
-#     "blogs",
-#     "blog",
-#     "billing",
-#     "create",
-#     "cookie",
-#     "contact",
-#     "config",
-#     "contribute",
-#     "disable",
-#     "delete",
-#     "download",
-#     "downloads",
-#     "delete",
-#     "edit",
-#     "explore",
-#     "email",
-#     "feedback",
-#     "follow",
-#     "feed",
-#     "intranet",
-#     "jobs",
-#     "join",
-#     "login",
-#     "logout",
-#     "media",
-#     "mail",
-#     "news",
-#     "newsletter",
-#     "help",
-#     "home",
-#     "privacy",
-#     "profile",
-#     "plan",
-#     "registration",
-#     "register",
-#     "remove",
-#     "root",
-#     "reviews",
-#     "review",
-#     "signin",
-#     "signup",
-#     "signout",
-#     "settings",
-#     "setting",
-#     "static",
-#     "support",
-#     "status",
-#     "search",
-#     "subscribe",
-#     "shop",
-#     "sub365",
-#     "subscriber",
-#     "terms",
-#     "term",
-#     "update",
-#     "username",
-#     "user",
-#     "users",
-# ]
+from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, StripePlan
 
 
 def ForbiddenSubdomainValidator(value):
-    forbidden_subdomain = ['admin', 'settings', 'news', 'about', 'help', 'signin', 'signup',
-                           'signout', 'terms', 'privacy', 'cookie', 'new', 'login', 'logout', 'administrator',
-                           'join', 'account', 'username', 'root', 'blog', 'user', 'users', 'billing', 'subscribe',
-                           'reviews', 'review', 'blog', 'blogs', 'edit', 'mail', 'email', 'home', 'job', 'jobs',
-                           'contribute', 'newsletter', 'shop', 'profile', 'register', 'auth', 'authentication',
-                           'campaign', 'config', 'delete', 'remove', 'forum', 'forums', 'download', 'downloads',
-                           'contact', 'blogs', 'feed', 'faq', 'intranet', 'logs', 'registration', 'search',
-                           'explore', 'rss', 'support', 'status', 'static', 'media', 'setting', 'sub365',
-                           'follow', 'activity', 'library']
+    forbidden_subdomain = ['about', 'account', 'accounts', 'activate', 'activity', 'admin',
+                           'administrator', 'affiliate', 'auth', 'authentication', 'billing', 
+                           'blog', 'blogs', 'campaign', 'config', 'contact', 'contribute', 
+                           'cookie', 'create', 'delete', 'disable', 'download', 'downloads', 
+                           'edit', 'email', 'explore', 'feed', 'feedback', 'follow', 'forum', 
+                           'forums', 'help', 'home', 'intranet', 'jobs', 'join', 'library', 
+                           'login', 'logout', 'logs', 'mail', 'media', 'news', 'newsletter', 
+                           'plan', 'privacy', 'profile', 'register', 'registration', 'remove', 
+                           'review', 'reviews', 'root', 'search', 'setting', 'settings', 
+                           'shop', 'signin', 'signout', 'signup', 'static', 'status', 'sub365', 
+                           'subscribe', 'subscriber', 'support', 'term', 'terms', 'update', 
+                           'user', 'username', 'users']
     if value.lower() in forbidden_subdomain:
         raise ValidationError("You are not allowed to use this name.")
 
@@ -461,3 +395,12 @@ class CoinPaymentDetailForm(forms.ModelForm):
                 }
             ),
         }
+
+    def clean_litecoin_address(self):
+        """
+        Validate the Litecoin address.
+        """
+        litecoin_address = self.cleaned_data.get("litecoin_address")
+        if not coinaddrvalidator.validate('litecoin', litecoin_address):
+            raise forms.ValidationError('Invalid Litecoin address. Please crosscheck.')
+        return litecoin_address
