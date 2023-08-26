@@ -63,7 +63,9 @@ class CoinPlanAdmin(admin.ModelAdmin):
 
 @admin.register(CoinSubscription)
 class CoinSubscriptionAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["subscriber", "plan", "subscription_date", "expiration_date",
+                    "coin_amount", "status"]
+    list_filter = ["status"]
 
 
 @admin.register(Subscription)

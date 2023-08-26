@@ -964,7 +964,7 @@ def subscribe_to_coin_plan(request, plan_id):
                 status=CoinSubscription.SubscriptionStatus.INACTIVE,
             )
             check_coin_transaction_status.apply_async(
-                eta=timezone.now() + timedelta(seconds=30),
+                eta=timezone.now() + timedelta(minutes=1),
             )
             return redirect(checkout_url)
         else:

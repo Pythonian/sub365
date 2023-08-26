@@ -902,10 +902,9 @@ class CoinSubscription(models.Model):
 
     class SubscriptionStatus(models.TextChoices):
         ACTIVE = "A", "Active"
-        INACTIVE = "I", "Inactive"
+        INACTIVE = "I", "Inactive"  # TODO: change to PENDING
         EXPIRED = "E", "Expired"
         CANCELED = "C", "Canceled"
-        FAILED = "F", "Failed"
 
     subscriber = models.ForeignKey(
         Subscriber, on_delete=models.CASCADE, related_name="coin_subscriptions"

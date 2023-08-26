@@ -99,7 +99,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'Africa/Lagos'
 
 USE_I18N = True
 
@@ -208,17 +208,17 @@ CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_BEAT_SCHEDULE = {
-    "check_coin_transaction_status_every_30_seconds": {
+    "check_coin_transaction_status_every_60_seconds": {
         "task": "check_coin_transaction_status",
-        "schedule": 30.0,
+        "schedule": 60.0,
     },
-    "check_coin_withdrawal_status_every_30_seconds": {
+    "check_coin_withdrawal_status_every_60_seconds": {
         "task": "check_coin_withdrawal_status",
-        "schedule": 30.0,
+        "schedule": 60.0,
         "args": (1, 1,),
     },
-    "update_expired_subscription_every_midnight": {
-        "task": "update_expired_subscriptions",
+    "check_and_mark_expired_subscriptions_daily": {
+        "task": "check_and_mark_expired_subscriptions",
         "schedule": crontab(hour=0, minute=0),
     },
 }

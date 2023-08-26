@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.utils import timezone
 from django.db import transaction
+from django.core.mail import send_mail
 
 import requests
 from celery import shared_task
@@ -43,7 +44,6 @@ def check_coin_transaction_status():
                 }
                 response = requests.post(endpoint, data=data, headers=header)
                 result = response.json()["result"]
-                logger.info(f"Response from API: {result}")
                 if isinstance(result, dict):
                     if result.get("status") == 100:
                         with transaction.atomic():
@@ -55,7 +55,6 @@ def check_coin_transaction_status():
                                     months=interval_count
                                 )
                                 coin_subscription.save()
-                                logger.info(f"Coin subscription {coin_subscription.id} marked as active")
 
                                 subscriber = coin_subscription.subscriber
 
@@ -92,12 +91,8 @@ def check_coin_transaction_status():
                                 plan.save()
 
                     elif result.get("status") == -1:
-                        # Transaction failed, Send email notification to subscriber
-                        send_coin_subscription_failure_email(coin_subscription)
-
-                        # Update the coin_subscription status to mark it as failed
-                        coin_subscription.status = CoinSubscription.SubscriptionStatus.FAILED
-                        coin_subscription.save()
+                        # Transaction failed, Delete the subscription object
+                        coin_subscription.delete()
                     else:
                         logger.warning(
                             f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}"
@@ -117,11 +112,24 @@ def check_coin_transaction_status():
         logger.exception(f"An unexpected error occurred: {e}")
 
 
-@shared_task(name="update_expired_subscriptions")
-def update_expired_subscriptions():
-    from django.core.management import call_command
+@shared_task(name="check_and_mark_expired_subscriptions")
+def check_and_mark_expired_subscriptions():
+    now = timezone.now()
+    expired_subscriptions = CoinSubscription.objects.filter(
+        status=CoinSubscription.SubscriptionStatus.ACTIVE,
+        expiration_date__lte=now,
+    )
 
-    call_command("update_expired_subscriptions")
+    for subscription in expired_subscriptions:
+        subscription.status = CoinSubscription.SubscriptionStatus.EXPIRED
+        subscription.save()
+
+        # Send email to the subscriber
+        subject = "Sub365.co: Your Coin Subscription has Expired"
+        message = f"Dear {subscription.subscriber}, your coin subscription has expired. Thank you for using our services."
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [subscription.subscriber.email]
+        send_mail(subject, message, from_email, recipient_list)
 
 
 @shared_task(name="check_coin_withdrawal_status")
