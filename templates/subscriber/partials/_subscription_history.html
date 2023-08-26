@@ -1,0 +1,15 @@
+<h5 class="text-secondary mb-3">Subscription History</h5>
+
+<div class="row g-4 mb-5">
+    {% for subscription in subscriptions %}
+    {% include "subscriber/partials/_subscription_card.html" %}
+    {% endfor %}
+    <div class="d-flex justify-content-between">
+        <p class="text-body-secondary">Showing
+            <span>{{ subscriptions.start_index }}-{{ subscriptions.end_index }}</span> of
+            <span>{{ subscriptions.paginator.count }}</span>
+            Subscription{{ subscriptions.paginator.count|pluralize }}
+        </p>
+        <div>{% include 'partials/_pagination.html' with page_obj=subscriptions %}</div>
+    </div>
+</div>

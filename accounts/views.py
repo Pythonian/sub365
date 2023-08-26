@@ -888,7 +888,8 @@ def subscriber_dashboard(request):
         except CoinSubscription.DoesNotExist:
             latest_subscription = None
         # Retrieve all the subscriptions done by the subscriber
-        subscriptions = CoinSubscription.objects.filter(subscriber=subscriber)
+        subscriptions = CoinSubscription.objects.filter(
+            subscriber=subscriber).exclude(status=CoinSubscription.SubscriptionStatus.INACTIVE)
         subscriptions = mk_paginator(request, subscriptions, 12)
         form = CoinPaymentDetailForm()
     else:
@@ -907,7 +908,8 @@ def subscriber_dashboard(request):
             latest_subscription = None
 
         # Retrieve all the subscriptions done by the subscriber
-        subscriptions = Subscription.objects.filter(subscriber=subscriber)
+        subscriptions = Subscription.objects.filter(
+            subscriber=subscriber).exclude(status=Subscription.SubscriptionStatus.INACTIVE)
         subscriptions = mk_paginator(request, subscriptions, 12)
         form = PaymentDetailForm()
 
