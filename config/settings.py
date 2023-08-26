@@ -211,7 +211,6 @@ CELERY_BEAT_SCHEDULE = {
     "check_coin_transaction_status_every_30_seconds": {
         "task": "check_coin_transaction_status",
         "schedule": 30.0,
-        "args": (1,),
     },
     "check_coin_withdrawal_status_every_30_seconds": {
         "task": "check_coin_withdrawal_status",

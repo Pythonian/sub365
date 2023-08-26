@@ -1,9 +1,5 @@
-###########
-# BUILDER #
-###########
-
 # Pull official base image
-FROM python:3.11.4-slim-buster as builder
+FROM python:3.10.13-bullseye as builder
 
 # set work directory
 WORKDIR /usr/src/app
@@ -12,26 +8,24 @@ WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE 1
 # ensures console output is not buffered by Docker
 ENV PYTHONUNBUFFERED 1
-# disable pip version check
-ENV PIP_DISABLE_PIP_VERSION_CHECK 1
 
 # copy requirements.txt
 COPY ./requirements.txt .
 
 # install system dependencies and clean up
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && pip install --upgrade pip \
     && pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 #########
 # FINAL #
 #########
 
 # pull official base image
-FROM python:3.11.4-slim-buster
+FROM python:3.10.13-bullseye
 
 # create directory for the app user
 RUN mkdir -p /home/app
@@ -49,12 +43,12 @@ RUN mkdir $APP_HOME/staticfiles
 WORKDIR $APP_HOME
 
 # install dependencies and clean up
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --no-cache /wheels/* \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+    && apt-get purge -y --auto-remove curl -o APT::AutoRemove::RecommendsImportant=false
 
 # copy entrypoint.sh
 COPY ./entrypoint.sh .
