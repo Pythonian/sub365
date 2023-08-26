@@ -44,7 +44,6 @@ ENV HOME=/home/app
 ENV APP_HOME=/home/app/web
 RUN mkdir $APP_HOME
 RUN mkdir $APP_HOME/staticfiles
-RUN mkdir $APP_HOME/celerybeat-schedule
 
 # Set work directory
 WORKDIR $APP_HOME

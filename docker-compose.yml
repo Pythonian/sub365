@@ -46,8 +46,6 @@ services:
       context: .
     image: sub365_celery_worker
     entrypoint: /home/app/web/docker/entrypoints/celery.sh
-    volumes:
-      - .:/home/app/web
     container_name: celery
     env_file:
       - ./.env
@@ -62,8 +60,6 @@ services:
       context: .
     image: sub365_celery_beat
     entrypoint: /home/app/web/docker/entrypoints/beat.sh
-    volumes:
-      - .:/home/app/web
     env_file:
       - ./.env
     depends_on:
@@ -76,8 +72,6 @@ services:
       context: .
     image: sub365_flower
     entrypoint: /home/app/web/docker/entrypoints/flower.sh
-    volumes:
-      - .:/home/app/web
     env_file:
       - ./.env
     ports:
