@@ -12,7 +12,6 @@ from django.core.mail import send_mail
 import requests
 from celery import shared_task
 
-from .emails import send_coin_subscription_failure_email
 from .models import (
     Affiliate,
     AffiliateInvitee,
@@ -126,7 +125,7 @@ def check_and_mark_expired_subscriptions():
 
         # Send email to the subscriber
         subject = "Sub365.co: Your Coin Subscription has Expired"
-        message = f"Dear {subscription.subscriber}, your coin subscription has expired. Thank you for using our services."
+        message = f"Dear {subscription.subscriber}, your coin subscription has expired. You can visit your account to start a new subscription today.\n\nBest regards,\nwww.Sub365.co"
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [subscription.subscriber.email]
         send_mail(subject, message, from_email, recipient_list)

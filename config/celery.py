@@ -10,8 +10,8 @@ app = Celery("config")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Update timezone
-# app.conf.enable_utc = False
-# app.conf.update(timezone="Africa/Lagos")
+app.conf.enable_utc = False
+app.conf.update(timezone="Africa/Lagos")
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
