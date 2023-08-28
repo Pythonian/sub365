@@ -870,7 +870,7 @@ class CoinSubscription(models.Model):
 
     class SubscriptionStatus(models.TextChoices):
         ACTIVE = "A", "Active"
-        INACTIVE = "I", "Inactive"  # TODO: change to PENDING
+        PENDING = "P", "Pending"
         EXPIRED = "E", "Expired"
         CANCELED = "C", "Canceled"
 
@@ -884,7 +884,7 @@ class CoinSubscription(models.Model):
     status = models.CharField(
         max_length=1,
         choices=SubscriptionStatus.choices,
-        default=SubscriptionStatus.INACTIVE,
+        default=SubscriptionStatus.PENDING,
     )
     coin_amount = models.CharField(max_length=225, blank=True, null=True)
     subscription_id = models.CharField(max_length=225, blank=True, null=True)

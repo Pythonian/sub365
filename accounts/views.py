@@ -889,7 +889,7 @@ def subscriber_dashboard(request):
             latest_subscription = None
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = CoinSubscription.objects.filter(
-            subscriber=subscriber).exclude(status=CoinSubscription.SubscriptionStatus.INACTIVE)
+            subscriber=subscriber).exclude(status=CoinSubscription.SubscriptionStatus.PENDING)
         subscriptions = mk_paginator(request, subscriptions, 12)
         form = CoinPaymentDetailForm()
     else:
@@ -961,7 +961,7 @@ def subscribe_to_coin_plan(request, plan_id):
                 checkout_url=result["checkout_url"],
                 status_url=result["status_url"],
                 qrcode_url=result["qrcode_url"],
-                status=CoinSubscription.SubscriptionStatus.INACTIVE,
+                status=CoinSubscription.SubscriptionStatus.PENDING,
             )
             check_coin_transaction_status.apply_async(
                 eta=timezone.now() + timedelta(minutes=1),

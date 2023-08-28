@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def check_coin_transaction_status():
     try:
         pending_subscriptions = CoinSubscription.objects.filter(
-            status=CoinSubscription.SubscriptionStatus.INACTIVE
+            status=CoinSubscription.SubscriptionStatus.PENDING
         )
 
         for coin_subscription in pending_subscriptions:
@@ -46,7 +46,7 @@ def check_coin_transaction_status():
                 if isinstance(result, dict):
                     if result.get("status") == 100:
                         with transaction.atomic():
-                            if coin_subscription.status == CoinSubscription.SubscriptionStatus.INACTIVE:
+                            if coin_subscription.status == CoinSubscription.SubscriptionStatus.PENDING:
                                 coin_subscription.status = CoinSubscription.SubscriptionStatus.ACTIVE
                                 coin_subscription.subscription_date = timezone.now()
                                 interval_count = coin_subscription.plan.interval_count
