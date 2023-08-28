@@ -15,9 +15,13 @@
                 <h5 class="fw-bold my-3">${{ plan.amount|intcomma }}<small> /{{ plan.interval_count }}
                         month{{ plan.interval_count|pluralize }}</small></h5>
                 <p>{{ plan.description }}</p>
-                <form action="{% if server_owner.coinbase_onboarding %}{% url 'subscribe_to_coin_plan' plan_id=plan.id %}{% else %}{% url 'subscribe_to_plan' product_id=plan.id %}{% endif %}" method="post">
+                <form
+                    action="{% if server_owner.coinbase_onboarding %}{% url 'subscribe_to_coin_plan' plan_id=plan.id %}{% else %}{% url 'subscribe_to_plan' product_id=plan.id %}{% endif %}"
+                    method="post">
                     {% csrf_token %}
-                    <button class="btn btn-sm btn-primary" type="submit" formtarget="_blank"><i class="far fa-credit-card me-1"></i>
+                    <button class="btn btn-sm btn-primary" type="submit"
+                        {% if server_owner.coinbase_onboarding %}formtarget="_blank" {% endif %}><i
+                            class="far fa-credit-card me-1"></i>
                         Subscribe</button>
                 </form>
             </div>

@@ -309,38 +309,6 @@ class ServerOwner(models.Model):
                 subscribed_via=self, status=Subscription.SubscriptionStatus.ACTIVE
             )[:limit]
 
-    # def get_total_earnings(self):
-    #     """
-    #     Calculate the total earnings of the ServerOwner based on subscriptions.
-
-    #     Returns:
-    #         Decimal: The total earnings amount formatted with two decimal places.
-    #     """
-    #     if self.coinbase_onboarding:
-    #         total_earnings = (
-    #             CoinSubscription.objects.filter(subscribed_via=self)
-    #             .aggregate(total=Sum("plan__amount"))
-    #             .get("total")
-    #         )
-    #         if total_earnings is not None:
-    #             total_earnings = Decimal(total_earnings)
-    #         else:
-    #             total_earnings = Decimal(0)
-    #         return total_earnings
-    #     else:
-    #         total_earnings = (
-    #             Subscription.objects.filter(subscribed_via=self)
-    #             .aggregate(total=Sum("plan__amount"))
-    #             .get("total")
-    #         )
-    #         if total_earnings is not None:
-    #             total_earnings = Decimal(total_earnings).quantize(
-    #                 Decimal("0.00"), rounding=ROUND_DOWN
-    #             )
-    #         else:
-    #             total_earnings = Decimal(0)
-    #         return total_earnings
-
     def get_total_earnings(self):
         """
         Calculate the total earnings of the ServerOwner based on subscriptions with

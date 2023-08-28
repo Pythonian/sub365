@@ -140,9 +140,6 @@ class OnboardingForm(forms.Form):
         return access_code
 
     def save(self, user):
-        """
-        Save the chosen subdomain and mark the server as chosen.
-        """
         subdomain = self.cleaned_data["subdomain"]
         server = self.cleaned_data["server"]
         affiliate_commission = self.cleaned_data["affiliate_commission"]

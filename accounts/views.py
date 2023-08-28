@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -1143,7 +1143,7 @@ def subscription_cancel(request):
             coin_subscription.status = CoinSubscription.SubscriptionStatus.CANCELED
             coin_subscription.save()
             messages.success(
-                request, "Your subscription has been canceled successfully."
+                request, f"Your subscription has been canceled successfully. It will not be renewed when it expires on {coin_subscription.expiration_date.strftime('%B %d, %Y')}"
             )
         except Http404:
             # If the subscription is not found, it will raise a 404 error with a message
@@ -1159,15 +1159,16 @@ def subscription_cancel(request):
                 status=Subscription.SubscriptionStatus.ACTIVE,
             )
 
-            # Cancel the subscription using the Stripe API
-            stripe.Subscription.delete(subscription.subscription_id)
+            # Cancel the subscription at the end of the billing period
+            subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
+            subscription_stripe.cancel_at_period_end = True
+            subscription_stripe.save()
             # Update the Subscription object
             subscription.status = Subscription.SubscriptionStatus.CANCELED
             subscription.save()
 
-            # Add a success message
             messages.success(
-                request, "Your subscription has been canceled successfully."
+                request, f"Your subscription has been canceled successfully. It will not be renewed when it expires on {subscription.expiration_date.strftime('%B %d, %Y')}"
             )
         except stripe.error.StripeError as e:
             logger.exception("An error occurred during a Stripe API call: %s", str(e))
