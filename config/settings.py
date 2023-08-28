@@ -121,7 +121,6 @@ else:
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
     STATICFILES_STORAGE = "config.storage_backends.StaticStorage"
 
-
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -212,11 +211,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "check_coin_transaction_status",
         "schedule": 60.0,
     },
-    # "check_coin_withdrawal_status_every_60_seconds": {
-    #     "task": "check_coin_withdrawal_status",
-    #     "schedule": 60.0,
-    #     "args": (1, 1,),
-    # },
     "check_and_mark_expired_subscriptions_daily": {
         "task": "check_and_mark_expired_subscriptions",
         "schedule": crontab(hour=0, minute=0),
