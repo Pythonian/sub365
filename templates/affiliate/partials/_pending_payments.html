@@ -4,4 +4,4 @@
 {% block data_title %}Pending Payments{% endblock data_title %}
 {% block data_value %}{% if affiliate.serverowner.coinbase_onboarding %}LTC
 {{ affiliate.pending_coin_commissions }}{% else %}${{ affiliate.pending_commissions|intcomma }}{% endif %}{% endblock data_value %}
-{% block data_icon %}fa-hand-holding-dollar{% endblock data_icon %}
+{% block data_icon %}{% if affiliate.serverowner.coinbase_onboarding %}fa-coins{% else %}fa-hand-holding-dollar{% endif %}{% endblock data_icon %}

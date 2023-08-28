@@ -35,7 +35,8 @@
                                 <th>Affiliate</th>
                                 <th>Discord ID</th>
                                 <th>Pending Amount</th>
-                                <th>Payment Method</th>
+                                <th>{% if serverowner.coinbase_onboarding %}Payment Address{% else %}Payment
+                                    Method{% endif %}</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -44,25 +45,37 @@
                             <tr>
                                 <td>{{ affiliate.subscriber }}</td>
                                 <td>{{ affiliate.discord_id }}</td>
-                                <td>${{ affiliate.pending_commissions|intcomma }}</td>
+                                <td>{% if serverowner.coinbase_onboarding %}LTC
+                                    {{ affiliate.pending_coin_commissions }}{% else %}${{ affiliate.pending_commissions|intcomma }}{% endif %}
+                                </td>
                                 <td><a data-bs-toggle="modal" data-bs-target="#paymentMethod{{ affiliate.id }}"
                                         class="btn btn-sm btn-primary"><i class="fas fa-eye me-1"></i> View Method</a>
                                 </td>
-                                <td><a class="btn btn-success text-white btn-sm" data-bs-toggle="modal"
+                                <td>
+                                    {% if serverowner.coinbase_onboarding %}
+                                    <a class="btn btn-success text-white btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#makePayment{{ affiliate.id }}"><i
+                                            class="fas fa-litecoin-sign me-1"></i>Make Payment</a>
+                                    {% else %}
+                                    <a class="btn btn-success text-white btn-sm" data-bs-toggle="modal"
                                         data-bs-target="#confirmPayment{{ affiliate.id }}"><i
-                                            class="fas fa-handshake me-1"></i> Confirm Payment</a></td>
+                                            class="fas fa-handshake me-1"></i>Confirm Payment</a>
+                                    {% endif %}
+                                </td>
                             </tr>
                             <div class="modal fade" id="paymentMethod{{ affiliate.id }}" tabindex="-1" role="dialog"
                                 aria-labelledby="paymentMethodModalLabel{{ affiliate.id }}" aria-hidden="true">
                                 <div class="modal-dialog" role="document">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Payment Method</h5>
+                                            <h5 class="modal-title">{% if serverowner.coinbase_onboarding %}Litecoin
+                                                Address{% else %}Payment Method{% endif %}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                 aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body text-dark">
-                                            <p>{{ affiliate.paymentdetail.body|linebreaks }}</p>
+                                            <p>{% if serverowner.coinbase_onboarding %}{{ affiliate.paymentdetail.litecoin_address }}{% else %}{{ affiliate.paymentdetail.body|linebreaks }}{% endif %}
+                                            </p>
                                         </div>
                                         <div class="modal-footer">
                                             <button class="btn btn-sm btn-outline-dark" type="button"
@@ -71,6 +84,38 @@
                                     </div>
                                 </div>
                             </div>
+                            {% if serverowner.coinbase_onboarding %}
+                            <div class="modal fade" id="makePayment{{ affiliate.id }}" tabindex="-1" role="dialog"
+                                aria-labelledby="makePaymentModalLabel{{ affiliate.id }}" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Make Payment</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-dark">
+                                            <p>Pay the sum of <span class="text-primary">LTC
+                                                    {{ affiliate.pending_coin_commissions }}</span>
+                                                to
+                                                the affiliate <span
+                                                    class="text-primary">{{ affiliate.subscriber }}</span></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-outline-dark btn-sm" type="button"
+                                                data-bs-dismiss="modal">Cancel</button>
+                                            <form method="POST" action="">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="affiliate_id"
+                                                    value="{{ affiliate.discord_id }}">
+                                                <button type="submit" class="btn btn-sm btn-success text-white"><i
+                                                        class="fas fa-check me-1"></i> Proceed</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
                             <div class="modal fade" id="confirmPayment{{ affiliate.id }}" tabindex="-1" role="dialog"
                                 aria-labelledby="confirmPaymentModalLabel{{ affiliate.id }}" aria-hidden="true">
                                 <div class="modal-dialog" role="document">
@@ -101,6 +146,7 @@
                                     </div>
                                 </div>
                             </div>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>

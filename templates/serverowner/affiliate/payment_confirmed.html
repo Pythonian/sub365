@@ -36,7 +36,8 @@
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                         <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                        <span>${{ affiliate.amount|intcomma }}</span>
+                        <span>{% if affiliate.serverowner.coinbase_onboarding %}LTC
+                            {{ coin_amount }}{% else %}${{ affiliate.amount|intcomma }}{% endif %}</span>
                     </li>
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">

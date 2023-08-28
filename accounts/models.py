@@ -212,34 +212,46 @@ class ServerOwner(models.Model):
         """
         return self.get_affiliate_payments().filter(paid=True)
 
-    def get_affiliates_confirmed_payment(self):
+    def get_affiliates_confirmed_payment_count(self):
         """
         Get the total number of affiliates who have been paid by serverowner.
         """
-        # TODO: change to get_affiliates_confirmed_payment_count
         return self.get_confirmed_affiliate_payments().count()
 
     def get_confirmed_payment_amount(self):
         """
-        Get the total amount of confirmed payments the server owner is to pay affiliates.
+        Get the total amount of confirmed payments the server owner has paid affiliates.
         """
-        # TODO: for coin payments
         confirmed_payments = self.get_confirmed_affiliate_payments()
-        total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
-        if total_amount is None:
-            total_amount = 0
-        return total_amount
+        if self.coinbase_onboarding:
+            total_amount = confirmed_payments.aggregate(total=Sum("coin_amount")).get("total")
+            if total_amount is None:
+                total_amount = 0
+            return total_amount
+        else:
+            total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
+            if total_amount is None:
+                total_amount = 0
+            return total_amount
 
     def calculate_affiliate_commission(self, subscription_amount):
         """
         Calculate the affiliate commission based on the subscription
         amount and affiliate commission percentage.
         """
-        commission_percentage = self.affiliate_commission
-        if commission_percentage is None:
-            return 0
+        if self.coinbase_onboarding:
+            commission_percentage = self.affiliate_commission
+            if commission_percentage is None:
+                return 0
+            subscription_amount = float(subscription_amount)
+            commission_amount = (subscription_amount * commission_percentage) / 100
+        else:
+            commission_percentage = self.affiliate_commission
+            if commission_percentage is None:
+                return 0
 
-        commission_amount = (subscription_amount * commission_percentage) / 100
+            commission_amount = (subscription_amount * commission_percentage) / 100
+
         return commission_amount
 
     def get_affiliate_users(self):
@@ -692,7 +704,6 @@ class StripePlan(models.Model):
         ACTIVE = "A", "Active"
         INACTIVE = "I", "Inactive"
 
-    # TODO: change user to serverowner
     user = models.ForeignKey(
         ServerOwner, on_delete=models.CASCADE, related_name="plans"
     )
@@ -701,7 +712,6 @@ class StripePlan(models.Model):
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=9, decimal_places=2)
     description = models.TextField(max_length=300, help_text="300 characters")
-    # TODO: currency field redundant?
     currency = models.CharField(max_length=3, default="usd")
     interval_count = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(12)]

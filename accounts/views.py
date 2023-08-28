@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
 from django.db.models import F, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -42,7 +43,7 @@ from .models import (
     Subscription,
     User,
 )
-from .tasks import check_coin_transaction_status, check_coin_withdrawal_status
+from .tasks import check_coin_transaction_status
 from .utils import create_hmac_signature, mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -745,7 +746,6 @@ def affiliate_detail(request, id):
 @onboarding_completed
 def pending_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
-    serverowner_id = serverowner.id
     affiliates = serverowner.get_pending_affiliates()
     affiliates = mk_paginator(request, affiliates, 20)
 
@@ -758,9 +758,9 @@ def pending_affiliate_payment(request):
                     try:
                         endpoint = "https://www.coinpayments.net/api.php"
                         data = (
-                            f"version=1&cmd=create_withdrawal&amount={serverowner.total_pending_btc_commissions}&currency="
+                            f"version=1&cmd=create_withdrawal&amount={affiliate.pending_coin_commissions}&currency="
                             + settings.COINBASE_CURRENCY
-                            + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.body}&key={serverowner.coinbase_api_public_key}&format=json"
+                            + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.litecoin_address}&key={serverowner.coinbase_api_public_key}&format=json"
                         )
                         header = {
                             "Content-Type": "application/x-www-form-urlencoded",
@@ -771,19 +771,44 @@ def pending_affiliate_payment(request):
                         response = requests.post(endpoint, data=data, headers=header)
                         response.raise_for_status()
                         result = response.json()["result"]
-                        if result:
-                            # check_coin_withdrawal_status.apply_async()
-                            check_coin_withdrawal_status.apply_async(
-                                args=(
-                                    affiliate_id,
-                                    serverowner_id,
-                                ),
+                        if result.get("status") == 1:
+                            serverowner.total_coin_pending_commissions = (
+                                F("total_coin_pending_commissions")
+                                - affiliate.pending_coin_commissions
+                            )
+                            serverowner.save()
+
+                            # Update the affiliate's pending_commissions and total_coin_commissions_paid fields
+                            affiliate.total_coin_commissions_paid = (
+                                F("total_coin_commissions_paid")
+                                + affiliate.pending_coin_commissions
+                            )
+                            affiliate.pending_coin_commissions = Decimal(0)
+                            affiliate.last_payment_date = timezone.now()
+                            affiliate.save()
+
+                            # Mark the associated AffiliatePayment instances as paid
+                            affiliate_payments = AffiliatePayment.objects.filter(
+                                serverowner=serverowner, affiliate=affiliate, paid=False
+                            )
+                            affiliate_payments.update(
+                                paid=True, date_payment_confirmed=timezone.now()
                             )
                             messages.success(
                                 request,
-                                "Your coin payment is being sent to the affiliate. A confirmation will be sent soon.",
+                                "The commission has been sent to the affiliate.",
                             )
+                            
+                            # Send email to the affiliate
+                            subject = "Sub365.co: Affiliate Commission Received"
+                            message = f"Dear {affiliate}, \n\nYou have just received an affiliate commission of {affiliate.pending_coin_commissions} from {serverowner}.\n\nBest regards,\nwww.sub365.co"
+                            from_email = settings.DEFAULT_FROM_EMAIL
+                            recipient_list = [affiliate.subscriber.email]
+                            send_mail(subject, message, from_email, recipient_list)
+
                             return redirect("pending_affiliate_payment")
+                        else:
+                            logger.warning(f"Withdrawal status: {result.get('status')}")
                     except requests.exceptions.RequestException as e:
                         logger.exception(f"Coinbase API request failed: {e}")
                         messages.error(
@@ -1234,7 +1259,7 @@ def upgrade_to_affiliate(request):
         # Form is invalid, display error message
         messages.error(
             request,
-            "An error occurred while submitting your form. Please cross-check your address.")
+            "An error occurred while submitting your form. Please re-enter your address.")
         return redirect("subscriber_dashboard")
 
 

@@ -212,11 +212,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "check_coin_transaction_status",
         "schedule": 60.0,
     },
-    "check_coin_withdrawal_status_every_60_seconds": {
-        "task": "check_coin_withdrawal_status",
-        "schedule": 60.0,
-        "args": (1, 1,),
-    },
+    # "check_coin_withdrawal_status_every_60_seconds": {
+    #     "task": "check_coin_withdrawal_status",
+    #     "schedule": 60.0,
+    #     "args": (1, 1,),
+    # },
     "check_and_mark_expired_subscriptions_daily": {
         "task": "check_and_mark_expired_subscriptions",
         "schedule": crontab(hour=0, minute=0),

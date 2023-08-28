@@ -112,7 +112,8 @@ class AffiliateInviteeAdmin(admin.ModelAdmin):
 
 @admin.register(AffiliatePayment)
 class AffiliatePaymentAdmin(admin.ModelAdmin):
-    list_display = ["serverowner", "affiliate", "subscriber", "amount", "paid"]
+    list_display = ["serverowner", "affiliate", "subscriber",
+                    "amount", "coin_amount", "paid"]
 
 
 admin.site.unregister(EmailAddress)
