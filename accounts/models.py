@@ -933,6 +933,7 @@ class AccessCode(models.Model):
         ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
     )
     is_used = models.BooleanField(default=False)
+    date_used = models.DateTimeField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 

@@ -22,7 +22,7 @@ from .models import (
 
 @admin.register(AccessCode)
 class AccessCode(admin.ModelAdmin):
-    list_display = ["code", "used_by", "is_used"]
+    list_display = ["code", "used_by", "is_used", "date_used"]
     list_filter = ["is_used"]
 
 

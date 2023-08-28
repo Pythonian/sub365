@@ -2,6 +2,7 @@ import re
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 import coinaddrvalidator
 
@@ -153,6 +154,7 @@ class OnboardingForm(forms.Form):
         code = AccessCode.objects.get(code=access_code)
         code.is_used = True
         code.used_by = profile
+        code.date_used = timezone.now()
         code.save()
 
 
