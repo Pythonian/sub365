@@ -158,22 +158,22 @@ class OnboardingForm(forms.Form):
         code.save()
 
 
-class CoinbaseOnboardingForm(forms.Form):
-    coinbase_api_secret_key = forms.CharField(
+class CoinpaymentsOnboardingForm(forms.Form):
+    coinpayment_api_secret_key = forms.CharField(
         max_length=255,
         widget=forms.TextInput(
             attrs={
-                "placeholder": "Enter your Coinbase API secret key",
+                "placeholder": "Enter your Coinpayments API secret key",
                 "class": "form-control",
             }
         ),
         required=True,
     )
-    coinbase_api_public_key = forms.CharField(
+    coinpayment_api_public_key = forms.CharField(
         max_length=255,
         widget=forms.TextInput(
             attrs={
-                "placeholder": "Enter your Coinbase API public key",
+                "placeholder": "Enter your Coinpayments API public key",
                 "class": "form-control",
             }
         ),
@@ -182,14 +182,14 @@ class CoinbaseOnboardingForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        api_secret_key = cleaned_data.get("coinbase_api_secret_key")
-        api_public_key = cleaned_data.get("coinbase_api_public_key")
+        api_secret_key = cleaned_data.get("coinpayment_api_secret_key")
+        api_public_key = cleaned_data.get("coinpayment_api_public_key")
 
         # Check if the API keys already exist in the database
         if (
-            ServerOwner.objects.filter(coinbase_api_secret_key=api_secret_key).exists()
+            ServerOwner.objects.filter(coinpayment_api_secret_key=api_secret_key).exists()
             or ServerOwner.objects.filter(
-                coinbase_api_public_key=api_public_key
+                coinpayment_api_public_key=api_public_key
             ).exists()
         ):
             raise forms.ValidationError("One or both of the API keys already exist.")

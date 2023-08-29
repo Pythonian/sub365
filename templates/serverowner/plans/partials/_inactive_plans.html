@@ -1,5 +1,5 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
 {% block data_title %}Inactive Plans{% endblock data_title %}
-{% block data_value %}{% if serverowner.coinbase_onboarding %}{{ serverowner.get_inactive_plans_count }}{% else %}{{ serverowner.get_inactive_plans_count }}{% endif %}{% endblock data_value %}
+{% block data_value %}{% if serverowner.coinpayment_onboarding %}{{ serverowner.get_inactive_plans_count }}{% else %}{{ serverowner.get_inactive_plans_count }}{% endif %}{% endblock data_value %}
 {% block data_icon %}fa-filter-circle-xmark{% endblock data_icon %}

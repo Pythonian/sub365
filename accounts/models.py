@@ -5,6 +5,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q, Sum
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
@@ -19,39 +20,106 @@ class User(AbstractUser):
 
 class ServerOwner(models.Model):
     """
-    Model for server owners.
+    Model representing serverowner instance.
     """
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    discord_id = models.CharField(max_length=255, unique=True)
-    username = models.CharField(max_length=255, unique=True)
-    avatar = models.CharField(max_length=255, blank=True, null=True)
-    subdomain = models.CharField(max_length=20)
-    email = models.EmailField()
-    stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE,
+        verbose_name=_("user"),
+        help_text=_("The Serverowner.")
+    )
+    discord_id = models.CharField(
+        _("discord id"),
+        max_length=255,
+        unique=True,
+        help_text=_("Discord ID of the Serverowner.")
+    )
+    username = models.CharField(
+        _("username"),
+        max_length=255,
+        unique=True,
+        help_text=_("The username of the Serverowner from Discord.")
+    )
+    avatar = models.CharField(
+        _("avatar"),
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text=_("The ID of the Serverowner's avatar from Discord.")
+    )
+    subdomain = models.CharField(
+        _("subdomain"),
+        max_length=20,
+        help_text=_("The referral name.")
+    )
+    email = models.EmailField(
+        _("email"),
+        help_text=_("Email address of the Serverowner from Discord.")
+    )
+    stripe_account_id = models.CharField(
+        _("stripe account id"),
+        max_length=100, 
+        blank=True, 
+        null=True,
+        help_text=_("The stripe account ID of the Serverowner.")
+    )
     affiliate_commission = models.IntegerField(
-        blank=True, null=True, validators=[MinValueValidator(1), MaxValueValidator(100)]
+        _("affiliate commission"),
+        blank=True, 
+        null=True, 
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text=_("Percentage commission for affiliates.")
     )
     total_pending_commissions = models.DecimalField(
+        _("total pending commissions"),
         max_digits=9,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Total pending dollar commissions to be paid by the server owner",
+        help_text=_("Total pending dollar commissions to be paid by the Serverowner.")
     )
     total_coin_pending_commissions = models.DecimalField(
+        _("total coin pending commissions"),
         max_digits=20,
         decimal_places=8,
         default=0,
-        help_text="Total pending coin commissions to be paid by the server owner",
+        help_text=_("Total pending coin commissions to be paid by the Serverowner."),
     )
-    coinbase_api_secret_key = models.CharField(max_length=255, blank=True, null=True)
-    coinbase_api_public_key = models.CharField(max_length=255, blank=True, null=True)
-    coinbase_onboarding = models.BooleanField(default=False)
+    coinpayment_api_secret_key = models.CharField(
+        _("coinpayment api secret key"),
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text=_("Coinpayment API secret key of the serverowner.")
+    )
+    coinpayment_api_public_key = models.CharField(
+        _("coinpayment api public key"),
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text=_("Coinpayment API public key of the serverowner.")
+    )
+    coinpayment_onboarding = models.BooleanField(
+        _("coinpayment onboarding"),
+        default=False,
+        help_text=_("If this Serverowner onboarded via coinpayment.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        """
+        Metadata options for the ServerOwner model.
+        """
+        ordering = ["-created"]
+        verbose_name = _("serverowner")
+        verbose_name_plural = _("serverowners")
+
     def __str__(self):
+        """
+        Return a string representation of the ServerOwner instance.
+        """
         return self.username
 
     def get_choice_server(self):
@@ -72,7 +140,7 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Plan objects belonging to the server owner.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return self.coin_plans.all()
         else:
             return self.plans.all()
@@ -84,7 +152,7 @@ class ServerOwner(models.Model):
         Returns:
             int: The total count of plans created by the server owner.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return self.coin_plans.count()
         else:
             return self.plans.count()
@@ -96,7 +164,7 @@ class ServerOwner(models.Model):
         Returns:
             Queryset: QuerySet of Plan objects set to a limit.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return self.get_plans().filter(status=CoinPlan.PlanStatus.ACTIVE)[:limit]
         else:
             return self.get_plans().filter(status=StripePlan.PlanStatus.ACTIVE)[:limit]
@@ -108,7 +176,7 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of active plans.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return (
                 self.get_plans().filter(status=CoinPlan.PlanStatus.ACTIVE.value).count()
             )
@@ -126,7 +194,7 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of inactive plans.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return self.coin_plans.filter(
                 status=CoinPlan.PlanStatus.INACTIVE.value
             ).count()
@@ -143,7 +211,7 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Plan objects ordered by subscriber count
                       in descending order excluding plans with no subscribers.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return self.coin_plans.filter(
                 status=CoinPlan.PlanStatus.ACTIVE, subscriber_count__gt=0
             ).order_by("-subscriber_count")[:limit]
@@ -157,8 +225,11 @@ class ServerOwner(models.Model):
     def get_total_payments_to_affiliates(self):
         """
         Get the total payments the server owner has paid to affiliates.
+
+        Returns:
+            Decimal: The total payments the server owner has paid to affiliates.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return (
                 self.affiliate_set.aggregate(
                     total_coin_payments=Sum("total_coin_commissions_paid")
@@ -175,55 +246,79 @@ class ServerOwner(models.Model):
 
     def get_pending_affiliates(self):
         """
-        Get a list of pending affiliates that the server owner is to pay.
+        Get a list of pending affiliates that the serverowner is to pay.
+
+        Returns:
+            QuerySet: QuerySet of Affiliate objects with pending commissions.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return self.affiliate_set.exclude(pending_coin_commissions=0)
         else:
             return self.affiliate_set.exclude(pending_commissions=0)
 
     def get_pending_affiliates_count(self):
         """
-        Get the total number of affiliates who are yet to be paid by serverowner.
+        Get the total number of affiliates who are yet to be paid by server owner.
+
+        Returns:
+            int: The total number of pending affiliates.
         """
         return self.get_pending_affiliates().count()
 
     def get_affiliates(self):
         """
         Get a list of all affiliates associated with the server owner.
+
+        Returns:
+            QuerySet: QuerySet of Affiliate objects associated with the server owner.
         """
         return Affiliate.objects.filter(serverowner=self)
 
     def get_affiliate_payments(self):
         """
-        Get the list of Affiliates payments associated with the Serverowner.
+        Get the list of Affiliate payments associated with the server owner.
+
+        Returns:
+            QuerySet: QuerySet of AffiliatePayment objects associated with the server owner.
         """
         return AffiliatePayment.objects.filter(serverowner=self)
 
     def get_pending_affiliate_payments(self):
         """
         Get the pending commissions the server owner is to pay affiliates.
+
+        Returns:
+            QuerySet: QuerySet of AffiliatePayment objects with pending commissions.
         """
         return self.get_affiliate_payments().filter(paid=False)
 
     def get_confirmed_affiliate_payments(self):
         """
-        Get the confirmed payment of commissions the server owner has paid affiliates.
+        Get the confirmed payment of commissions the server owner has paid to affiliates.
+
+        Returns:
+            QuerySet: QuerySet of AffiliatePayment objects with confirmed payments.
         """
         return self.get_affiliate_payments().filter(paid=True)
 
     def get_affiliates_confirmed_payment_count(self):
         """
-        Get the total number of affiliates who have been paid by serverowner.
+        Get the total number of affiliates who have been paid by the server owner.
+
+        Returns:
+            int: The total number of affiliates with confirmed payments.
         """
         return self.get_confirmed_affiliate_payments().count()
 
     def get_confirmed_payment_amount(self):
         """
-        Get the total amount of confirmed payments the server owner has paid affiliates.
+        Get the total amount of confirmed payments the server owner has paid to affiliates.
+
+        Returns:
+            Decimal: The total amount of confirmed payments.
         """
         confirmed_payments = self.get_confirmed_affiliate_payments()
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             total_amount = confirmed_payments.aggregate(total=Sum("coin_amount")).get("total")
             if total_amount is None:
                 total_amount = 0
@@ -238,8 +333,14 @@ class ServerOwner(models.Model):
         """
         Calculate the affiliate commission based on the subscription
         amount and affiliate commission percentage.
+
+        Args:
+            subscription_amount (float): The subscription amount.
+
+        Returns:
+            float: The calculated affiliate commission amount.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             commission_percentage = self.affiliate_commission
             if commission_percentage is None:
                 return 0
@@ -312,7 +413,7 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return CoinSubscription.objects.filter(
                 subscribed_via=self, status=CoinSubscription.SubscriptionStatus.ACTIVE
             )[:limit]
@@ -329,7 +430,7 @@ class ServerOwner(models.Model):
         Returns:
             Decimal: The total earnings amount formatted with two decimal places.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             total_earnings = (
                 CoinSubscription.objects.filter(
                     subscribed_via=self,
@@ -370,7 +471,7 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with active subscriptions.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return (
                 self.get_subscribed_users()
                 .filter(
@@ -392,7 +493,7 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of subscribers with inactive subscriptions.
         """
-        if self.coinbase_onboarding:
+        if self.coinpayment_onboarding:
             return (
                 self.get_subscribed_users()
                 .exclude(
@@ -410,48 +511,130 @@ class ServerOwner(models.Model):
 
 class Server(models.Model):
     """
-    Model for servers.
+    Model representing server instance.
     """
 
     owner = models.ForeignKey(
-        ServerOwner, on_delete=models.CASCADE, related_name="servers"
+        ServerOwner, 
+        on_delete=models.CASCADE, 
+        related_name="servers",
+        verbose_name=_("owner"),
+        help_text=_("The Serverowner who owns this Discord server.")
     )
-    server_id = models.CharField(max_length=100)
-    name = models.CharField(max_length=100)
-    icon = models.CharField(max_length=255, blank=True, null=True)
-    choice_server = models.BooleanField(default=False)
+    server_id = models.CharField(
+        _("server id"),
+        max_length=100,
+        help_text=_("The Discord ID of the server.")
+    )
+    name = models.CharField(
+        _("name"),
+        max_length=100,
+        help_text=_("Name of the server.")
+    )
+    icon = models.CharField(
+        _("icon"),
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text=_("Icon of the server on Discord.")
+    )
+    choice_server = models.BooleanField(
+        _("choice server"),
+        default=False,
+        help_text=_("If this is the server the Serverowner onboarded with.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        """
+        Metadata options for the Server model.
+        """
+        ordering = ["-created"]
+        verbose_name = _("server")
+        verbose_name_plural = _("servers")
+
     def __str__(self):
+        """
+        Return a string representation of the Server instance.
+        """
         return self.name
 
 
 class Subscriber(models.Model):
     """
-    Model for subscribers.
+    Model representing subscribers.
     """
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    discord_id = models.CharField(max_length=255, unique=True)
-    username = models.CharField(max_length=255, unique=True)
-    avatar = models.CharField(max_length=255, blank=True, null=True)
-    email = models.EmailField()
-    subscribed_via = models.ForeignKey(
-        ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name=_("user"),
+        help_text=_("The associated user for the subscriber."),
     )
-    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
+    discord_id = models.CharField(
+        _("discord id"),
+        max_length=255, 
+        unique=True,
+        help_text=_("Discord ID of the subscriber.")
+    )
+    username = models.CharField(
+        _("username"),
+        max_length=255, 
+        unique=True,
+        help_text=_("Username of the subscriber.")
+    )
+    avatar = models.CharField(
+        _("avatar"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("Avatar URL of the subscriber.")
+    )
+    email = models.EmailField(
+        _("email"),
+        help_text=_("Email address of the subscriber.")
+    )
+    subscribed_via = models.ForeignKey(
+        ServerOwner, 
+        on_delete=models.SET_NULL, 
+        blank=True, 
+        null=True,
+        verbose_name=_("subscribed via"),
+        help_text=_("The serverowner via which the subscriber is subscribed.")
+    )
+    stripe_customer_id = models.CharField(
+        _("stripe customer id"),
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text=_("Stripe customer ID of the subscriber.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the Subscriber model.
+        """
         ordering = ["-created"]
+        verbose_name = _("subscriber")
+        verbose_name_plural = _("subscribers")
 
     def __str__(self):
+        """
+        Return a string representation of the Subscriber instance.
+        """
         return self.username
 
     def has_active_subscription(self):
-        if self.subscribed_via.coinbase_onboarding:
+        """
+        Check if the subscriber has an active subscription.
+
+        Returns:
+            bool: True if the subscriber has an active subscription, False otherwise.
+        """
+        if self.subscribed_via.coinpayment_onboarding:
             return self.coin_subscriptions.filter(
                 status=CoinSubscription.SubscriptionStatus.ACTIVE,
                 expiration_date__gt=timezone.now(),
@@ -463,64 +646,128 @@ class Subscriber(models.Model):
             ).exists()
 
     def get_subscriptions(self):
-        if self.subscribed_via.coinbase_onboarding:
+        """
+        Get the subscriptions associated with the subscriber.
+
+        Returns:
+            QuerySet: The queryset of subscriptions associated with the subscriber.
+        """
+        if self.subscribed_via.coinpayment_onboarding:
             return self.coin_subscriptions.all()
         else:
             return self.subscriptions.all()
 
 
 class Affiliate(models.Model):
-    subscriber = models.OneToOneField(Subscriber, on_delete=models.CASCADE)
+    """
+    Model representing affiliates.
+    """
+    
+    subscriber = models.OneToOneField(
+        Subscriber,
+        on_delete=models.CASCADE,
+        verbose_name=_("subscriber"),
+        help_text=_("The subscriber associated with the affiliate."),
+    )
     affiliate_link = models.CharField(
-        max_length=255, unique=True, blank=True, null=True
+        _("affiliate link"),
+        max_length=255,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text=_("The unique affiliate link."),
     )
     discord_id = models.CharField(
-        max_length=255, primary_key=True, help_text="Discord ID of the Affiliate"
+        max_length=255,
+        primary_key=True,
+        verbose_name=_("discord id"),
+        help_text=_("Discord ID of the affiliate."),
     )
-    server_id = models.CharField(max_length=255)
-    serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
-    last_payment_date = models.DateTimeField(null=True, blank=True)
+    server_id = models.CharField(
+        _("server id"),
+        max_length=255,
+        help_text=_("The ID of the server associated with the affiliate.")
+    )
+    serverowner = models.ForeignKey(
+        ServerOwner,
+        on_delete=models.CASCADE,
+        verbose_name=_("server owner"),
+        help_text=_("The server owner associated with the affiliate."),
+    )
+    last_payment_date = models.DateTimeField(
+        _("last payment date"),
+        null=True, 
+        blank=True,
+        help_text=_("The date and time of the last payment to the affiliate.")
+    )
     total_commissions_paid = models.DecimalField(
+        _("total commissions paid"),
         max_digits=9,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Total commissions paid to the affiliate",
+        help_text=_("Total commissions paid to the affiliate.")
     )
     total_coin_commissions_paid = models.DecimalField(
+        _("total coin commissions paid"),
         max_digits=20,
         decimal_places=8,
         default=0,
-        help_text="Total coin commissions paid to the affiliate",
+        help_text=_("Total coin commissions paid to the affiliate.")
     )
-    pending_commissions = models.DecimalField(max_digits=9, decimal_places=2, default=0)
+    pending_commissions = models.DecimalField(
+        _("pending commissions"),
+        max_digits=9, 
+        decimal_places=2, 
+        default=0,
+        help_text=_("Pending commissions to be paid to the affiliate.")
+    )
     pending_coin_commissions = models.DecimalField(
-        max_digits=20, decimal_places=8, default=0
+        _("pending coin commissions"),
+        max_digits=20, 
+        decimal_places=8, 
+        default=0,
+        help_text=_("Pending coin commissions to be paid to the affiliate.")
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the Affiliate model.
+        """
         ordering = ["-created"]
 
     def __str__(self):
+        """
+        Return a string representation of the Affiliate instance.
+        """
         return self.subscriber.username
 
     def update_last_payment_date(self):
+        """
+        Update the last payment date of the affiliate to the current date and time.
+        """
         self.last_payment_date = timezone.now()
         self.save()
 
     def get_total_invitation_count(self):
         """
         Get the total count of affiliate invitees.
+
+        Returns:
+            int: The total count of affiliate invitees.
         """
         return self.affiliateinvitee_set.all().count()
 
     def get_active_subscription_count(self):
         """
         Get the count of invitees with active subscriptions.
+
+        Returns:
+            int: The count of invitees with active subscriptions.
         """
-        if self.serverowner.coinbase_onboarding:
+        if self.serverowner.coinpayment_onboarding:
             invitees_with_active_coin_subscriptions = self.affiliateinvitee_set.filter(
                 invitee_discord_id__in=Subscriber.objects.filter(
                     coin_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE
@@ -538,9 +785,12 @@ class Affiliate(models.Model):
     def calculate_conversion_rate(self):
         """
         Calculate the conversion rate of the affiliate.
+
+        Returns:
+            float: The conversion rate of the affiliate.
         """
         invitees_count = self.affiliateinvitee_set.count()
-        if self.serverowner.coinbase_onboarding:
+        if self.serverowner.coinpayment_onboarding:
             successful_invitees_count = self.affiliateinvitee_set.filter(
                 invitee_discord_id__in=Subscriber.objects.filter(
                     Q(
@@ -573,35 +823,62 @@ class Affiliate(models.Model):
     def get_affiliate_payments(self):
         """
         Get the affiliate payments associated with this affiliate.
+
+        Returns:
+            QuerySet: The queryset of affiliate payments associated with this affiliate.
         """
         return AffiliatePayment.objects.filter(affiliate=self)
 
     def get_affiliate_invitees(self):
         """
         Get a list of all affiliate invitees associated with this affiliate.
+
+        Returns:
+            QuerySet: The queryset of affiliate invitees associated with this affiliate.
         """
         return self.affiliateinvitee_set.all()
 
 
 class AffiliateInvitee(models.Model):
-    """Model table for an Invited user by an Affiliate"""
+    """
+    Model representing Affiliate invitee.
+    """
 
-    affiliate = models.ForeignKey(Affiliate, on_delete=models.CASCADE)
+    affiliate = models.ForeignKey(
+        Affiliate, 
+        on_delete=models.CASCADE,
+        verbose_name=_("affiliate"),
+        help_text=_("The affiliate who invited the user.")
+    )
     invitee_discord_id = models.CharField(
-        max_length=255, unique=True, help_text="Discord ID of the Invitee"
+        _("invitee discord id"),
+        max_length=255, 
+        unique=True, 
+        help_text=_("Discord ID of the Invitee.")
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the AffiliateInvitee model.
+        """
         ordering = ["-id"]
+        verbose_name = _("affiliate invitee")
+        verbose_name_plural = _("affiliate invitees")
 
     def __str__(self):
+        """
+        Return a string representation of the AffiliateInvitee instance.
+        """
         return self.invitee_discord_id
 
     def get_affiliateinvitee_name(self):
         """
-        Get the username of the Invitee
+        Get the username of the Invitee.
+
+        Returns:
+            str or None: The username of the invitee, or None if not found.
         """
         subscriber = Subscriber.objects.filter(
             discord_id=self.invitee_discord_id
@@ -611,11 +888,17 @@ class AffiliateInvitee(models.Model):
         return None
 
     def get_affiliate_commission_payment(self):
+        """
+        Get the affiliate commission payment received for this Invitee.
+
+        Returns:
+            Decimal: The affiliate commission payment received.
+        """
         subscriber = Subscriber.objects.filter(
             discord_id=self.invitee_discord_id
         ).first()
         if subscriber:
-            if self.affiliate.serverowner.coinbase_onboarding:
+            if self.affiliate.serverowner.coinpayment_onboarding:
                 subscription = subscriber.coin_subscriptions.order_by(
                     "-created"
                 ).first()
@@ -640,13 +923,16 @@ class AffiliateInvitee(models.Model):
     def calculate_affiliate_payment_commission(self):
         """
         Calculate the total affiliate payment commission received for this AffiliateInvitee.
+
+        Returns:
+            Decimal: The total affiliate payment commission received.
         """
         affiliate_payments = AffiliatePayment.objects.filter(
             affiliate=self.affiliate,
             subscriber__discord_id=self.invitee_discord_id,
             paid=True,
         )
-        if self.affiliate.serverowner.coinbase_onboarding:
+        if self.affiliate.serverowner.coinpayment_onboarding:
             total_commission = affiliate_payments.aggregate(
                 total_commission=Sum("coin_amount")
             ).get("total_commission")
@@ -659,87 +945,178 @@ class AffiliateInvitee(models.Model):
 
 
 class AffiliatePayment(models.Model):
-    serverowner = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
+    """
+    Model representing Affiliate payments.
+    """
+
+    serverowner = models.ForeignKey(
+        ServerOwner, 
+        on_delete=models.CASCADE,
+        verbose_name=_("serverowner"),
+        help_text=_("The serverowner who is to pay the affiliate.")
+    )
     affiliate = models.ForeignKey(
-        Affiliate, on_delete=models.CASCADE, help_text="Discord ID of the Affiliate"
+        Affiliate, 
+        on_delete=models.CASCADE, 
+        verbose_name=_("affiliate"),
+        help_text=_("Discord ID of the Affiliate to be paid.")
     )
     subscriber = models.ForeignKey(
         Subscriber,
         on_delete=models.CASCADE,
-        help_text="The Affiliate Invitee who subscribed",
+        verbose_name=_("subscriber"),
+        help_text=_("The Affiliate Invitee who subscribed.")
     )
     amount = models.DecimalField(
+        _("amount"),
         max_digits=9,
         decimal_places=2,
         validators=[MinValueValidator(0)],
         blank=True,
         null=True,
-        help_text="The dollar commission to be paid.",
+        help_text=_("The dollar commission to be paid.")
     )
     coin_amount = models.DecimalField(
+        _("coin amount"),
         max_digits=20,
         decimal_places=8,
         blank=True,
         null=True,
-        help_text="The coin commission to be paid.",
+        help_text=_("The coin commission to be paid.")
     )
-    paid = models.BooleanField(default=False)
-    date_payment_confirmed = models.DateTimeField(blank=True, null=True)
+    paid = models.BooleanField(
+        _("paid"),
+        default=False,
+        help_text=_("If this payment has been made.")
+    )
+    date_payment_confirmed = models.DateTimeField(
+        _("date payment confirmed"),
+        blank=True, 
+        null=True,
+        help_text=_("Date the serverowner made payment.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the AffiliatePayment model.
+        """
         ordering = ["-created"]
+        verbose_name = _("affiliate payment")
+        verbose_name_plural = _("affiliate payments")
 
     def __str__(self):
+        """
+        Return a string representation of the affiliatepayment.
+        """
         return f"Affiliate Payment #{self.id}"
 
 
 class StripePlan(models.Model):
     """
-    Model for Stripe plans.
+    Model representing Stripe plans.
     """
 
     class PlanStatus(models.TextChoices):
-        ACTIVE = "A", "Active"
-        INACTIVE = "I", "Inactive"
+        """
+        Choices for the plan status.
+        """
+        ACTIVE = "A", _("Active")
+        INACTIVE = "I", _("Inactive")
 
     user = models.ForeignKey(
-        ServerOwner, on_delete=models.CASCADE, related_name="plans"
+        ServerOwner, 
+        on_delete=models.CASCADE, 
+        related_name="plans",
+        verbose_name=_("user"),
+        help_text=_("The server owner who created the plan.")
     )
-    product_id = models.CharField(max_length=100)
-    price_id = models.CharField(max_length=100)
-    name = models.CharField(max_length=100)
-    amount = models.DecimalField(max_digits=9, decimal_places=2)
-    description = models.TextField(max_length=300, help_text="300 characters")
-    currency = models.CharField(max_length=3, default="usd")
+    product_id = models.CharField(
+        _("product id"),
+        max_length=100,
+        help_text=_("The product ID associated with the plan.")
+    )
+    price_id = models.CharField(
+        _("price id"),
+        max_length=100,
+        help_text=_("The price ID associated with the plan.")
+    )
+    name = models.CharField(
+        _("name"),
+        max_length=100,
+        help_text=_("The name of the Stripe plan.")
+    )
+    amount = models.DecimalField(
+        _("amount"),
+        max_digits=9, 
+        decimal_places=2,
+        help_text=_("The amount in dollars for the plan.")
+    )
+    description = models.TextField(
+        _("description"),
+        max_length=300, 
+        help_text=_("Description of the plan (up to 300 characters).")
+    )
+    currency = models.CharField(
+        _("currency"),
+        max_length=3, 
+        default="usd",
+        help_text=_("The currency code used for the plan.")
+    )
     interval_count = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(12)]
+        _("interval count"),
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        help_text=_("Number of months the plan should last.")
     )
-    subscriber_count = models.IntegerField(default=0)
+    subscriber_count = models.IntegerField(
+        _("subscriber count"),
+        default=0,
+        help_text=_("The number of subscribers to this plan.")
+    )
     status = models.CharField(
-        max_length=1, choices=PlanStatus.choices, default=PlanStatus.ACTIVE
+        _("status"),
+        max_length=1, 
+        choices=PlanStatus.choices, 
+        default=PlanStatus.ACTIVE,
+        help_text=_("Status of the plan.")
     )
     discord_role_id = models.CharField(
-        max_length=255, help_text="ID of Discord role to be assigned to subscribers"
+        _("discord role id"),
+        max_length=255,
+        help_text=_("ID of Discord role to be assigned to subscribers.")
     )
     permission_description = models.CharField(
+        _("permission description"),
         max_length=255,
         blank=True,
         null=True,
-        help_text="Description of permissions to be given to subscribers",
+        help_text=_("Description of permissions to be given to subscribers."),
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the StripePlan model.
+        """
         ordering = ["-created"]
+        verbose_name = _("stripe plan")
+        verbose_name_plural = _("stripe plans")
 
     def __str__(self):
+        """
+        Return a string representation of the Stripe plan.
+        """
         return self.name
 
     def total_earnings(self):
-        # Calculate the total earnings for this plan
+        """
+        Calculate the total earnings from subscriptions to this plan.
+        
+        Returns:
+            Decimal: The total earnings from subscriptions.
+        """
         subscribers = Subscription.objects.filter(plan=self, subscribed_via=self.user)
         total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))[
             "total"
@@ -747,11 +1124,21 @@ class StripePlan(models.Model):
         return total_earnings or Decimal(0)
 
     def get_stripeplan_subscribers(self):
-        # Get all subscribers for this plan, filtered by the server owner
+        """
+        Get all subscribers for this plan, filtered by the server owner.
+        
+        Returns:
+            QuerySet: A queryset of subscribers for this plan and server owner.
+        """
         return Subscription.objects.filter(plan=self, subscribed_via=self.user)
 
     def active_subscriptions_count(self):
-        # Count the number of active subscriptions for this plan
+        """
+        Count the number of active subscriptions for this plan.
+        
+        Returns:
+            int: The count of active subscriptions.
+        """
         subscribers = self.get_stripeplan_subscribers()
         active_subscriptions = subscribers.filter(
             status=Subscription.SubscriptionStatus.ACTIVE
@@ -759,53 +1146,104 @@ class StripePlan(models.Model):
         return active_subscriptions.count()
 
     def total_subscriptions_count(self):
-        # Count the total number of subscriptions for this plan
+        """
+        Count the total number of subscriptions for this plan.
+        
+        Returns:
+            int: The total count of subscriptions.
+        """
         subscribers = self.get_stripeplan_subscribers()
         return subscribers.count()
 
 
 class CoinPlan(models.Model):
     """
-    Model for Coin plans.
+    Model representing coin subscription plans.
     """
 
     class PlanStatus(models.TextChoices):
-        ACTIVE = "A", "Active"
-        INACTIVE = "I", "Inactive"
+        """
+        Choices for the plan status.
+        """
+        ACTIVE = "A", _("Active")
+        INACTIVE = "I", _("Inactive")
 
     serverowner = models.ForeignKey(
-        ServerOwner, on_delete=models.CASCADE, related_name="coin_plans"
+        ServerOwner, 
+        on_delete=models.CASCADE, 
+        related_name="coin_plans",
+        verbose_name=_("serverowner"),
+        help_text=_("The serverowner who created the plan.")
     )
-    name = models.CharField(max_length=100)
-    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    name = models.CharField(
+        _("name"),
+        max_length=100,
+        help_text=_("The name of the coin plan.")
+    )
+    amount = models.DecimalField(
+        _("amount"),
+        max_digits=9, 
+        decimal_places=2,
+        help_text=_("The amount in dollars for the plan.")
+    )
     interval_count = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(12)]
+        _("interval count"),
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        help_text=_("The number of months the plan should last.")
     )
-    description = models.TextField(max_length=300, help_text="300 characters")
+    description = models.TextField(
+        _("description"),
+        max_length=300, 
+        help_text=_("Description of the plan (up to 300 characters).")
+    )
     status = models.CharField(
-        max_length=1, choices=PlanStatus.choices, default=PlanStatus.ACTIVE
+        _("status"),
+        max_length=1, 
+        choices=PlanStatus.choices, 
+        default=PlanStatus.ACTIVE,
+        help_text=_("Status of the plan.")
     )
-    subscriber_count = models.IntegerField(default=0)
+    subscriber_count = models.IntegerField(
+        _("subscriber count"),
+        default=0,
+        help_text=_("Number of subscriptions to this plan.")
+    )
     discord_role_id = models.CharField(
-        max_length=255, help_text="ID of Discord role to be assigned to subscribers"
+        _("discord role id"),
+        max_length=255, 
+        help_text=_("The ID of the Discord role assigned to subscribers.")
     )
     permission_description = models.CharField(
+        _("permission description"),
         max_length=255,
         blank=True,
         null=True,
-        help_text="Description of permissions to be given to subscribers",
+        help_text=_("The description of permissions given to subscribers.")
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the CoinPlan model.
+        """
         ordering = ["-created"]
+        verbose_name = _("coin plan")
+        verbose_name_plural = _("coin plans")
 
     def __str__(self):
+        """
+        Return a string representation of the coin plan.
+        """
         return self.name
 
     def total_earnings(self):
-        # Calculate the total earnings for this plan
+        """
+        Calculate the total earnings from subscriptions to this plan.
+
+        Returns:
+            Decimal: The total earnings from subscriptions.
+        """
         subscribers = CoinSubscription.objects.filter(
             plan=self, subscribed_via=self.serverowner
         )
@@ -815,13 +1253,23 @@ class CoinPlan(models.Model):
         return total_earnings or Decimal(0)
 
     def get_coinplan_subscribers(self):
-        # Get all subscribers for this plan, filtered by the server owner
+        """
+        Get all subscribers for this plan, filtered by the server owner.
+
+        Returns:
+            QuerySet: A queryset of subscribers for this plan and serverowner.
+        """
         return CoinSubscription.objects.filter(
             plan=self, subscribed_via=self.serverowner
         )
 
     def active_subscriptions_count(self):
-        # Count the number of active subscriptions for this plan
+        """
+        Count the number of active subscriptions for this plan.
+
+        Returns:
+            int: The count of active subscriptions.
+        """
         subscribers = self.get_coinplan_subscribers()
         active_subscriptions = subscribers.filter(
             status=CoinSubscription.SubscriptionStatus.ACTIVE
@@ -829,113 +1277,302 @@ class CoinPlan(models.Model):
         return active_subscriptions.count()
 
     def total_subscriptions_count(self):
-        # Count the total number of subscriptions for this plan
+        """
+        Count the total number of subscriptions for this plan.
+
+        Returns:
+            int: The total count of subscriptions.
+        """
         subscribers = self.get_coinplan_subscribers()
         return subscribers.count()
 
 
 class Subscription(models.Model):
     """
-    Model for subscriptions.
+    Model representing Stripe subscriptions.
     """
 
     class SubscriptionStatus(models.TextChoices):
-        ACTIVE = "A", "Active"
-        INACTIVE = "I", "Inactive"
-        EXPIRED = "E", "Expired"
-        CANCELED = "C", "Canceled"
+        """
+        Choices for the subscription status.
+        """
+        ACTIVE = "A", _("Active")
+        INACTIVE = "I", _("Inactive")
+        EXPIRED = "E", _("Expired")
+        CANCELED = "C", _("Canceled")
 
     subscriber = models.ForeignKey(
-        Subscriber, on_delete=models.CASCADE, related_name="subscriptions"
+        Subscriber,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+        verbose_name=_("subscriber"),
+        help_text=_("The user subscribing to the plan.")
     )
-    subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
-    plan = models.ForeignKey(StripePlan, on_delete=models.CASCADE)
-    subscription_date = models.DateTimeField(blank=True, null=True)
-    expiration_date = models.DateTimeField(blank=True, null=True)
-    subscription_id = models.CharField(max_length=200, blank=True, null=True)
-    session_id = models.CharField(max_length=200, blank=True, null=True)
+    subscribed_via = models.ForeignKey(
+        ServerOwner, 
+        on_delete=models.CASCADE,
+        verbose_name=_("subscribed via"),
+        help_text=_("The serverowner for whom this subscription is intended.")
+    )
+    plan = models.ForeignKey(
+        StripePlan,
+        on_delete=models.CASCADE,
+        verbose_name=_("plan"),
+        help_text=_("The Stripe plan being subscribed to.")
+    )
+    subscription_date = models.DateTimeField(
+        _("subscription date"),
+        blank=True, 
+        null=True,
+        help_text=_("The date and time when the subscription was initiated.")
+    )
+    expiration_date = models.DateTimeField(
+        _("expiration date"),
+        blank=True, 
+        null=True,
+        help_text=_("The date and time when the subscription will expire.")
+    )
+    subscription_id = models.CharField(
+        _("subscription id"),
+        max_length=200, 
+        blank=True, 
+        null=True,
+        help_text=_("The Stripe subscription ID associated with this subscription.")
+    )
+    session_id = models.CharField(
+        _("session id"),
+        max_length=200,
+        blank=True, 
+        null=True,
+        help_text=_("The Stripe checkout session ID associated with this subscription.")
+    )
     status = models.CharField(
+        _("status"),
         max_length=1,
         choices=SubscriptionStatus.choices,
         default=SubscriptionStatus.INACTIVE,
+        help_text=_("The status of the subscription.")
     )
     value = models.IntegerField(
-        default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
+        _("value"),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the Subscription model.
+        """
         ordering = ["-created"]
         get_latest_by = ["-created"]
+        verbose_name = _("stripe subscription")
+        verbose_name_plural = _("stripe subscriptions")
 
     def __str__(self):
+        """
+        Return a string representation of the subscription.
+        """
         return f"Subscription #{self.id}"
 
 
 class CoinSubscription(models.Model):
     """
-    Model for coin subscriptions.
+    Model representing subscriptions for coin plans.
     """
 
     class SubscriptionStatus(models.TextChoices):
-        ACTIVE = "A", "Active"
-        PENDING = "P", "Pending"
-        EXPIRED = "E", "Expired"
-        CANCELED = "C", "Canceled"
+        """
+        Choices for the subscription status.
+        """
+        ACTIVE = "A", _("Active")
+        PENDING = "P", _("Pending")
+        EXPIRED = "E", _("Expired")
+        CANCELED = "C", _("Canceled")
 
     subscriber = models.ForeignKey(
-        Subscriber, on_delete=models.CASCADE, related_name="coin_subscriptions"
+        Subscriber,
+        on_delete=models.CASCADE,
+        related_name="coin_subscriptions",
+        verbose_name=_("subscriber"),
+        help_text=_("The user subscribing to the coin plan.")
     )
-    subscribed_via = models.ForeignKey(ServerOwner, on_delete=models.CASCADE)
-    plan = models.ForeignKey(CoinPlan, on_delete=models.CASCADE)
-    subscription_date = models.DateTimeField(blank=True, null=True)
-    expiration_date = models.DateTimeField(blank=True, null=True)
+    subscribed_via = models.ForeignKey(
+        ServerOwner,
+        on_delete=models.CASCADE,
+        verbose_name=_("subscribed via"),
+        help_text=_("The server owner for whom this subscription is intended.")
+    )
+    plan = models.ForeignKey(
+        CoinPlan,
+        on_delete=models.CASCADE,
+        verbose_name=_("plan"),
+        help_text=_("The coin plan being subscribed to.")
+    )
+    subscription_date = models.DateTimeField(
+        _("subscription date"),
+        blank=True, 
+        null=True,
+        help_text=_("The date and time when the subscription was initiated.")
+    )
+    expiration_date = models.DateTimeField(
+        _("expiration date"),
+        blank=True, 
+        null=True,
+        help_text=_("The date and time when the subscription will expire.")
+    )
     status = models.CharField(
+        _("status"),
         max_length=1,
         choices=SubscriptionStatus.choices,
         default=SubscriptionStatus.PENDING,
+        help_text=_("The status of the subscription.")
     )
-    coin_amount = models.CharField(max_length=225, blank=True, null=True)
-    subscription_id = models.CharField(max_length=225, blank=True, null=True)
-    address = models.CharField(max_length=225, blank=True, null=True)
-    checkout_url = models.CharField(max_length=225, blank=True, null=True)
-    status_url = models.CharField(max_length=225, blank=True, null=True)
-    qrcode_url = models.CharField(max_length=225, blank=True, null=True)
+    coin_amount = models.DecimalField(
+        _("coin amount"),
+        max_digits=20,
+        decimal_places=8,
+        blank=True,
+        null=True,
+        help_text=_("The litecoin value associated with the subscription.")
+    )
+    # TODO coin_amount = models.CharField(max_length=225, blank=True, null=True)
+    subscription_id = models.CharField(
+        _("subscription id"),
+        max_length=225,
+        blank=True,
+        null=True,
+        help_text=_("The ID of the subscription.")
+    )
+    address = models.CharField(
+        _("address"),
+        max_length=225,
+        blank=True,
+        null=True,
+        help_text=_("The Litecoin address associated with the subscription.")
+    )
+    checkout_url = models.CharField(
+        _("checkout url"),
+        max_length=225,
+        blank=True,
+        null=True,
+        help_text=_("The CoinPayment URL for subscriber redirection.")
+    )
+    status_url = models.CharField(
+        _("status url"),
+        max_length=225,
+        blank=True,
+        null=True,
+        help_text=_("The URL for accessing transaction status information.")
+    )
     value = models.IntegerField(
-        default=0, validators=[MinValueValidator(0), MaxValueValidator(1)]
+        _("value"),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """
+        Metadata options for the CoinSubscription model.
+        """
         ordering = ["-created"]
         get_latest_by = ["-created"]
+        verbose_name = _("coin subscription")
+        verbose_name_plural = _("coin subscriptions")
 
     def __str__(self):
+        """
+        Return a string representation of the coin subscription.
+        """
         return f"Coin Subscription #{self.id}"
 
 
 class PaymentDetail(models.Model):
-    affiliate = models.OneToOneField(Affiliate, on_delete=models.CASCADE)
-    litecoin_address = models.CharField(max_length=255, blank=True, null=True)
-    body = models.TextField(blank=True, null=True)
+    """
+    Model to store payment details related to affiliates and commissions.
+    """
+
+    affiliate = models.OneToOneField(
+        Affiliate,
+        on_delete=models.CASCADE,
+        verbose_name=_("affiliate"),
+        help_text=_("The affiliate user linked to this payment detail.")
+    )
+    litecoin_address = models.CharField(
+        _("litecoin address"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("The Litecoin address of the affiliate, used when registered via CoinPayments.")
+    )
+    body = models.TextField(
+        _("payment information"),
+        blank=True,
+        null=True,
+        help_text=_("Payment details of the affiliate when registered via Stripe.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        """
+        Metadata options for the PaymentDetail model.
+        """
+        verbose_name = _("payment detail")
+
     def __str__(self):
+        """
+        Return a string representation of the payment detail.
+        """
         return f"Payment detail for {self.affiliate}"
 
 
 class AccessCode(models.Model):
-    code = models.CharField(max_length=5, unique=True)
-    used_by = models.ForeignKey(
-        ServerOwner, on_delete=models.SET_NULL, blank=True, null=True
+    """
+    Model representing unique access codes for server access.
+    """
+
+    code = models.CharField(
+        _("code"),
+        max_length=5,
+        unique=True,
+        help_text=_("The unique access code value.")
     )
-    is_used = models.BooleanField(default=False)
-    date_used = models.DateTimeField(blank=True, null=True)
+    used_by = models.ForeignKey(
+        ServerOwner,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name=_("used by"),
+        help_text=_("The serverowner who used the access code.")
+    )
+    is_used = models.BooleanField(
+        _("is used?"),
+        default=False,
+        help_text=_("Whether the access code has been used.")
+    )
+    date_used = models.DateTimeField(
+        _("date used"),
+        blank=True,
+        null=True,
+        help_text=_("The date and time the access code was used.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        """
+        Metadata options for the AccessCode model.
+        """
+        ordering = ["-created"]
+        verbose_name = _("access code")
+        verbose_name_plural = _("access codes")
+
     def __str__(self):
+        """
+        Return a string representation of the access code.
+        """
         return self.code

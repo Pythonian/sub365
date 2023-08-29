@@ -23,7 +23,7 @@ from requests.exceptions import RequestException
 
 from .decorators import onboarding_completed, redirect_if_no_subdomain
 from .forms import (
-    CoinbaseOnboardingForm,
+    CoinpaymentsOnboardingForm,
     CoinPaymentDetailForm,
     CoinPlanForm,
     OnboardingForm,
@@ -212,7 +212,7 @@ def subscribe_redirect(request):
 def onboarding(request):
     """Handle the onboarding of a Serverowner."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
-    if serverowner.stripe_account_id or serverowner.coinbase_onboarding:
+    if serverowner.stripe_account_id or serverowner.coinpayment_onboarding:
         return redirect("dashboard")
 
     if request.method == "POST":
@@ -238,23 +238,23 @@ def onboarding(request):
 
 @login_required
 def onboarding_crypto(request):
-    """Handle the onboarding process for connecting with coinbase payments."""
+    """Handle the onboarding process for connecting with coinpayment payments."""
     try:
         serverowner = request.user.serverowner
-        if serverowner.coinbase_onboarding:
+        if serverowner.coinpayment_onboarding:
             return redirect("dashboard")
     except ObjectDoesNotExist:
         messages.error(request, "You have trespassed into forbidden territory.")
         return redirect("index")
 
     if request.method == "POST":
-        form = CoinbaseOnboardingForm(request.POST)
+        form = CoinpaymentsOnboardingForm(request.POST)
         if form.is_valid():
             # Get the API keys entered by the user
-            api_secret_key = form.cleaned_data["coinbase_api_secret_key"]
-            api_public_key = form.cleaned_data["coinbase_api_public_key"]
+            api_secret_key = form.cleaned_data["coinpayment_api_secret_key"]
+            api_public_key = form.cleaned_data["coinpayment_api_public_key"]
             try:
-                # Make the API request to verify the coinbase API keys
+                # Make the API request to verify the coinpayment API keys
                 endpoint = "https://www.coinpayments.net/api.php"
                 data = f"version=1&cmd=get_basic_info&key={api_public_key}&format=json"
                 header = {
@@ -266,9 +266,9 @@ def onboarding_crypto(request):
                 result = response.json()["result"]
                 if result:
                     serverowner = request.user.serverowner
-                    serverowner.coinbase_api_secret_key = api_secret_key
-                    serverowner.coinbase_api_public_key = api_public_key
-                    serverowner.coinbase_onboarding = True
+                    serverowner.coinpayment_api_secret_key = api_secret_key
+                    serverowner.coinpayment_api_public_key = api_public_key
+                    serverowner.coinpayment_onboarding = True
                     serverowner.save()
                     return redirect("dashboard_view")
                 else:
@@ -288,7 +288,7 @@ def onboarding_crypto(request):
                     None, "An unexpected error occurred. Please try again later."
                 )
     else:
-        form = CoinbaseOnboardingForm()
+        form = CoinpaymentsOnboardingForm()
 
     template = "onboarding_crypto.html"
     context = {
@@ -430,7 +430,7 @@ def dashboard(request):
 def plans(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    if serverowner.coinbase_onboarding:
+    if serverowner.coinpayment_onboarding:
         if request.method == "POST":
             form = CoinPlanForm(request.POST)
             if form.is_valid():
@@ -499,8 +499,8 @@ def plans(request):
         stripe_plans = serverowner.get_plans()
         stripe_plans = mk_paginator(request, stripe_plans, 9)
 
-    if serverowner.coinbase_onboarding:
-        template = "serverowner/plans/coinbase/list.html"
+    if serverowner.coinpayment_onboarding:
+        template = "serverowner/plans/coinpayment/list.html"
         context = {
             "serverowner": serverowner,
             "form": form,
@@ -520,7 +520,7 @@ def plans(request):
 @redirect_if_no_subdomain
 def plan_detail(request, product_id):
     """Display detailed information about a specific plan."""
-    if request.user.serverowner.coinbase_onboarding:
+    if request.user.serverowner.coinpayment_onboarding:
         plan = get_object_or_404(
             CoinPlan, id=product_id, serverowner=request.user.serverowner
         )
@@ -583,8 +583,8 @@ def plan_detail(request, product_id):
         else:
             form = PlanForm(instance=plan)
 
-    if request.user.serverowner.coinbase_onboarding:
-        template = "serverowner/plans/coinbase/detail.html"
+    if request.user.serverowner.coinpayment_onboarding:
+        template = "serverowner/plans/coinpayment/detail.html"
     else:
         template = "serverowner/plans/stripe/detail.html"
     context = {
@@ -602,7 +602,7 @@ def plan_detail(request, product_id):
 def deactivate_plan(request):
     """Deactivate a plan."""
 
-    if request.user.serverowner.coinbase_onboarding:
+    if request.user.serverowner.coinpayment_onboarding:
         if request.method == "POST":
             product_id = request.POST.get("product_id")
             plan = get_object_or_404(
@@ -658,8 +658,8 @@ def subscribers(request):
     """Display the subscribers of a user's plans."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    if serverowner.coinbase_onboarding:
-        template = "serverowner/subscribers/coinbase/list.html"
+    if serverowner.coinpayment_onboarding:
+        template = "serverowner/subscribers/coinpayment/list.html"
     else:
         template = "serverowner/subscribers/stripe/list.html"
 
@@ -680,7 +680,7 @@ def subscriber_detail(request, id):
     subscriptions = subscriber.get_subscriptions()
     subscriptions = mk_paginator(request, subscriptions, 12)
 
-    if request.user.serverowner.coinbase_onboarding:
+    if request.user.serverowner.coinpayment_onboarding:
         try:
             # Retrieve the latest active subscription for the subscriber
             subscription = CoinSubscription.objects.filter(
@@ -749,7 +749,7 @@ def pending_affiliate_payment(request):
     affiliates = serverowner.get_pending_affiliates()
     affiliates = mk_paginator(request, affiliates, 20)
 
-    if serverowner.coinbase_onboarding:
+    if serverowner.coinpayment_onboarding:
         if request.method == "POST":
             affiliate_id = request.POST.get("affiliate_id")
             if affiliate_id is not None:
@@ -760,12 +760,12 @@ def pending_affiliate_payment(request):
                         data = (
                             f"version=1&cmd=create_withdrawal&amount={affiliate.pending_coin_commissions}&currency="
                             + settings.COINBASE_CURRENCY
-                            + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.litecoin_address}&key={serverowner.coinbase_api_public_key}&format=json"
+                            + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.litecoin_address}&key={serverowner.coinpayment_api_public_key}&format=json"
                         )
                         header = {
                             "Content-Type": "application/x-www-form-urlencoded",
                             "HMAC": create_hmac_signature(
-                                data, serverowner.coinbase_api_secret_key
+                                data, serverowner.coinpayment_api_secret_key
                             ),
                         }
                         response = requests.post(endpoint, data=data, headers=header)
@@ -900,7 +900,7 @@ def subscriber_dashboard(request):
     # Retrieve the server owner associated with the subscriber
     server_owner = subscriber.subscribed_via
 
-    if server_owner.coinbase_onboarding:
+    if server_owner.coinpayment_onboarding:
         plans = CoinPlan.objects.filter(
             serverowner=server_owner, status=CoinPlan.PlanStatus.ACTIVE
         )
@@ -963,12 +963,12 @@ def subscribe_to_coin_plan(request, plan_id):
         data = (
             f"version=1&cmd=create_transaction&amount={plan.amount}&currency1=USD&currency2="
             + settings.COINBASE_CURRENCY
-            + f"&buyer_email={subscriber.email}&key={subscriber.subscribed_via.coinbase_api_public_key}&format=json"
+            + f"&buyer_email={subscriber.email}&key={subscriber.subscribed_via.coinpayment_api_public_key}&format=json"
         )
         header = {
             "Content-Type": "application/x-www-form-urlencoded",
             "HMAC": create_hmac_signature(
-                data, subscriber.subscribed_via.coinbase_api_secret_key
+                data, subscriber.subscribed_via.coinpayment_api_secret_key
             ),
         }
         response = requests.post(endpoint, data=data, headers=header)
@@ -1158,7 +1158,7 @@ def subscription_success(request):
 def subscription_cancel(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
-    if subscriber.subscribed_via.coinbase_onboarding:
+    if subscriber.subscribed_via.coinpayment_onboarding:
         try:
             coin_subscription = get_object_or_404(
                 CoinSubscription,
@@ -1231,7 +1231,7 @@ def upgrade_to_affiliate(request):
 
     affiliate = None
 
-    if subscriber.subscribed_via.coinbase_onboarding:
+    if subscriber.subscribed_via.coinpayment_onboarding:
         form = CoinPaymentDetailForm(request.POST)
     else:
         form = PaymentDetailForm(request.POST)
@@ -1273,7 +1273,7 @@ def affiliate_dashboard(request):
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     payment_detail = affiliate.paymentdetail
 
-    if affiliate.serverowner.coinbase_onboarding:
+    if affiliate.serverowner.coinpayment_onboarding:
         if request.method == "POST":
             form = CoinPaymentDetailForm(request.POST, instance=payment_detail)
             if form.is_valid():

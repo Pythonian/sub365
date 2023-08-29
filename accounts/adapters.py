@@ -12,7 +12,10 @@ class DiscordAdapter(DefaultSocialAccountAdapter):
         """
         Return the redirect URL for successful social account login.
 
-        :param request: The current request object.
-        :return: The redirect URL.
+        Args:
+            request (HttpRequest): The current request object.
+
+        Returns:
+            str: The redirect URL.
         """
         return reverse("discord_callback")

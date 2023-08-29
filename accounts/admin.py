@@ -22,47 +22,75 @@ from .models import (
 
 @admin.register(AccessCode)
 class AccessCode(admin.ModelAdmin):
+    """
+    Admin class for managing AccessCode instances.
+    """
+
     list_display = ["code", "used_by", "is_used", "date_used"]
     list_filter = ["is_used"]
 
 
 @admin.register(Server)
 class ServerAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing Server instances.
+    """
+
     list_display = ["name", "owner", "server_id", "choice_server"]
     list_filter = ["choice_server"]
 
 
 @admin.register(ServerOwner)
 class ServerOwnerAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing ServerOwner instances.
+    """
+
     list_display = [
         "username",
         "subdomain",
         "email",
         "affiliate_commission",
-        "coinbase_onboarding",
+        "coinpayment_onboarding",
     ]
     search_fields = ["username", "subdomain", "email"]
 
 
 @admin.register(Subscriber)
 class SubscriberAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing Subscriber instances.
+    """
+
     list_display = ["username", "email", "subscribed_via"]
 
 
 @admin.register(StripePlan)
 class StripePlanAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing StripePlan instances.
+    """
+
     list_display = ["name", "user", "amount", "subscriber_count"]
     search_fields = ["user__username"]
 
 
 @admin.register(CoinPlan)
 class CoinPlanAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing CoinPlan instances.
+    """
+    
     list_display = ["name", "serverowner", "amount", "subscriber_count"]
     search_fields = ["serverowner__username"]
 
 
 @admin.register(CoinSubscription)
 class CoinSubscriptionAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing CoinSubscription instances.
+    """
+
     list_display = ["subscriber", "plan", "subscription_date", "expiration_date",
                     "coin_amount", "status"]
     list_filter = ["status"]
@@ -70,6 +98,10 @@ class CoinSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing Subscription instances.
+    """
+
     list_display = [
         "subscriber",
         "subscribed_via",
@@ -84,6 +116,10 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing User instances.
+    """
+
     list_display = [
         "username",
         "is_serverowner",
@@ -101,17 +137,29 @@ class PaymentDetailInline(admin.StackedInline):
 
 @admin.register(Affiliate)
 class AffiliateAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing Affiliate instances.
+    """
+
     list_display = ["subscriber", "affiliate_link", "created"]
     inlines = [PaymentDetailInline]
 
 
 @admin.register(AffiliateInvitee)
 class AffiliateInviteeAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing AffiliateInvitee instances.
+    """
+
     list_display = ["affiliate", "invitee_discord_id", "created"]
 
 
 @admin.register(AffiliatePayment)
 class AffiliatePaymentAdmin(admin.ModelAdmin):
+    """
+    Admin class for managing AffiliatePayment instances.
+    """
+
     list_display = ["serverowner", "affiliate", "subscriber",
                     "amount", "coin_amount", "paid"]
 

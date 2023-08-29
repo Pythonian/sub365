@@ -23,6 +23,12 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="check_coin_transaction_status")
 def check_coin_transaction_status():
+    """
+    Periodic task to check the status of coin transactions for pending coin subscriptions.
+
+    Raises:
+        Exception: If an unexpected error occurs during the processing of coin transactions.
+    """
     try:
         pending_subscriptions = CoinSubscription.objects.filter(
             status=CoinSubscription.SubscriptionStatus.PENDING
@@ -31,11 +37,11 @@ def check_coin_transaction_status():
         for coin_subscription in pending_subscriptions:
             try:
                 endpoint = "https://www.coinpayments.net/api.php"
-                data = f"version=1&cmd=get_tx_info&txid={coin_subscription.subscription_id}&key={coin_subscription.subscribed_via.coinbase_api_public_key}&format=json"
+                data = f"version=1&cmd=get_tx_info&txid={coin_subscription.subscription_id}&key={coin_subscription.subscribed_via.coinpayment_api_public_key}&format=json"
                 header = {
                     "Content-Type": "application/x-www-form-urlencoded",
                     "HMAC": create_hmac_signature(
-                        data, coin_subscription.subscribed_via.coinbase_api_secret_key
+                        data, coin_subscription.subscribed_via.coinpayment_api_secret_key
                     ),
                 }
                 response = requests.post(endpoint, data=data, headers=header)
@@ -111,6 +117,9 @@ def check_coin_transaction_status():
 
 @shared_task(name="check_and_mark_expired_subscriptions")
 def check_and_mark_expired_subscriptions():
+    """
+    Periodic task to check and mark expired coin subscriptions.
+    """
     now = timezone.now()
     expired_subscriptions = CoinSubscription.objects.filter(
         status=CoinSubscription.SubscriptionStatus.ACTIVE,

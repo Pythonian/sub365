@@ -6,10 +6,19 @@ from django.shortcuts import get_object_or_404, redirect
 
 import stripe
 
-from accounts.models import ServerOwner
+from .models import ServerOwner
 
 
 def redirect_if_no_subdomain(view_func):
+    """
+    Decorator that redirects users to the onboarding page if they don't have a subdomain set.
+
+    Args:
+        view_func (function): The view function to be wrapped.
+
+    Returns:
+        function: Wrapped view function that performs redirection if subdomain is missing.
+    """
     def wrapped_view(request, *args, **kwargs):
         try:
             if not request.user.serverowner.subdomain:
@@ -24,6 +33,15 @@ def redirect_if_no_subdomain(view_func):
 
 
 def onboarding_completed(view_func):
+    """
+    Decorator that checks if onboarding is completed for a user.
+
+    Args:
+        view_func (function): The view function to be wrapped.
+
+    Returns:
+        function: Wrapped view function that checks if onboarding is completed.
+    """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         serverowner = get_object_or_404(ServerOwner, user=request.user)

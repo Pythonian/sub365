@@ -2,6 +2,6 @@
 {% load humanize %}
 
 {% block data_title %}Total Amount Paid{% endblock data_title %}
-{% block data_value %}{% if serverowner.coinbase_onboarding %}LTC
+{% block data_value %}{% if serverowner.coinpayment_onboarding %}LTC
 {{ serverowner.get_confirmed_payment_amount }}{% else %}${{ serverowner.get_confirmed_payment_amount|intcomma }}{% endif %}{% endblock data_value %}
-{% block data_icon %}{% if serverowner.coinbase_onboarding %}fa-litecoin-sign{% else %}fa-sack-dollar{% endif %}{% endblock data_icon %}
+{% block data_icon %}{% if serverowner.coinpayment_onboarding %}fa-litecoin-sign{% else %}fa-sack-dollar{% endif %}{% endblock data_icon %}

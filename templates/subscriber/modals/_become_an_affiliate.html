@@ -15,7 +15,7 @@
                             class="text-primary text-decoration-underline">{{ server_owner.get_choice_server }}</span>
                         for a commission.</p>
                     <div class="col-12">
-                        {% if server_owner.coinbase_onboarding %}
+                        {% if server_owner.coinpayment_onboarding %}
                         {% for error in form.litecoin_address.errors %}
                         <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
                             role="alert">

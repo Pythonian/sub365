@@ -37,7 +37,7 @@
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                         <p class="p-0 m-0 text-muted fs-6">COMMISSION:</p>
-                        <span>{% if payment.serverowner.coinbase_onboarding %}LTC {{ payment.coin_amount }}
+                        <span>{% if payment.serverowner.coinpayment_onboarding %}LTC {{ payment.coin_amount }}
                             {% else %}${{ payment.amount|intcomma }}{% endif %}</span>
                     </li>
                     <li
