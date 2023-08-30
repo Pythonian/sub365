@@ -100,3 +100,4 @@ setup.cfg
 *.DS_Store
 
 Makefile
+docs

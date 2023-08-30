@@ -1,0 +1,22 @@
+Steps to daemonize celery and celerybeat
+
+1. Create the dedicated user and group
+    sudo groupadd celery
+    sudo useradd -g celery celery
+2. Create the celery configuration file at: sudo nano /etc/default/celeryd
+3. Change ownership of the celery log and PID file
+    chown -R celery:celery /var/log/celery/
+    mkdir /var/run/celery
+    chown -R celery:celery /var/run/celery/
+4. Create the systemd files
+    sudo nano /etc/systemd/system/celery.service
+    sudo nano /etc/systemd/system/celerybeat.service
+5. Restart the server
+    sudo systemctl daemon-reload
+    sudo systemctl enable celery
+    sudo systemctl enable celerybeat
+    sudo systemctl start celery
+    sudo systemctl start celerybeat
+6. Check the status
+    sudo systemctl status celery
+    sudo systemctl status celerybeat
