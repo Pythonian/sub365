@@ -1437,13 +1437,12 @@ class CoinSubscription(models.Model):
         null=True,
         help_text=_("The litecoin value associated with the subscription.")
     )
-    # TODO coin_amount = models.CharField(max_length=225, blank=True, null=True)
     subscription_id = models.CharField(
         _("subscription id"),
         max_length=225,
         blank=True,
         null=True,
-        help_text=_("The ID of the subscription.")
+        help_text=_("The Coinpayments Transaction ID.")
     )
     address = models.CharField(
         _("address"),

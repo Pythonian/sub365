@@ -985,7 +985,6 @@ def subscribe_to_coin_plan(request, plan_id):
                 address=result["address"],
                 checkout_url=result["checkout_url"],
                 status_url=result["status_url"],
-                qrcode_url=result["qrcode_url"],
                 status=CoinSubscription.SubscriptionStatus.PENDING,
             )
             check_coin_transaction_status.apply_async(
