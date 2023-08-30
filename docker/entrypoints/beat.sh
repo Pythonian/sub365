@@ -11,7 +11,7 @@ do
 done
 
 rm -f './celerybeat.pid'
-celery -A config.celery beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+celery -A config.celery beat -l INFO
 
 # NOTE: Update the file permissions locally
 # chmod +x docker/entrypoints/beat.sh
