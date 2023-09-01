@@ -644,6 +644,24 @@ class Subscriber(models.Model):
                 status=Subscription.SubscriptionStatus.ACTIVE,
                 expiration_date__gt=timezone.now(),
             ).exists()
+        
+    def get_latest_pending_coin_subscription(self):
+        """
+        Get the latest PENDING subscription of the subscriber.
+
+        Returns:
+            Subscription or None: The latest PENDING subscription or None if not found.
+        """
+        # Query all subscriptions for the subscriber
+        subscriptions = self.coin_subscriptions.filter(
+            status=CoinSubscription.SubscriptionStatus.PENDING
+        ).order_by("-created")
+        
+        # Get the first subscription in the sorted queryset (latest PENDING)
+        if subscriptions.exists():
+            return subscriptions.first()
+        else:
+            return None
 
     def get_subscriptions(self):
         """
