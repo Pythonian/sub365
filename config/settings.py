@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "storages",
     "django_celery_beat",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [

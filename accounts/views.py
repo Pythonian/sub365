@@ -15,6 +15,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 import requests
 import stripe
 from allauth.account.views import LogoutView
@@ -950,6 +953,21 @@ def subscriber_dashboard(request):
     }
 
     return render(request, template, context)
+
+
+@api_view(['GET'])
+def check_pending_subscription(request):
+    subscriber = get_object_or_404(Subscriber, user=request.user)
+    latest_pending_subscription = subscriber.get_latest_pending_coin_subscription()
+    
+    if latest_pending_subscription:
+        # Return data indicating a pending subscription
+        data = {'has_pending_subscription': True}
+    else:
+        # Return data indicating no pending subscription
+        data = {'has_pending_subscription': False}
+    
+    return Response(data)
 
 
 @login_required
