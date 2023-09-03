@@ -894,8 +894,8 @@ class AffiliateInvitee(models.Model):
                 ).first()
                 if subscription:
                     subscription_amount = subscription.plan.amount
-                    server_owner = self.affiliate.serverowner
-                    commission_payment = server_owner.calculate_affiliate_commission(
+                    serverowner = self.affiliate.serverowner
+                    commission_payment = serverowner.calculate_affiliate_commission(
                         subscription_amount
                     )
                     return commission_payment
@@ -903,8 +903,8 @@ class AffiliateInvitee(models.Model):
                 subscription = subscriber.subscriptions.order_by("-created").first()
                 if subscription:
                     subscription_amount = subscription.plan.amount
-                    server_owner = self.affiliate.serverowner
-                    commission_payment = server_owner.calculate_affiliate_commission(
+                    serverowner = self.affiliate.serverowner
+                    commission_payment = serverowner.calculate_affiliate_commission(
                         subscription_amount
                     )
                     return commission_payment
@@ -921,8 +921,8 @@ class AffiliateInvitee(models.Model):
                 ).first()
                 if subscription:
                     subscription_amount = subscription.coin_amount
-                    server_owner = self.affiliate.serverowner
-                    commission_payment = server_owner.calculate_affiliate_commission(
+                    serverowner = self.affiliate.serverowner
+                    commission_payment = serverowner.calculate_affiliate_commission(
                         subscription_amount
                     )
                     return commission_payment

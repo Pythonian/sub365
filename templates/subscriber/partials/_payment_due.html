@@ -1,6 +1,6 @@
 {% extends "serverowner/_base_dashboard_data.html" %}
 
-{% block data_title %}{% if server_owner.coinpayment_onboarding %}Expiry Date{% else %}Next Payment
+{% block data_title %}{% if serverowner.coinpayment_onboarding %}Expiry Date{% else %}Next Payment
 Due{% endif %}{% endblock data_title %}
 {% block data_value %}{{ subscription.expiration_date|date:"F j" }}{% endblock data_value %}
 {% block data_icon %}fa-clock{% endblock data_icon %}

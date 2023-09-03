@@ -39,7 +39,7 @@
     <div>
         <h1 class="h3 mb-1 text-dark">Welcome, {{ subscriber.username }}. Choose a subscription plan below</h1>
         <p class="small m-0">You will need to subscribe to a plan to be granted access to <span
-                class="text-primary">{{ server_owner.get_choice_server }}</span> by the Server owner.</p>
+                class="text-primary">{{ serverowner.get_choice_server }}</span> by the Server owner.</p>
     </div>
     {% if not user.is_affiliate %}
     <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#affiliateModal"><i

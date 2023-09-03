@@ -119,8 +119,8 @@ def discord_callback(request):
                         subscriber.avatar = user_info.get("avatar", "")
                         subscriber.email = user_info.get("email", "")
                         subscriber.save()
-                        server_owner = ServerOwner.objects.get(subdomain=subdomain)
-                        subscriber.subscribed_via = server_owner
+                        serverowner = ServerOwner.objects.get(subdomain=subdomain)
+                        subscriber.subscribed_via = serverowner
                         subscriber.save()
                     user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                     login(request, user, backend=user.backend)
@@ -140,9 +140,9 @@ def discord_callback(request):
                                 server_id = server["id"]
                                 server_name = server["name"]
                                 server_icon = server.get("icon", "")
-                                server_owner = server["owner"]
+                                serverowner = server["owner"]
                                 # Check if user owns the server
-                                if server_owner:
+                                if serverowner:
                                     owned_servers.append(
                                         {
                                             "id": server_id,
@@ -907,11 +907,11 @@ def subscriber_dashboard(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     # Retrieve the server owner associated with the subscriber
-    server_owner = subscriber.subscribed_via
+    serverowner = subscriber.subscribed_via
 
-    if server_owner.coinpayment_onboarding:
+    if serverowner.coinpayment_onboarding:
         plans = CoinPlan.objects.filter(
-            serverowner=server_owner, status=CoinPlan.PlanStatus.ACTIVE
+            serverowner=serverowner, status=CoinPlan.PlanStatus.ACTIVE
         )
         plans = mk_paginator(request, plans, 9)
         try:
@@ -929,7 +929,7 @@ def subscriber_dashboard(request):
     else:
         # Retrieve the plans related to the ServerOwner
         plans = StripePlan.objects.filter(
-            user=server_owner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
+            user=serverowner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
         )
         plans = mk_paginator(request, plans, 9)
 
@@ -952,7 +952,7 @@ def subscriber_dashboard(request):
     context = {
         "plans": plans,
         "subscriber": subscriber,
-        "server_owner": server_owner,
+        "serverowner": serverowner,
         "subscription": latest_subscription,
         "subscriptions": subscriptions,
         "form": form,
