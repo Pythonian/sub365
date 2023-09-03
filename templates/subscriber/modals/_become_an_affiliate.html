@@ -12,7 +12,7 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <p>You will become an Affiliate and be able to invite users to the server <span
-                            class="text-primary text-decoration-underline">{{ serverowner.get_choice_server }}</span>
+                            class="text-primary">{{ serverowner.get_choice_server }}</span>
                         for a commission.</p>
                     <div class="col-12">
                         {% if serverowner.coinpayment_onboarding %}

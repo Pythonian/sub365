@@ -523,8 +523,8 @@ class Server(models.Model):
         Metadata options for the Server model.
         """
         ordering = ["-created"]
-        verbose_name = _("server")
-        verbose_name_plural = _("servers")
+        verbose_name = _("discord server")
+        verbose_name_plural = _("discord servers")
 
     def __str__(self):
         """
