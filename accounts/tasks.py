@@ -68,18 +68,27 @@ def check_coin_transaction_status():
                                         serverowner=subscriber.subscribed_via,
                                         affiliate=affiliateinvitee.affiliate,
                                         subscriber=subscriber,
-                                        coin_amount=affiliateinvitee.get_affiliate_commission_payment(),
+                                        amount=affiliateinvitee.get_affiliate_commission_payment(),
+                                        coin_amount=affiliateinvitee.get_affiliate_coin_commission_payment(),
                                     )
 
                                     affiliateinvitee.affiliate.update_last_payment_date()
                                     affiliateinvitee.affiliate.pending_coin_commissions = (
                                         F("pending_coin_commissions")
+                                        + affiliateinvitee.get_affiliate_coin_commission_payment()
+                                    )
+                                    affiliateinvitee.affiliate.pending_commissions = (
+                                        F("pending_commissions")
                                         + affiliateinvitee.get_affiliate_commission_payment()
                                     )
                                     affiliateinvitee.affiliate.save()
 
                                     subscriber.subscribed_via.total_coin_pending_commissions = (
                                         F("total_coin_pending_commissions")
+                                        + affiliateinvitee.get_affiliate_coin_commission_payment()
+                                    )
+                                    subscriber.subscribed_via.total_pending_commissions = (
+                                        F("total_pending_commissions")
                                         + affiliateinvitee.get_affiliate_commission_payment()
                                     )
                                     subscriber.subscribed_via.save()

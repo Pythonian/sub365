@@ -157,18 +157,6 @@ class ServerOwner(models.Model):
         else:
             return self.plans.count()
 
-    def get_active_plans(self, limit=3):
-        """
-        Get the active plans created by the ServerOwner.
-
-        Returns:
-            Queryset: QuerySet of Plan objects set to a limit.
-        """
-        if self.coinpayment_onboarding:
-            return self.get_plans().filter(status=CoinPlan.PlanStatus.ACTIVE)[:limit]
-        else:
-            return self.get_plans().filter(status=StripePlan.PlanStatus.ACTIVE)[:limit]
-
     def get_active_plans_count(self):
         """
         Get the total number of active plans.
@@ -229,20 +217,12 @@ class ServerOwner(models.Model):
         Returns:
             Decimal: The total payments the server owner has paid to affiliates.
         """
-        if self.coinpayment_onboarding:
-            return (
-                self.affiliate_set.aggregate(
-                    total_coin_payments=Sum("total_coin_commissions_paid")
-                ).get("total_coin_payments")
-                or 0
-            )
-        else:
-            return (
-                self.affiliate_set.aggregate(
-                    total_payments=Sum("total_commissions_paid")
-                ).get("total_payments")
-                or 0
-            )
+        return (
+            self.affiliate_set.aggregate(
+                total_payments=Sum("total_commissions_paid")
+            ).get("total_payments")
+            or Decimal(0)
+        )
 
     def get_pending_affiliates(self):
         """
@@ -318,16 +298,10 @@ class ServerOwner(models.Model):
             Decimal: The total amount of confirmed payments.
         """
         confirmed_payments = self.get_confirmed_affiliate_payments()
-        if self.coinpayment_onboarding:
-            total_amount = confirmed_payments.aggregate(total=Sum("coin_amount")).get("total")
-            if total_amount is None:
-                total_amount = 0
-            return total_amount
-        else:
-            total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
-            if total_amount is None:
-                total_amount = 0
-            return total_amount
+        total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
+        if total_amount is None:
+            total_amount = 0
+        return total_amount
 
     def calculate_affiliate_commission(self, subscription_amount):
         """
@@ -350,9 +324,7 @@ class ServerOwner(models.Model):
             commission_percentage = self.affiliate_commission
             if commission_percentage is None:
                 return 0
-
             commission_amount = (subscription_amount * commission_percentage) / 100
-
         return commission_amount
 
     def get_affiliate_users(self):
@@ -921,7 +893,7 @@ class AffiliateInvitee(models.Model):
                     "-created"
                 ).first()
                 if subscription:
-                    subscription_amount = subscription.coin_amount
+                    subscription_amount = subscription.plan.amount
                     server_owner = self.affiliate.serverowner
                     commission_payment = server_owner.calculate_affiliate_commission(
                         subscription_amount
@@ -931,6 +903,24 @@ class AffiliateInvitee(models.Model):
                 subscription = subscriber.subscriptions.order_by("-created").first()
                 if subscription:
                     subscription_amount = subscription.plan.amount
+                    server_owner = self.affiliate.serverowner
+                    commission_payment = server_owner.calculate_affiliate_commission(
+                        subscription_amount
+                    )
+                    return commission_payment
+        return Decimal(0)
+    
+    def get_affiliate_coin_commission_payment(self):
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id
+        ).first()
+        if subscriber:
+            if self.affiliate.serverowner.coinpayment_onboarding:
+                subscription = subscriber.coin_subscriptions.order_by(
+                    "-created"
+                ).first()
+                if subscription:
+                    subscription_amount = subscription.coin_amount
                     server_owner = self.affiliate.serverowner
                     commission_payment = server_owner.calculate_affiliate_commission(
                         subscription_amount
@@ -950,16 +940,10 @@ class AffiliateInvitee(models.Model):
             subscriber__discord_id=self.invitee_discord_id,
             paid=True,
         )
-        if self.affiliate.serverowner.coinpayment_onboarding:
-            total_commission = affiliate_payments.aggregate(
-                total_commission=Sum("coin_amount")
-            ).get("total_commission")
-            return total_commission or 0
-        else:
-            total_commission = affiliate_payments.aggregate(
-                total_commission=Sum("amount")
-            ).get("total_commission")
-            return total_commission or 0
+        total_commission = affiliate_payments.aggregate(
+            total_commission=Sum("amount")
+        ).get("total_commission")
+        return total_commission or Decimal(0)
 
 
 class AffiliatePayment(models.Model):

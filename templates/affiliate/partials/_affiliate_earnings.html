@@ -2,6 +2,5 @@
 {% load humanize %}
 
 {% block data_title %}Total Earnings{% endblock data_title %}
-{% block data_value %}{% if affiliate.serverowner.coinpayment_onboarding %}LTC
-{{ affiliate.total_coin_commissions_paid }}{% else %}${{ affiliate.total_commissions_paid|intcomma }}{% endif %}{% endblock data_value %}
-{% block data_icon %}{% if affiliate.serverowner.coinpayment_onboarding %}fa-litecoin-sign{% else %}fa-sack-dollar{% endif %}{% endblock data_icon %}
+{% block data_value %}${{ affiliate.total_commissions_paid|intcomma }}{% endblock data_value %}
+{% block data_icon %}fa-sack-dollar{% endblock data_icon %}

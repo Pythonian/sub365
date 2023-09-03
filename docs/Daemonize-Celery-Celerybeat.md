@@ -103,15 +103,15 @@
     ConditionPathIsDirectory=/var/run/celery
 
     ExecStart=/home/username/projectdir/venv/bin/celery multi start ${CELERYD_NODES} \
-    -A ${CELERY_APP} --pidfile=${CELERYD_PID_FILE} \
-    --logfile=${CELERYD_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL} ${CELERYD_OPTS}
+        -A ${CELERY_APP} --pidfile=${CELERYD_PID_FILE} \
+        --logfile=${CELERYD_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL} ${CELERYD_OPTS}
     ExecStop=/home/username/projectdir/venv/bin/celery \
-    ${CELERY_BIN} multi stopwait ${CELERYD_NODES} \
-    --pidfile=${CELERYD_PID_FILE}
+        ${CELERY_BIN} multi stopwait ${CELERYD_NODES} \
+        --pidfile=${CELERYD_PID_FILE}
     ExecReload=/home/username/projectdir/venv/bin/celery \
-    ${CELERY_BIN} multi restart ${CELERYD_NODES} \
-    -A ${CELERY_APP} --pidfile=${CELERYD_PID_FILE} \
-    --logfile=${CELERYD_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL} ${CELERYD_OPTS}
+        ${CELERY_BIN} multi restart ${CELERYD_NODES} \
+        -A ${CELERY_APP} --pidfile=${CELERYD_PID_FILE} \
+        --logfile=${CELERYD_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL} ${CELERYD_OPTS}
     Restart=always
 
     [Install]
@@ -141,8 +141,8 @@
     ConditionPathIsDirectory=/var/run/celery
 
     ExecStart=/home/username/projectdir/venv/bin/celery -A ${CELERY_APP} beat \
-    --pidfile=${CELERYBEAT_PID_FILE} \
-    --logfile=${CELERYBEAT_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL}
+        --pidfile=${CELERYBEAT_PID_FILE} \
+        --logfile=${CELERYBEAT_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL}
     ExecStop=/bin/systemctl kill celerybeat.service
     RemainAfterExit=yes
 

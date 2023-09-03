@@ -8,7 +8,7 @@ from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
-from django.db.models import F, Q
+from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -98,6 +98,7 @@ def discord_callback(request):
                             provider="discord", uid=user_info["id"]
                         )
                         user = social_account.user
+                        # TODO: Remove next 3 lines and test
                         user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
                         login(request, user, backend=user.backend)
                         return redirect("dashboard_view")
@@ -956,15 +957,20 @@ def subscriber_dashboard(request):
 
 
 @api_view(['GET'])
+@login_required
 def check_pending_subscription(request):
-    subscriber = get_object_or_404(Subscriber, user=request.user)
-    latest_pending_subscription = subscriber.get_latest_pending_coin_subscription()
-    
-    if latest_pending_subscription:
-        # Return data indicating a pending subscription
-        data = {'has_pending_subscription': True}
-    else:
-        # Return data indicating no pending subscription
+    try:
+        subscriber = Subscriber.objects.get(user=request.user)
+        latest_pending_subscription = subscriber.get_latest_pending_coin_subscription()
+        
+        if latest_pending_subscription:
+            # Return data indicating a pending subscription
+            data = {'has_pending_subscription': True}
+        else:
+            # Return data indicating no pending subscription
+            data = {'has_pending_subscription': False}
+    except Subscriber.DoesNotExist:
+        # Handle the case when there's no Subscriber instance for the user
         data = {'has_pending_subscription': False}
     
     return Response(data)

@@ -36,8 +36,7 @@
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
                         <p class="p-0 m-0 text-muted fs-6">TOTAL COMMISSION:</p>
-                        <span>{% if invitee.affiliate.serverowner.coinpayment_onboarding %}LTC
-                            {% else %}${% endif %}{{ invitee.calculate_affiliate_payment_commission }}</span>
+                        <span>${{ invitee.calculate_affiliate_payment_commission }}</span>
                     </li>
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
