@@ -780,6 +780,9 @@ def pending_affiliate_payment(request):
                                 F("total_coin_pending_commissions")
                                 - affiliate.pending_coin_commissions
                             )
+                            serverowner.total_pending_commissions = (
+                                F("total_pending_commissions") - affiliate.pending_commissions
+                            )
                             serverowner.save()
 
                             # Update the affiliate's pending_commissions and total_coin_commissions_paid fields
@@ -787,7 +790,11 @@ def pending_affiliate_payment(request):
                                 F("total_coin_commissions_paid")
                                 + affiliate.pending_coin_commissions
                             )
+                            affiliate.total_commissions_paid = (
+                                F("total_commissions_paid") + affiliate.pending_commissions
+                            )
                             affiliate.pending_coin_commissions = Decimal(0)
+                            affiliate.pending_commissions = Decimal(0)
                             affiliate.last_payment_date = timezone.now()
                             affiliate.save()
 

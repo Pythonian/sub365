@@ -133,6 +133,10 @@ class UserAdmin(admin.ModelAdmin):
 class PaymentDetailInline(admin.StackedInline):
     model = PaymentDetail
     extra = 0
+    readonly_fields = ["litecoin_address", "body"]
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Affiliate)
@@ -141,7 +145,10 @@ class AffiliateAdmin(admin.ModelAdmin):
     Admin class for managing Affiliate instances.
     """
 
-    list_display = ["subscriber", "affiliate_link", "created"]
+    list_display = ["subscriber", "affiliate_link", "total_commissions_paid", "last_payment_date"]
+    readonly_fields = ["subscriber", "affiliate_link", "discord_id", "server_id",
+                       "serverowner", "last_payment_date", "total_commissions_paid",
+                       "total_coin_commissions_paid", "pending_commissions", "pending_coin_commissions"]
     inlines = [PaymentDetailInline]
 
 
