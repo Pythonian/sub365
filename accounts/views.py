@@ -46,7 +46,7 @@ from .models import (
     Subscription,
     User,
 )
-from .tasks import check_coin_transaction_status
+from .tasks import check_coin_transaction_status, send_affiliate_email
 from .utils import create_hmac_signature, mk_paginator
 
 logger = logging.getLogger(__name__)
@@ -810,12 +810,10 @@ def pending_affiliate_payment(request):
                                 "The commission has been sent to the affiliate.",
                             )
                             
-                            # Send email to the affiliate
-                            subject = "Sub365.co: Affiliate Commission Received"
-                            message = f"Dear {affiliate}, \n\nYou have just received an affiliate commission of {affiliate.pending_coin_commissions} from {serverowner}.\n\nBest regards,\nwww.sub365.co"
-                            from_email = settings.DEFAULT_FROM_EMAIL
-                            recipient_list = [affiliate.subscriber.email]
-                            send_mail(subject, message, from_email, recipient_list)
+                            # Send email to affiliate
+                            send_affiliate_email.delay(
+                                affiliate.subscriber.email, affiliate, serverowner, affiliate.pending_commissions
+                            )
 
                             return redirect("pending_affiliate_payment")
                         else:

@@ -145,3 +145,12 @@ def check_and_mark_expired_subscriptions():
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [subscription.subscriber.email]
         send_mail(subject, message, from_email, recipient_list)
+
+
+@shared_task
+def send_affiliate_email(affiliate_email, affiliate, serverowner, commission_amount):
+    subject = "Sub365.co: Affiliate Commission Received"
+    message = f"Dear {affiliate}, \n\nYou have just received an affiliate commission of ${commission_amount} from {serverowner}.\n\nBest regards,\nwww.sub365.co"
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [affiliate_email]    
+    send_mail(subject, message, from_email, recipient_list)
