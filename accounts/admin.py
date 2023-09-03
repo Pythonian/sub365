@@ -130,12 +130,61 @@ class UserAdmin(admin.ModelAdmin):
     ]
 
 
-class PaymentDetailInline(admin.StackedInline):
+class PaymentDetailInline(admin.TabularInline):
+    """
+    Inline admin class for managing PaymentDetail instances within the Affiliate admin.    
+    """
     model = PaymentDetail
     extra = 0
     readonly_fields = ["litecoin_address", "body"]
 
     def has_delete_permission(self, request, obj=None):
+        """
+        Determine whether the user has permission to delete PaymentDetail instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+    
+
+class AffiliatePaymentInline(admin.TabularInline):
+    """
+    Inline admin class for managing AffiliatePayment instances within the Affiliate admin.
+    """
+    model = AffiliatePayment
+    extra = 0
+    readonly_fields = ["serverowner", "subscriber", "amount", "coin_amount", "paid", 
+                       "date_payment_confirmed"]
+    
+    def has_delete_permission(self, request, obj=None):
+        """
+        Determine whether the user has permission to delete AffiliatePayment instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+    
+    def has_add_permission(self, request, obj=None):
+        """
+        Determine whether the user has permission to add new AffiliatePayment instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
         return False
 
 
@@ -149,7 +198,7 @@ class AffiliateAdmin(admin.ModelAdmin):
     readonly_fields = ["subscriber", "affiliate_link", "discord_id", "server_id",
                        "serverowner", "last_payment_date", "total_commissions_paid",
                        "total_coin_commissions_paid", "pending_commissions", "pending_coin_commissions"]
-    inlines = [PaymentDetailInline]
+    inlines = [PaymentDetailInline, AffiliatePaymentInline]
 
 
 @admin.register(AffiliateInvitee)
@@ -159,16 +208,6 @@ class AffiliateInviteeAdmin(admin.ModelAdmin):
     """
 
     list_display = ["affiliate", "invitee_discord_id", "created"]
-
-
-@admin.register(AffiliatePayment)
-class AffiliatePaymentAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing AffiliatePayment instances.
-    """
-
-    list_display = ["serverowner", "affiliate", "subscriber",
-                    "amount", "coin_amount", "paid"]
 
 
 admin.site.unregister(EmailAddress)

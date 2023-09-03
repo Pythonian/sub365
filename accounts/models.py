@@ -1012,7 +1012,7 @@ class AffiliatePayment(models.Model):
         """
         Return a string representation of the affiliatepayment.
         """
-        return f"Affiliate Payment #{self.id}"
+        return f"#{self.id}"
 
 
 class StripePlan(models.Model):
@@ -1528,7 +1528,7 @@ class PaymentDetail(models.Model):
         """
         Return a string representation of the payment detail.
         """
-        return f"Payment detail for {self.affiliate}"
+        return f"{self.affiliate}"
 
 
 class AccessCode(models.Model):
