@@ -20,9 +20,7 @@
                         Discord Server Management
                     </div>
                     <div class="col-12 col-lg-auto text-center text-lg-end">
-                        <div class="h3 text-white">Invoice</div>
-                        #{{ subscription.id }}
-                        <br />
+                        <div class="h4 text-white">Pending</div>
                         {{ subscription.created|date:"F j, Y"}}
                     </div>
                 </div>
@@ -33,8 +31,7 @@
                         <thead class="border-bottom">
                             <tr class="small text-uppercase text-muted">
                                 <th scope="col">Plan</th>
-                                <th class="text-end" scope="col">Subscription Date</th>
-                                <th class="text-end" scope="col">Expiration Date</th>
+                                <th class="text-end" scope="col">Interval</th>
                                 <th class="text-end" scope="col">Amount</th>
                             </tr>
                         </thead>
@@ -45,12 +42,12 @@
                                     <div class="small text-muted d-none d-md-block">{{ subscription.plan.description }}
                                     </div>
                                 </td>
-                                <td class="text-end fw-bold">{{ subscription.subscription_date|date:"j F, Y" }}</td>
-                                <td class="text-end fw-bold">{{ subscription.expiration_date|date:"j F, Y" }}</td>
+                                <td class="text-end fw-bold">{{ subscription.plan.interval_count }}
+                                    month{{ subscription.plan.interval_count|pluralize }}</td>
                                 <td class="text-end fw-bold">${{ subscription.plan.amount|intcomma }}</td>
                             </tr>
                             <tr>
-                                <td class="text-end pb-0" colspan="3">
+                                <td class="text-end pb-0" colspan="2">
                                     <div class="text-uppercase small fw-700 text-muted">Total Amount:</div>
                                 </td>
                                 <td class="text-end pb-0">
@@ -75,9 +72,10 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="small text-muted text-uppercase fw-bold mb-2">Note</div>
-                        <div class="small mb-0">This is your payment invoice for your subscription to the server <span
-                                class="text-primary">{{ subscription.subscribed_via.get_choice_server }}</span>. Please
-                            contact the server owner if you have any dispute about this.</div>
+                        <div class="small mb-0">
+                            Your subscription payment is being processed. It usually takes just a few moments
+                            to complete. An invoice will be sent to your email upon confirmation.
+                        </div>
                     </div>
                 </div>
             </div>

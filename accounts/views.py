@@ -337,6 +337,12 @@ def create_stripe_account(request):
     """Create a Stripe account for the user."""
     connected_account = stripe.Account.create(
         type="standard",
+        # email=request.user.serverowner.email,
+        # capabilities={
+        #     "card_payments": {"requested": True},
+        #     "transfers": {"requested": True},
+        # },
+        # business_type="individual",
     )
 
     # Retrieve the Stripe account ID
@@ -372,6 +378,7 @@ def collect_user_info(request):
         refresh_url=request.build_absolute_uri(reverse("stripe_refresh")),
         return_url=request.build_absolute_uri(reverse("dashboard")),
         type="account_onboarding",
+        # collect="eventually_due",
     )
 
     # Redirect the user to the Stripe onboarding flow
@@ -966,7 +973,7 @@ def subscriber_dashboard(request):
 def check_pending_subscription(request):
     try:
         subscriber = Subscriber.objects.get(user=request.user)
-        latest_pending_subscription = subscriber.get_latest_pending_coin_subscription()
+        latest_pending_subscription = subscriber.get_latest_pending_subscription()
         
         if latest_pending_subscription:
             # Return data indicating a pending subscription
@@ -1066,6 +1073,12 @@ def subscribe_to_plan(request, product_id):
                 ],
                 mode="subscription",
                 customer=subscriber.stripe_customer_id,
+                subscription_data={
+                    "transfer_data": {
+                        "destination": subscriber.subscribed_via.stripe_account_id,
+                        "amount_percent": 100,
+                    }
+                },
             )
 
         except stripe.error.StripeError as e:
@@ -1090,6 +1103,12 @@ def subscribe_to_plan(request, product_id):
                 ],
                 mode="subscription",
                 customer_email=subscriber.email,
+                subscription_data={
+                    "transfer_data": {
+                        "destination": subscriber.subscribed_via.stripe_account_id,
+                        "amount_percent": 100,
+                    }
+                },
             )
 
         except stripe.error.StripeError as e:
@@ -1116,59 +1135,28 @@ def subscription_success(request):
         if Subscription.objects.filter(session_id=session_id).exists():
             return redirect("subscriber_dashboard")
 
-        session_info = stripe.checkout.Session.retrieve(session_id)
-
-        subscription_id = session_info.subscription
-        subscription_info = stripe.Subscription.retrieve(subscription_id)
-
-        current_period_end = subscription_info.current_period_end
-        expiration_date = datetime.fromtimestamp(current_period_end)
-
-        subscription = Subscription.objects.create(
-            subscriber=subscriber,
-            subscribed_via=subscriber.subscribed_via,
-            plan=plan,
-            subscription_date=timezone.now(),
-            expiration_date=expiration_date,
-            subscription_id=subscription_id,
-            session_id=session_id,
-            status=Subscription.SubscriptionStatus.ACTIVE,
-        )
-
         try:
-            affiliateinvitee = AffiliateInvitee.objects.get(
-                invitee_discord_id=subscriber.discord_id
-            )
-            affiliatepayment = AffiliatePayment.objects.create(  # noqa
-                serverowner=subscriber.subscribed_via,
-                affiliate=affiliateinvitee.affiliate,
+            session_info = stripe.checkout.Session.retrieve(session_id)
+            subscription_id = session_info.subscription
+
+            subscription = Subscription.objects.create(
                 subscriber=subscriber,
-                amount=affiliateinvitee.get_affiliate_commission_payment(),
+                subscribed_via=subscriber.subscribed_via,
+                plan=plan,
+                subscription_id=subscription_id,
+                session_id=session_id,
+                status=Subscription.SubscriptionStatus.INACTIVE,
             )
 
-            affiliateinvitee.affiliate.update_last_payment_date()
-            affiliateinvitee.affiliate.pending_commissions = (
-                F("pending_commissions")
-                + affiliateinvitee.get_affiliate_commission_payment()
-            )
-            affiliateinvitee.affiliate.save()
-
-            subscriber.subscribed_via.total_pending_commissions = (
-                F("total_pending_commissions")
-                + affiliateinvitee.get_affiliate_commission_payment()
-            )
-            subscriber.subscribed_via.save()
-
-        except ObjectDoesNotExist:
-            affiliateinvitee = None
-
-        # Increment the subscriber count for the plan
-        plan.subscriber_count = F("subscriber_count") + 1
-        plan.save()
-
-        # Save the customer ID to the subscriber
-        subscriber.stripe_customer_id = session_info.customer
-        subscriber.save()
+            # Save the customer ID to the subscriber
+            subscriber.stripe_customer_id = session_info.customer
+            subscriber.save()
+        except stripe.error.InvalidRequestError as e:
+            logger.error("Stripe Session retrieval error: %s", str(e))
+            messages.error(
+                request,
+                "Your checkout session was invalid. Please try again.")
+            return redirect("subscriber_dashboard")
 
     else:
         return redirect("subscriber_dashboard")

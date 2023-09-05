@@ -154,3 +154,12 @@ def send_affiliate_email(affiliate_email, affiliate, serverowner, commission_amo
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [affiliate_email]    
     send_mail(subject, message, from_email, recipient_list)
+
+
+@shared_task
+def send_payment_failed_email(subscriber_email):
+    subject = "Sub365.co: Subscription Payment Failed Notification"
+    message = "Your subscription payment has failed. Please visit your dashboard and try again."
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [subscriber_email]
+    send_mail(subject, message, from_email, recipient_list)

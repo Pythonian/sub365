@@ -20,7 +20,8 @@
                     method="post">
                     {% csrf_token %}
                     <button class="btn btn-sm btn-primary" type="submit"
-                        {% if serverowner.coinpayment_onboarding %}formtarget="_blank" {% endif %}><i
+                        {% if serverowner.coinpayment_onboarding %}formtarget="_blank" {% endif %}
+                        {% if subscriber.get_latest_pending_subscription %}disabled{% endif %}><i
                             class="far fa-credit-card me-1"></i>
                         Subscribe</button>
                 </form>

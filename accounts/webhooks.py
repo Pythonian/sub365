@@ -1,13 +1,18 @@
 import logging
-
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.db import transaction
+from django.db.models import F
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 import stripe
 
-from .models import Subscription  # noqa
+from .models import AffiliateInvitee, AffiliatePayment, Subscription, ServerOwner
+from .tasks import send_payment_failed_email
 
 logger = logging.getLogger(__name__)
 
@@ -35,25 +40,83 @@ def stripe_webhook(request):
         # Invalid signature
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
         return HttpResponse(status=400)
+    
+    # if event.type == "account.updated":
+    #     account = ServerOwner.objects.get(stripe_account_id=event.account)
+    #     account.charges_enabled = event.data.object.charges_enabled
+    #     account.payouts_enabled = event.data.object.payouts_enabled
+    #     account.details_submitted = event.data.object.details_submitted
 
-    # if event.type == "invoice.payment_succeeded" or event.type == "invoice.paid":
-    #     # Invoice payment succeeded for the subscription renewal
-    #     subscription_id = event.data.object.lines.data[0].subscription
-    #     try:
-    #         subscription = Subscription.objects.get(subscription_id=subscription_id)
-    #         # Update the Subscription object with the new expiration date and subscription_date
-    #         current_period_end = event.data.object.period_end
-    #         expiration_date = timezone.datetime.fromtimestamp(current_period_end)
-    #         subscription.expiration_date = expiration_date
-    #         subscription.subscription_date = (
-    #             expiration_date  # Update subscription_date with the renewal date
-    #         )
-    #         subscription.save()
-    #     except Subscription.DoesNotExist:
-    #         logger.error(
-    #             "Subscription not found for subscription_id: %s", subscription_id
-    #         )
-    #     except stripe.error.StripeError as e:
-    #         logger.exception("An error occurred during a Stripe API call: %s", str(e))
+    if event.type == "invoice.paid":
+        subscription_id = event.data.object.subscription
 
+        try:
+            subscription = Subscription.objects.get(subscription_id=subscription_id)
+        except Subscription.DoesNotExist:
+            # Handle the case where the subscription is not found
+            logger.error(f"Subscription not found for ID: {subscription_id}")
+            return HttpResponse(status=404)
+
+        # Check if the payment was successful
+        if event.data.object.status == "paid":
+            with transaction.atomic():
+
+                # Payment was successful
+                subscription.status = Subscription.SubscriptionStatus.ACTIVE
+                subscription.subscription_date = timezone.now()
+                interval_count = subscription.plan.interval_count
+                subscription.expiration_date = timezone.now() + relativedelta(
+                    months=interval_count
+                )
+                subscription.save()
+
+                subscriber = subscription.subscriber
+                try:
+                    affiliateinvitee = AffiliateInvitee.objects.get(
+                        invitee_discord_id=subscriber.discord_id
+                    )
+                    affiliatepayment = AffiliatePayment.objects.create(  # noqa
+                        serverowner=subscriber.subscribed_via,
+                        affiliate=affiliateinvitee.affiliate,
+                        subscriber=subscriber,
+                        amount=affiliateinvitee.get_affiliate_commission_payment(),
+                    )
+
+                    affiliateinvitee.affiliate.update_last_payment_date()
+                    affiliateinvitee.affiliate.pending_commissions = (
+                        F("pending_commissions")
+                        + affiliateinvitee.get_affiliate_commission_payment()
+                    )
+                    affiliateinvitee.affiliate.save()
+
+                    subscriber.subscribed_via.total_pending_commissions = (
+                        F("total_pending_commissions")
+                        + affiliateinvitee.get_affiliate_commission_payment()
+                    )
+                    subscriber.subscribed_via.save()
+
+                except ObjectDoesNotExist:
+                    affiliateinvitee = None
+
+                # Increment the subscriber count for the plan
+                plan = subscription.plan
+                plan.subscriber_count = F("subscriber_count") + 1
+                plan.save()
+
+    elif event.type == "invoice.payment_failed":
+        subscription_id = event.data.object.subscription
+
+        try:
+            subscription = Subscription.objects.get(subscription_id=subscription_id)
+        except Subscription.DoesNotExist:
+            # Handle the case where the subscription is not found
+            logger.error(f"Subscription not found for ID: {subscription_id}")
+            return HttpResponse(status=404)
+
+        # Delete the subscription from the database
+        subscription.delete()
+
+        # Send a notification to the subscriber
+        send_payment_failed_email.delay(subscription.subscriber.email)
+    
     return HttpResponse(status=200)

@@ -47,6 +47,10 @@ def onboarding_completed(view_func):
         serverowner = get_object_or_404(ServerOwner, user=request.user)
         stripe_account_id = serverowner.stripe_account_id
 
+        if stripe_account_id is None:
+            # Redirect to create_stripe_account if stripe_account_id is None
+            return redirect("create_stripe_account")
+
         if stripe_account_id:
             # Retrieve the user's Stripe account
             stripe_account = stripe.Account.retrieve(stripe_account_id)
