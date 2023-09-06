@@ -112,21 +112,21 @@ def stripe_webhook(request):
         # Send a notification to the subscriber
         send_payment_failed_email.delay(subscription.subscriber.email)
 
-    # elif event.type == 'account.updated':
-    #     account = event.data.object
-    #     # Check charges_enabled and payouts_enabled
-    #     charges_enabled = account.charges_enabled
-    #     payouts_enabled = account.payouts_enabled
-    #     details_submitted = account.details_submitted
+    elif event.type == 'account.updated':
+        account = event.data.object
+        # Check charges_enabled and payouts_enabled
+        charges_enabled = account.charges_enabled
+        payouts_enabled = account.payouts_enabled
+        details_submitted = account.details_submitted
 
-    #     # Update Serverowner's stripe_onboarding field if conditions are met
-    #     try:
-    #         serverowner = ServerOwner.objects.get(stripe_account_id=account.id)
-    #         if charges_enabled and payouts_enabled and details_submitted:
-    #             serverowner.stripe_onboarding = True
-    #             serverowner.save()
-    #     except ServerOwner.DoesNotExist:
-    #         logger.error(f"ServerOwner object not found for: {serverowner}")
-    #         return HttpResponse(status=404)
+        # Update Serverowner's stripe_onboarding field if conditions are met
+        try:
+            serverowner = ServerOwner.objects.get(stripe_account_id=account.id)
+            if charges_enabled and payouts_enabled and details_submitted:
+                serverowner.stripe_onboarding = True
+                serverowner.save()
+        except ServerOwner.DoesNotExist:
+            logger.error(f"ServerOwner object not found for: {serverowner}")
+            return HttpResponse(status=404)
 
     return HttpResponse(status=200)

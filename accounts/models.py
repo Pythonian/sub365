@@ -105,6 +105,11 @@ class ServerOwner(models.Model):
         default=False,
         help_text=_("If this Serverowner onboarded via coinpayment.")
     )
+    stripe_onboarding = models.BooleanField(
+        _("stripe onboarding"),
+        default=False,
+        help_text=_("If this Serverowner onboarded via stripe.")
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
