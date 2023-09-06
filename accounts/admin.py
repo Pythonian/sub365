@@ -51,7 +51,6 @@ class ServerOwnerAdmin(admin.ModelAdmin):
         "subdomain",
         "email",
         "affiliate_commission",
-        "coinpayment_onboarding",
     ]
     search_fields = ["username", "subdomain", "email"]
 

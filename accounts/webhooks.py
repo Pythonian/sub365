@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
@@ -11,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 import stripe
 
-from .models import AffiliateInvitee, AffiliatePayment, Subscription, ServerOwner
+from .models import AffiliateInvitee, AffiliatePayment, Subscription
 from .tasks import send_payment_failed_email
 
 logger = logging.getLogger(__name__)
@@ -40,12 +39,6 @@ def stripe_webhook(request):
         # Invalid signature
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
         return HttpResponse(status=400)
-    
-    # if event.type == "account.updated":
-    #     account = ServerOwner.objects.get(stripe_account_id=event.account)
-    #     account.charges_enabled = event.data.object.charges_enabled
-    #     account.payouts_enabled = event.data.object.payouts_enabled
-    #     account.details_submitted = event.data.object.details_submitted
 
     if event.type == "invoice.paid":
         subscription_id = event.data.object.subscription

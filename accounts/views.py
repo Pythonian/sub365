@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -7,7 +7,6 @@ from django.contrib import messages
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import send_mail
 from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -318,31 +317,12 @@ def dashboard_view(request):
         return redirect("index")
 
 
-def create_webhook_endpoint(request, stripe_account_id):
-    webhook_endpoint = stripe.WebhookEndpoint.create(
-        # url=request.build_absolute_uri(reverse("stripe_webhook")),
-        url="http://web:8000/webhook/",
-        enabled_events=[
-            "invoice.payment_succeeded", "invoice.paid",
-            "checkout.session.async_payment_succeeded",
-            "checkout.session.async_payment_failed",
-        ],
-        connect=True,
-    )
-    return webhook_endpoint
-
-
 @login_required
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
     connected_account = stripe.Account.create(
         type="standard",
-        # email=request.user.serverowner.email,
-        # capabilities={
-        #     "card_payments": {"requested": True},
-        #     "transfers": {"requested": True},
-        # },
-        # business_type="individual",
+        email=request.user.serverowner.email,
     )
 
     # Retrieve the Stripe account ID
@@ -353,8 +333,6 @@ def create_stripe_account(request):
         serverowner = request.user.serverowner
         serverowner.stripe_account_id = stripe_account_id
         serverowner.save()
-        # Create a webhook endpoint for the newly created connected account
-        # create_webhook_endpoint(request, stripe_account_id)
     except ObjectDoesNotExist:
         messages.error(request, "You have tresspassed to forbidden territory.")
         return redirect("index")
@@ -378,7 +356,6 @@ def collect_user_info(request):
         refresh_url=request.build_absolute_uri(reverse("stripe_refresh")),
         return_url=request.build_absolute_uri(reverse("dashboard")),
         type="account_onboarding",
-        # collect="eventually_due",
     )
 
     # Redirect the user to the Stripe onboarding flow
