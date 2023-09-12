@@ -28,9 +28,7 @@ def stripe_webhook(request):
     event = None
 
     try:
-        event = stripe.Webhook.construct_event(  # noqa
-            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
     except ValueError as e:
         # Invalid payload
         logger.exception("An error occurred during a Stripe API call: %s", str(e))
@@ -53,21 +51,16 @@ def stripe_webhook(request):
         # Check if the payment was successful
         if event.data.object.status == "paid":
             with transaction.atomic():
-
                 # Payment was successful
                 subscription.status = Subscription.SubscriptionStatus.ACTIVE
                 subscription.subscription_date = timezone.now()
                 interval_count = subscription.plan.interval_count
-                subscription.expiration_date = timezone.now() + relativedelta(
-                    months=interval_count
-                )
+                subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
                 subscription.save()
 
                 subscriber = subscription.subscriber
                 try:
-                    affiliateinvitee = AffiliateInvitee.objects.get(
-                        invitee_discord_id=subscriber.discord_id
-                    )
+                    affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
                     affiliatepayment = AffiliatePayment.objects.create(  # noqa
                         serverowner=subscriber.subscribed_via,
                         affiliate=affiliateinvitee.affiliate,
@@ -77,14 +70,12 @@ def stripe_webhook(request):
 
                     affiliateinvitee.affiliate.update_last_payment_date()
                     affiliateinvitee.affiliate.pending_commissions = (
-                        F("pending_commissions")
-                        + affiliateinvitee.get_affiliate_commission_payment()
+                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
                     )
                     affiliateinvitee.affiliate.save()
 
                     subscriber.subscribed_via.total_pending_commissions = (
-                        F("total_pending_commissions")
-                        + affiliateinvitee.get_affiliate_commission_payment()
+                        F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
                     )
                     subscriber.subscribed_via.save()
 
@@ -112,9 +103,8 @@ def stripe_webhook(request):
         # Send a notification to the subscriber
         send_payment_failed_email.delay(subscription.subscriber.email)
 
-    elif event.type == 'account.updated':
+    elif event.type == "account.updated":
         account = event.data.object
-        # Check charges_enabled and payouts_enabled
         charges_enabled = account.charges_enabled
         payouts_enabled = account.payouts_enabled
         details_submitted = account.details_submitted
@@ -126,7 +116,6 @@ def stripe_webhook(request):
                 serverowner.stripe_onboarding = True
                 serverowner.save()
         except ServerOwner.DoesNotExist:
-            logger.error(f"ServerOwner object not found for: {serverowner}")
-            return HttpResponse(status=404)
+            pass
 
     return HttpResponse(status=200)
