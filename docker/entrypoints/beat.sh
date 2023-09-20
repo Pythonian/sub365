@@ -3,7 +3,6 @@
 set -o errexit
 set -o nounset
 
-# Wait for database migrations to be applied
 until python manage.py migrate --check
 do
     echo "Waiting for migrations to be applied..."

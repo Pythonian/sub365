@@ -101,3 +101,5 @@ setup.cfg
 
 Makefile
 docs
+.ruff_cache
+.pre-commit-config.yaml

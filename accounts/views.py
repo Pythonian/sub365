@@ -2,6 +2,10 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
+import requests
+import stripe
+from allauth.account.views import LogoutView
+from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_backends, login
@@ -13,20 +17,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-
+from requests.exceptions import RequestException
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-import requests
-import stripe
-from allauth.account.views import LogoutView
-from allauth.socialaccount.models import SocialAccount
-from requests.exceptions import RequestException
-
 from .decorators import onboarding_completed, redirect_if_no_subdomain
 from .forms import (
-    CoinpaymentsOnboardingForm,
     CoinPaymentDetailForm,
+    CoinpaymentsOnboardingForm,
     CoinPlanForm,
     OnboardingForm,
     PaymentDetailForm,
@@ -138,7 +136,7 @@ def discord_callback(request):
                                             "id": server_id,
                                             "name": server_name,
                                             "icon": server_icon,
-                                        }
+                                        },
                                     )
                     else:
                         # Redirect user and show a message to create a server
@@ -194,7 +192,7 @@ def subscribe_redirect(request):
     request.session["subdomain_redirect"] = subdomain
     discord_client_id = settings.DISCORD_CLIENT_ID
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
-    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"  # noqa
+    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"
     return redirect(redirect_url)
 
 
@@ -218,7 +216,7 @@ def onboarding(request):
     else:
         form = OnboardingForm(user=request.user)
 
-    template = "onboarding.html"
+    template = "account/onboarding.html"
     context = {
         "form": form,
     }
@@ -278,7 +276,7 @@ def onboarding_crypto(request):
     else:
         form = CoinpaymentsOnboardingForm()
 
-    template = "onboarding_crypto.html"
+    template = "account/onboarding_crypto.html"
     context = {
         "form": form,
     }
@@ -556,7 +554,6 @@ def plan_detail(request, product_id):
 @require_POST
 def deactivate_plan(request):
     """Deactivate a plan."""
-
     if request.user.serverowner.coinpayment_onboarding:
         if request.method == "POST":
             product_id = request.POST.get("product_id")
@@ -631,7 +628,8 @@ def subscriber_detail(request, id):
         try:
             # Retrieve the latest active subscription for the subscriber
             subscription = CoinSubscription.objects.filter(
-                subscriber=subscriber, status=CoinSubscription.SubscriptionStatus.ACTIVE
+                subscriber=subscriber,
+                status=CoinSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except CoinSubscription.DoesNotExist:
             subscription = None
@@ -639,7 +637,8 @@ def subscriber_detail(request, id):
         try:
             # Retrieve the latest active subscription for the subscriber
             subscription = Subscription.objects.filter(
-                subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+                subscriber=subscriber,
+                status=Subscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except Subscription.DoesNotExist:
             subscription = None
@@ -717,6 +716,7 @@ def pending_affiliate_payment(request):
                         response.raise_for_status()
                         result = response.json()["result"]
                         if result.get("status") == 1:
+                            affiliate_pending_commission = affiliate.pending_commissions
                             serverowner.total_coin_pending_commissions = (
                                 F("total_coin_pending_commissions") - affiliate.pending_coin_commissions
                             )
@@ -739,7 +739,9 @@ def pending_affiliate_payment(request):
 
                             # Mark the associated AffiliatePayment instances as paid
                             affiliate_payments = AffiliatePayment.objects.filter(
-                                serverowner=serverowner, affiliate=affiliate, paid=False
+                                serverowner=serverowner,
+                                affiliate=affiliate,
+                                paid=False,
                             )
                             affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
                             messages.success(
@@ -749,11 +751,15 @@ def pending_affiliate_payment(request):
 
                             # Send email to affiliate
                             send_affiliate_email.delay(
-                                affiliate.subscriber.email, affiliate, serverowner, affiliate.pending_commissions
+                                affiliate.subscriber.email,
+                                affiliate.subscriber.username,
+                                serverowner.username,
+                                affiliate_pending_commission,
                             )
 
                             return redirect("pending_affiliate_payment")
                         else:
+                            # TODO: If withdrawal amount is not enough?
                             logger.warning(f"Withdrawal status: {result.get('status')}")
                     except requests.exceptions.RequestException as e:
                         logger.exception(f"Coinbase API request failed: {e}")
@@ -796,7 +802,9 @@ def pending_affiliate_payment(request):
 
                     # Mark the associated AffiliatePayment instances as paid
                     affiliate_payments = AffiliatePayment.objects.filter(
-                        serverowner=serverowner, affiliate=affiliate, paid=False
+                        serverowner=serverowner,
+                        affiliate=affiliate,
+                        paid=False,
                     )
                     affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
 
@@ -848,13 +856,14 @@ def subscriber_dashboard(request):
         try:
             # Retrieve the latest active subscription for the subscriber
             latest_subscription = CoinSubscription.objects.filter(
-                subscriber=subscriber, status=CoinSubscription.SubscriptionStatus.ACTIVE
+                subscriber=subscriber,
+                status=CoinSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except CoinSubscription.DoesNotExist:
             latest_subscription = None
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = CoinSubscription.objects.filter(subscriber=subscriber).exclude(
-            status=CoinSubscription.SubscriptionStatus.PENDING
+            status=CoinSubscription.SubscriptionStatus.PENDING,
         )
         subscriptions = mk_paginator(request, subscriptions, 12)
         form = CoinPaymentDetailForm()
@@ -866,14 +875,15 @@ def subscriber_dashboard(request):
         try:
             # Retrieve the latest active subscription for the subscriber
             latest_subscription = Subscription.objects.filter(
-                subscriber=subscriber, status=Subscription.SubscriptionStatus.ACTIVE
+                subscriber=subscriber,
+                status=Subscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except Subscription.DoesNotExist:
             latest_subscription = None
 
         # Retrieve all the subscriptions done by the subscriber
         subscriptions = Subscription.objects.filter(subscriber=subscriber).exclude(
-            status=Subscription.SubscriptionStatus.INACTIVE
+            status=Subscription.SubscriptionStatus.INACTIVE,
         )
         subscriptions = mk_paginator(request, subscriptions, 12)
         form = PaymentDetailForm()
@@ -934,7 +944,7 @@ def subscribe_to_coin_plan(request, plan_id):
         result = response.json()["result"]
         if result:
             checkout_url = result["checkout_url"]
-            coin_subscription = CoinSubscription.objects.create(
+            CoinSubscription.objects.create(
                 subscriber=subscriber,
                 subscribed_via=subscriber.subscribed_via,
                 plan=plan,
@@ -991,7 +1001,7 @@ def subscribe_to_plan(request, product_id):
                     {
                         "price": plan.price_id,
                         "quantity": 1,
-                    }
+                    },
                 ],
                 mode="subscription",
                 customer=subscriber.stripe_customer_id,
@@ -999,7 +1009,7 @@ def subscribe_to_plan(request, product_id):
                     "transfer_data": {
                         "destination": subscriber.subscribed_via.stripe_account_id,
                         "amount_percent": 100,
-                    }
+                    },
                 },
             )
 
@@ -1021,7 +1031,7 @@ def subscribe_to_plan(request, product_id):
                     {
                         "price": plan.price_id,
                         "quantity": 1,
-                    }
+                    },
                 ],
                 mode="subscription",
                 customer_email=subscriber.email,
@@ -1029,7 +1039,7 @@ def subscribe_to_plan(request, product_id):
                     "transfer_data": {
                         "destination": subscriber.subscribed_via.stripe_account_id,
                         "amount_percent": 100,
-                    }
+                    },
                 },
             )
 

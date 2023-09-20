@@ -6,8 +6,7 @@ from .models import ServerOwner, Subscriber, User
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    """
-    Signal receiver function to create a user profile based on 
+    """Signal receiver function to create a user profile based on
     their user type (ServerOwner or Subscriber) when a new user is created.
 
     Args:

@@ -13,9 +13,7 @@ until worker_ready; do
 done
 >&2 echo 'Celery workers is available'
 
-celery -A config.celery  \
-       --broker="${CELERY_BROKER_URL}" \
-       flower
+celery -A config.celery --broker="${CELERY_BROKER_URL}" flower
 
 # NOTE: Update the file permissions locally
 # chmod +x docker/entrypoints/flower.sh

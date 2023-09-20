@@ -5,8 +5,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 
 
 def mk_paginator(request, items, num_items):
-    """
-    Create a paginator for querysets.
+    """Create a paginator for querysets.
 
     Args:
         request (HttpRequest): The current request object.
@@ -30,8 +29,7 @@ def mk_paginator(request, items, num_items):
 
 
 def create_hmac_signature(data, api_secret_key):
-    """
-    Create an HMAC signature for the provided data.
+    """Create an HMAC signature for the provided data.
 
     Args:
         data (str): The data for which the HMAC signature is to be created.

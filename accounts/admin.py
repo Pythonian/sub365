@@ -1,7 +1,6 @@
+from allauth.account.models import EmailAddress
 from django.contrib import admin
 from django.contrib.auth.models import Group
-
-from allauth.account.models import EmailAddress
 
 from .models import (
     AccessCode,
@@ -22,9 +21,7 @@ from .models import (
 
 @admin.register(AccessCode)
 class AccessCode(admin.ModelAdmin):
-    """
-    Admin class for managing AccessCode instances.
-    """
+    """Admin class for managing AccessCode instances."""
 
     list_display = ["code", "used_by", "is_used", "date_used"]
     list_filter = ["is_used"]
@@ -32,9 +29,7 @@ class AccessCode(admin.ModelAdmin):
 
 @admin.register(Server)
 class ServerAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing Server instances.
-    """
+    """Admin class for managing Server instances."""
 
     list_display = ["name", "owner", "server_id", "choice_server"]
     list_filter = ["choice_server"]
@@ -42,9 +37,7 @@ class ServerAdmin(admin.ModelAdmin):
 
 @admin.register(ServerOwner)
 class ServerOwnerAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing ServerOwner instances.
-    """
+    """Admin class for managing ServerOwner instances."""
 
     list_display = [
         "username",
@@ -57,18 +50,14 @@ class ServerOwnerAdmin(admin.ModelAdmin):
 
 @admin.register(Subscriber)
 class SubscriberAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing Subscriber instances.
-    """
+    """Admin class for managing Subscriber instances."""
 
     list_display = ["username", "email", "subscribed_via"]
 
 
 @admin.register(StripePlan)
 class StripePlanAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing StripePlan instances.
-    """
+    """Admin class for managing StripePlan instances."""
 
     list_display = ["name", "user", "amount", "subscriber_count"]
     search_fields = ["user__username"]
@@ -76,30 +65,23 @@ class StripePlanAdmin(admin.ModelAdmin):
 
 @admin.register(CoinPlan)
 class CoinPlanAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing CoinPlan instances.
-    """
-    
+    """Admin class for managing CoinPlan instances."""
+
     list_display = ["name", "serverowner", "amount", "subscriber_count"]
     search_fields = ["serverowner__username"]
 
 
 @admin.register(CoinSubscription)
 class CoinSubscriptionAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing CoinSubscription instances.
-    """
+    """Admin class for managing CoinSubscription instances."""
 
-    list_display = ["subscriber", "plan", "subscription_date", "expiration_date",
-                    "coin_amount", "status"]
+    list_display = ["subscriber", "plan", "subscription_date", "expiration_date", "coin_amount", "status"]
     list_filter = ["status"]
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing Subscription instances.
-    """
+    """Admin class for managing Subscription instances."""
 
     list_display = [
         "subscriber",
@@ -115,9 +97,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing User instances.
-    """
+    """Admin class for managing User instances."""
 
     list_display = [
         "username",
@@ -130,16 +110,14 @@ class UserAdmin(admin.ModelAdmin):
 
 
 class PaymentDetailInline(admin.TabularInline):
-    """
-    Inline admin class for managing PaymentDetail instances within the Affiliate admin.    
-    """
+    """Inline admin class for managing PaymentDetail instances within the Affiliate admin."""
+
     model = PaymentDetail
     extra = 0
     readonly_fields = ["litecoin_address", "body"]
 
     def has_delete_permission(self, request, obj=None):
-        """
-        Determine whether the user has permission to delete PaymentDetail instances.
+        """Determine whether the user has permission to delete PaymentDetail instances.
 
         Args:
             request: The current request.
@@ -149,20 +127,17 @@ class PaymentDetailInline(admin.TabularInline):
             bool: True if the user has permission to delete, False otherwise.
         """
         return False
-    
+
 
 class AffiliatePaymentInline(admin.TabularInline):
-    """
-    Inline admin class for managing AffiliatePayment instances within the Affiliate admin.
-    """
+    """Inline admin class for managing AffiliatePayment instances within the Affiliate admin."""
+
     model = AffiliatePayment
     extra = 0
-    readonly_fields = ["serverowner", "subscriber", "amount", "coin_amount", "paid", 
-                       "date_payment_confirmed"]
-    
+    readonly_fields = ["serverowner", "subscriber", "amount", "coin_amount", "paid", "date_payment_confirmed"]
+
     def has_delete_permission(self, request, obj=None):
-        """
-        Determine whether the user has permission to delete AffiliatePayment instances.
+        """Determine whether the user has permission to delete AffiliatePayment instances.
 
         Args:
             request: The current request.
@@ -172,10 +147,9 @@ class AffiliatePaymentInline(admin.TabularInline):
             bool: True if the user has permission to delete, False otherwise.
         """
         return False
-    
+
     def has_add_permission(self, request, obj=None):
-        """
-        Determine whether the user has permission to add new AffiliatePayment instances.
+        """Determine whether the user has permission to add new AffiliatePayment instances.
 
         Args:
             request: The current request.
@@ -189,22 +163,27 @@ class AffiliatePaymentInline(admin.TabularInline):
 
 @admin.register(Affiliate)
 class AffiliateAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing Affiliate instances.
-    """
+    """Admin class for managing Affiliate instances."""
 
     list_display = ["subscriber", "affiliate_link", "total_commissions_paid", "last_payment_date"]
-    readonly_fields = ["subscriber", "affiliate_link", "discord_id", "server_id",
-                       "serverowner", "last_payment_date", "total_commissions_paid",
-                       "total_coin_commissions_paid", "pending_commissions", "pending_coin_commissions"]
+    readonly_fields = [
+        "subscriber",
+        "affiliate_link",
+        "discord_id",
+        "server_id",
+        "serverowner",
+        "last_payment_date",
+        "total_commissions_paid",
+        "total_coin_commissions_paid",
+        "pending_commissions",
+        "pending_coin_commissions",
+    ]
     inlines = [PaymentDetailInline, AffiliatePaymentInline]
 
 
 @admin.register(AffiliateInvitee)
 class AffiliateInviteeAdmin(admin.ModelAdmin):
-    """
-    Admin class for managing AffiliateInvitee instances.
-    """
+    """Admin class for managing AffiliateInvitee instances."""
 
     list_display = ["affiliate", "invitee_discord_id", "created"]
 

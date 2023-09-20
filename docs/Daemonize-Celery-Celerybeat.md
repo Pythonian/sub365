@@ -57,7 +57,7 @@
 
     # If enabled PID and log directories will be created if missing,
     # and owned by the userid/group configured
-    CELERY_CREATE_DIRS=1    
+    CELERY_CREATE_DIRS=1
     ```
 
 3. **Adjust Ownership and Permissions:**

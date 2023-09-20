@@ -1,16 +1,12 @@
-from django.urls import reverse
-
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from django.urls import reverse
 
 
 class DiscordAdapter(DefaultSocialAccountAdapter):
-    """
-    Custom social account adapter for handling login redirect URLs.
-    """
+    """Custom social account adapter for handling login redirect URLs."""
 
     def get_login_redirect_url(self, request):
-        """
-        Return the redirect URL for successful social account login.
+        """Return the redirect URL for successful social account login.
 
         Args:
             request (HttpRequest): The current request object.

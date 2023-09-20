@@ -10,9 +10,7 @@ class Command(BaseCommand):
     help = "Generate unique access codes"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "num_codes", type=int, help="Number of access codes to generate"
-        )
+        parser.add_argument("num_codes", type=int, help="Number of access codes to generate")
 
     def handle(self, *args, **options):
         num_codes = options["num_codes"]
@@ -26,6 +24,4 @@ class Command(BaseCommand):
         for code in generated_codes:
             AccessCode.objects.create(code=code)
 
-        self.stdout.write(
-            self.style.SUCCESS(f"Successfully generated {len(generated_codes)} access codes.")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Successfully generated {len(generated_codes)} access codes."))

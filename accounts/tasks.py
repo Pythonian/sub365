@@ -1,21 +1,16 @@
 import logging
-from dateutil.relativedelta import relativedelta
-
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import F
-from django.utils import timezone
-from django.db import transaction
-from django.core.mail import send_mail
 
 import requests
 from celery import shared_task
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
+from django.db import transaction
+from django.db.models import F
+from django.utils import timezone
 
-from .models import (
-    AffiliateInvitee,
-    AffiliatePayment,
-    CoinSubscription,
-)
+from .models import AffiliateInvitee, AffiliatePayment, CoinSubscription
 from .utils import create_hmac_signature
 
 logger = logging.getLogger(__name__)
@@ -23,16 +18,13 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="check_coin_transaction_status")
 def check_coin_transaction_status():
-    """
-    Periodic task to check the status of coin transactions for pending coin subscriptions.
+    """Periodic task to check the status of coin transactions for pending coin subscriptions.
 
     Raises:
         Exception: If an unexpected error occurs during the processing of coin transactions.
     """
     try:
-        pending_subscriptions = CoinSubscription.objects.filter(
-            status=CoinSubscription.SubscriptionStatus.PENDING
-        )
+        pending_subscriptions = CoinSubscription.objects.filter(status=CoinSubscription.SubscriptionStatus.PENDING)
 
         for coin_subscription in pending_subscriptions:
             try:
@@ -40,9 +32,7 @@ def check_coin_transaction_status():
                 data = f"version=1&cmd=get_tx_info&txid={coin_subscription.subscription_id}&key={coin_subscription.subscribed_via.coinpayment_api_public_key}&format=json"
                 header = {
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "HMAC": create_hmac_signature(
-                        data, coin_subscription.subscribed_via.coinpayment_api_secret_key
-                    ),
+                    "HMAC": create_hmac_signature(data, coin_subscription.subscribed_via.coinpayment_api_secret_key),
                 }
                 response = requests.post(endpoint, data=data, headers=header)
                 result = response.json()["result"]
@@ -54,7 +44,7 @@ def check_coin_transaction_status():
                                 coin_subscription.subscription_date = timezone.now()
                                 interval_count = coin_subscription.plan.interval_count
                                 coin_subscription.expiration_date = timezone.now() + relativedelta(
-                                    months=interval_count
+                                    months=interval_count,
                                 )
                                 coin_subscription.save()
 
@@ -62,7 +52,7 @@ def check_coin_transaction_status():
 
                                 try:
                                     affiliateinvitee = AffiliateInvitee.objects.get(
-                                        invitee_discord_id=subscriber.discord_id
+                                        invitee_discord_id=subscriber.discord_id,
                                     )
                                     affiliatepayment = AffiliatePayment.objects.create(  # noqa
                                         serverowner=subscriber.subscribed_via,
@@ -78,8 +68,7 @@ def check_coin_transaction_status():
                                         + affiliateinvitee.get_affiliate_coin_commission_payment()
                                     )
                                     affiliateinvitee.affiliate.pending_commissions = (
-                                        F("pending_commissions")
-                                        + affiliateinvitee.get_affiliate_commission_payment()
+                                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
                                     )
                                     affiliateinvitee.affiliate.save()
 
@@ -107,7 +96,7 @@ def check_coin_transaction_status():
                         coin_subscription.delete()
                     else:
                         logger.warning(
-                            f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}"
+                            f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}",
                         )
                 else:
                     logger.warning(f"Unexpected format for 'result': {result}")
@@ -126,9 +115,7 @@ def check_coin_transaction_status():
 
 @shared_task(name="check_and_mark_expired_subscriptions")
 def check_and_mark_expired_subscriptions():
-    """
-    Periodic task to check and mark expired coin subscriptions.
-    """
+    """Periodic task to check and mark expired coin subscriptions."""
     now = timezone.now()
     expired_subscriptions = CoinSubscription.objects.filter(
         status=CoinSubscription.SubscriptionStatus.ACTIVE,
@@ -152,7 +139,7 @@ def send_affiliate_email(affiliate_email, affiliate, serverowner, commission_amo
     subject = "Sub365.co: Affiliate Commission Received"
     message = f"Dear {affiliate}, \n\nYou have just received an affiliate commission of ${commission_amount} from {serverowner}.\n\nBest regards,\nwww.sub365.co"
     from_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [affiliate_email]    
+    recipient_list = [affiliate_email]
     send_mail(subject, message, from_email, recipient_list)
 
 

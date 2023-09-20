@@ -1,14 +1,14 @@
 import logging
+
+import stripe
 from dateutil.relativedelta import relativedelta
-from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-
-import stripe
 
 from .models import AffiliateInvitee, AffiliatePayment, ServerOwner, Subscription
 from .tasks import send_payment_failed_email
@@ -18,10 +18,7 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def stripe_webhook(request):
-    """
-    Webhook endpoint to handle Stripe events.
-    """
-
+    """Webhook endpoint to handle Stripe events."""
     # Verify the webhook event using the Stripe signature
     payload = request.body
     sig_header = request.META["HTTP_STRIPE_SIGNATURE"]

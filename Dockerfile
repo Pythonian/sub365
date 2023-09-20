@@ -1,5 +1,5 @@
 # Pull official base image
-FROM python:3.10.13-bullseye as builder
+FROM python:3.10.13-slim-bullseye as builder
 
 # set work directory
 WORKDIR /usr/src/app
@@ -14,18 +14,18 @@ COPY ./requirements.txt .
 
 # install system dependencies and clean up
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
+    && apt-get install -y build-essential gcc \
     && pip install --upgrade pip \
     && pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && rm -rf /var/lib/apt/lists/*
 
 #########
 # FINAL #
 #########
 
 # pull official base image
-FROM python:3.10.13-bullseye
+FROM python:3.10.13-slim-bullseye
 
 # create directory for the app user
 RUN mkdir -p /home/app
@@ -43,7 +43,7 @@ RUN mkdir $APP_HOME/staticfiles
 WORKDIR $APP_HOME
 
 # install dependencies and clean up
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+RUN apt-get update && apt-get install -y curl gcc \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
