@@ -28,11 +28,13 @@ def stripe_webhook(request):
         event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
     except ValueError as e:
         # Invalid payload
-        logger.exception("An error occurred during a Stripe API call: %s", str(e))
+        msg = f"An error occurred during a Stripe API call: {e}"
+        logger.exception(msg)
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
         # Invalid signature
-        logger.exception("An error occurred during a Stripe API call: %s", str(e))
+        msg = f"An error occurred during a Stripe API call: {e}"
+        logger.exception(msg)
         return HttpResponse(status=400)
 
     if event.type == "invoice.paid":
@@ -41,8 +43,8 @@ def stripe_webhook(request):
         try:
             subscription = Subscription.objects.get(subscription_id=subscription_id)
         except Subscription.DoesNotExist:
-            # Handle the case where the subscription is not found
-            logger.error(f"Subscription not found for ID: {subscription_id}")
+            msg = f"Subscription not found for ID: {subscription_id}"
+            logger.exception(msg)
             return HttpResponse(status=404)
 
         # Check if the payment was successful
@@ -58,7 +60,7 @@ def stripe_webhook(request):
                 subscriber = subscription.subscriber
                 try:
                     affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
-                    affiliatepayment = AffiliatePayment.objects.create(  # noqa
+                    AffiliatePayment.objects.create(
                         serverowner=subscriber.subscribed_via,
                         affiliate=affiliateinvitee.affiliate,
                         subscriber=subscriber,
@@ -90,8 +92,7 @@ def stripe_webhook(request):
         try:
             subscription = Subscription.objects.get(subscription_id=subscription_id)
         except Subscription.DoesNotExist:
-            # Handle the case where the subscription is not found
-            logger.error(f"Subscription not found for ID: {subscription_id}")
+            logger.exception("Subscription not found")
             return HttpResponse(status=404)
 
         # Delete the subscription from the database

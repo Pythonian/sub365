@@ -36,6 +36,8 @@ def check_coin_transaction_status():
                 }
                 response = requests.post(endpoint, data=data, headers=header)
                 result = response.json()["result"]
+                # TODO: merge lines 41 and 42 to reduce if branches.
+                # Also can batch create/update be used?
                 if isinstance(result, dict):
                     if result.get("status") == 100:
                         if coin_subscription.status == CoinSubscription.SubscriptionStatus.PENDING:

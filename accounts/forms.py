@@ -180,9 +180,9 @@ class OnboardingForm(forms.Form):
             if access_code_obj.is_used:
                 msg = "Invalid code. Contact admin@sub365.co"
                 raise forms.ValidationError(msg)
-        except AccessCode.DoesNotExist:
+        except AccessCode.DoesNotExist as e:
             msg = "Invalid code. Contact admin@sub365.co"
-            raise forms.ValidationError(msg)
+            raise forms.ValidationError(msg) from e
         return access_code
 
     def save(self, user):
