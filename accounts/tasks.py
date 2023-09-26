@@ -97,9 +97,8 @@ def check_coin_transaction_status():
                         # Transaction failed, Delete the subscription object
                         coin_subscription.delete()
                     else:
-                        logger.warning(
-                            f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}",
-                        )
+                        msg = f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}"
+                        logger.warning(msg)
                 else:
                     logger.warning(f"Unexpected format for 'result': {result}")
             except ObjectDoesNotExist:
