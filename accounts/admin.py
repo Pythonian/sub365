@@ -34,30 +34,6 @@ class ServerInline(admin.TabularInline):
     extra = 0
     readonly_fields = ["name", "server_id", "icon", "choice_server"]
 
-    def has_add_permission(self, request, obj=None):
-        """Determine whether the user has permission to add new Discord Server instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to add, False otherwise.
-        """
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        """Determine whether the user has permission to delete Discord Server instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to delete, False otherwise.
-        """
-        return False
-
 
 @admin.register(ServerOwner)
 class ServerOwnerAdmin(admin.ModelAdmin):
@@ -122,30 +98,6 @@ class PaymentDetailInline(admin.TabularInline):
     extra = 0
     readonly_fields = ["litecoin_address", "body"]
 
-    def has_add_permission(self, request, obj=None):
-        """Determine whether the user has permission to add new PaymentDetail instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to add, False otherwise.
-        """
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        """Determine whether the user has permission to delete PaymentDetail instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to delete, False otherwise.
-        """
-        return False
-
 
 class AffiliatePaymentInline(admin.TabularInline):
     """Inline admin class for managing AffiliatePayment instances within the Affiliate admin."""
@@ -154,30 +106,6 @@ class AffiliatePaymentInline(admin.TabularInline):
     extra = 0
     readonly_fields = ["serverowner", "subscriber", "amount", "coin_amount", "paid", "date_payment_confirmed"]
 
-    def has_delete_permission(self, request, obj=None):
-        """Determine whether the user has permission to delete AffiliatePayment instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to delete, False otherwise.
-        """
-        return False
-
-    def has_add_permission(self, request, obj=None):
-        """Determine whether the user has permission to add new AffiliatePayment instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to add, False otherwise.
-        """
-        return False
-
 
 class AffiliateInviteeInline(admin.TabularInline):
     """Inline admin class for managing AffiliateInvitee instances within the Affiliate admin."""
@@ -185,30 +113,6 @@ class AffiliateInviteeInline(admin.TabularInline):
     model = AffiliateInvitee
     extra = 0
     readonly_fields = ["invitee_discord_id"]
-
-    def has_add_permission(self, request, obj=None):
-        """Determine whether the user has permission to add new AffiliateInvitee instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to add, False otherwise.
-        """
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        """Determine whether the user has permission to delete AffiliateInvitee instances.
-
-        Args:
-            request: The current request.
-            obj (optional): The object being edited.
-
-        Returns:
-            bool: True if the user has permission to delete, False otherwise.
-        """
-        return False
 
 
 @admin.register(Affiliate)
