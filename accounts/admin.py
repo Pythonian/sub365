@@ -39,12 +39,7 @@ class ServerAdmin(admin.ModelAdmin):
 class ServerOwnerAdmin(admin.ModelAdmin):
     """Admin class for managing ServerOwner instances."""
 
-    list_display = [
-        "username",
-        "subdomain",
-        "email",
-        "affiliate_commission",
-    ]
+    list_display = ["username", "subdomain", "email", "affiliate_commission"]
     search_fields = ["username", "subdomain", "email"]
 
 
@@ -83,14 +78,7 @@ class CoinSubscriptionAdmin(admin.ModelAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     """Admin class for managing Subscription instances."""
 
-    list_display = [
-        "subscriber",
-        "subscribed_via",
-        "plan",
-        "subscription_date",
-        "expiration_date",
-        "status",
-    ]
+    list_display = ["subscriber", "subscribed_via", "plan", "subscription_date", "expiration_date", "status"]
     search_fields = ["subscriber", "subscribed_via", "plan"]
     list_filter = ["status", "subscription_date", "expiration_date"]
 
@@ -99,14 +87,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 class UserAdmin(admin.ModelAdmin):
     """Admin class for managing User instances."""
 
-    list_display = [
-        "username",
-        "is_serverowner",
-        "is_affiliate",
-        "is_subscriber",
-        "is_superuser",
-        "is_active",
-    ]
+    list_display = ["username", "is_serverowner", "is_affiliate", "is_subscriber", "is_superuser", "is_active"]
 
 
 class PaymentDetailInline(admin.TabularInline):
@@ -115,6 +96,18 @@ class PaymentDetailInline(admin.TabularInline):
     model = PaymentDetail
     extra = 0
     readonly_fields = ["litecoin_address", "body"]
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new PaymentDetail instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete PaymentDetail instances.
@@ -161,6 +154,38 @@ class AffiliatePaymentInline(admin.TabularInline):
         return False
 
 
+class AffiliateInviteeInline(admin.TabularInline):
+    """Inline admin class for managing AffiliateInvitee instances within the Affiliate admin."""
+
+    model = AffiliateInvitee
+    extra = 0
+    readonly_fields = ["invitee_discord_id"]
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new AffiliateInvitee instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete AffiliateInvitee instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+
+
 @admin.register(Affiliate)
 class AffiliateAdmin(admin.ModelAdmin):
     """Admin class for managing Affiliate instances."""
@@ -178,14 +203,7 @@ class AffiliateAdmin(admin.ModelAdmin):
         "pending_commissions",
         "pending_coin_commissions",
     ]
-    inlines = [PaymentDetailInline, AffiliatePaymentInline]
-
-
-@admin.register(AffiliateInvitee)
-class AffiliateInviteeAdmin(admin.ModelAdmin):
-    """Admin class for managing AffiliateInvitee instances."""
-
-    list_display = ["affiliate", "invitee_discord_id", "created"]
+    inlines = [PaymentDetailInline, AffiliatePaymentInline, AffiliateInviteeInline]
 
 
 admin.site.unregister(EmailAddress)
