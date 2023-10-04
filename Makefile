@@ -29,8 +29,8 @@ shell: ## Start a Django shell
 	@$(PYTHON) manage.py shell
 
 test: ## Run tests with coverage
-	@$(PYTHON) -m coverage run --source='.' manage.py test
-	@$(PYTHON) -m coverage report -m
+	@coverage run manage.py test accounts/tests/
+	@coverage html
 
 pipupdate: ## Update project requirements
 	@$(PYTHON) manage.py pipupdates
