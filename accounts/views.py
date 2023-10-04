@@ -444,7 +444,7 @@ def plans(request):
                         },
                     )
 
-                    # Save the product and price details in your database
+                    # Save the product and price details
                     stripe_product = form.save(commit=False)
                     stripe_product.price_id = price.id
                     stripe_product.product_id = product.id
