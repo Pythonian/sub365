@@ -19,9 +19,9 @@ def create_user_profile(sender, instance, created, **kwargs):
         None
     """
     if created:
-        if instance.is_serverowner:
+        if instance.is_serverowner and not hasattr(instance, "serverowner"):
             # Create a ServerOwner profile for server owners
             ServerOwner.objects.create(user=instance)
-        if instance.is_subscriber:
+        elif instance.is_subscriber and not hasattr(instance, "subscriber"):
             # Create a Subscriber profile for subscribers
             Subscriber.objects.create(user=instance)
