@@ -11,7 +11,8 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      SECRET_KEY: 'django-invalid'
+      SECRET_KEY: "django-invalid"
+      DEBUG: "True"
     strategy:
       max-parallel: 4
       matrix:
