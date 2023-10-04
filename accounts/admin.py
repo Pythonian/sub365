@@ -27,12 +27,36 @@ class AccessCode(admin.ModelAdmin):
     list_filter = ["is_used"]
 
 
-@admin.register(Server)
-class ServerAdmin(admin.ModelAdmin):
-    """Admin class for managing Server instances."""
+class ServerInline(admin.TabularInline):
+    """Inline admin class for managing Discord Server instances within the Serverowner admin."""
 
-    list_display = ["name", "owner", "server_id", "choice_server"]
-    list_filter = ["choice_server"]
+    model = Server
+    extra = 0
+    readonly_fields = ["name", "server_id", "icon", "choice_server"]
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new Discord Server instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete Discord Server instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
 
 
 @admin.register(ServerOwner)
@@ -41,6 +65,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
 
     list_display = ["username", "subdomain", "email", "affiliate_commission"]
     search_fields = ["username", "subdomain", "email"]
+    inlines = [ServerInline]
 
 
 @admin.register(Subscriber)
