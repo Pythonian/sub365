@@ -44,8 +44,15 @@ class ServerOwner(models.Model):
         null=True,
         help_text=_("The ID of the Serverowner's avatar from Discord."),
     )
-    subdomain = models.CharField(_("subdomain"), max_length=20, help_text=_("The referral name."))
-    email = models.EmailField(_("email"), help_text=_("Email address of the Serverowner from Discord."))
+    subdomain = models.CharField(
+        _("subdomain"),
+        max_length=20,
+        help_text=_("The referral name."),
+    )
+    email = models.EmailField(
+        _("email"),
+        help_text=_("Email address of the Serverowner from Discord."),
+    )
     stripe_account_id = models.CharField(
         _("stripe account id"),
         max_length=100,
@@ -442,8 +449,16 @@ class Server(models.Model):
         verbose_name=_("owner"),
         help_text=_("The Serverowner who owns this Discord server."),
     )
-    server_id = models.CharField(_("server id"), max_length=100, help_text=_("The Discord ID of the server."))
-    name = models.CharField(_("name"), max_length=100, help_text=_("Name of the server."))
+    server_id = models.CharField(
+        _("server id"),
+        max_length=100,
+        help_text=_("The Discord ID of the server."),
+    )
+    name = models.CharField(
+        _("name"),
+        max_length=100,
+        help_text=_("Name of the server."),
+    )
     icon = models.CharField(
         _("icon"),
         max_length=255,
@@ -486,7 +501,12 @@ class Subscriber(models.Model):
         unique=True,
         help_text=_("Discord ID of the subscriber."),
     )
-    username = models.CharField(_("username"), max_length=255, unique=True, help_text=_("Username of the subscriber."))
+    username = models.CharField(
+        _("username"),
+        max_length=255,
+        unique=True,
+        help_text=_("Username of the subscriber."),
+    )
     avatar = models.CharField(
         _("avatar"),
         max_length=255,
@@ -494,7 +514,10 @@ class Subscriber(models.Model):
         null=True,
         help_text=_("Avatar URL of the subscriber."),
     )
-    email = models.EmailField(_("email"), help_text=_("Email address of the subscriber."))
+    email = models.EmailField(
+        _("email"),
+        help_text=_("Email address of the subscriber."),
+    )
     subscribed_via = models.ForeignKey(
         ServerOwner,
         on_delete=models.SET_NULL,
@@ -556,7 +579,6 @@ class Subscriber(models.Model):
                 "-created",
             )
 
-        # Get the first subscription in the sorted queryset (latest PENDING)
         if subscriptions.exists():
             return subscriptions.first()
         else:
@@ -862,7 +884,11 @@ class AffiliatePayment(models.Model):
         null=True,
         help_text=_("The coin commission to be paid."),
     )
-    paid = models.BooleanField(_("paid"), default=False, help_text=_("If this payment has been made."))
+    paid = models.BooleanField(
+        _("paid"),
+        default=False,
+        help_text=_("If this payment has been made."),
+    )
     date_payment_confirmed = models.DateTimeField(
         _("date payment confirmed"),
         blank=True,
@@ -905,8 +931,16 @@ class StripePlan(models.Model):
         max_length=100,
         help_text=_("The product ID associated with the plan."),
     )
-    price_id = models.CharField(_("price id"), max_length=100, help_text=_("The price ID associated with the plan."))
-    name = models.CharField(_("name"), max_length=100, help_text=_("The name of the Stripe plan."))
+    price_id = models.CharField(
+        _("price id"),
+        max_length=100,
+        help_text=_("The price ID associated with the plan."),
+    )
+    name = models.CharField(
+        _("name"),
+        max_length=100,
+        help_text=_("The name of the Stripe plan."),
+    )
     amount = models.DecimalField(
         _("amount"),
         max_digits=9,
@@ -1021,7 +1055,11 @@ class CoinPlan(models.Model):
         verbose_name=_("serverowner"),
         help_text=_("The serverowner who created the plan."),
     )
-    name = models.CharField(_("name"), max_length=100, help_text=_("The name of the coin plan."))
+    name = models.CharField(
+        _("name"),
+        max_length=100,
+        help_text=_("The name of the coin plan."),
+    )
     amount = models.DecimalField(
         _("amount"),
         max_digits=9,
@@ -1174,7 +1212,11 @@ class Subscription(models.Model):
         default=SubscriptionStatus.INACTIVE,
         help_text=_("The status of the subscription."),
     )
-    value = models.IntegerField(_("value"), default=0, validators=[MinValueValidator(0), MaxValueValidator(1)])
+    value = models.IntegerField(
+        _("value"),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -1272,7 +1314,11 @@ class CoinSubscription(models.Model):
         blank=True,
         help_text=_("The URL for accessing transaction status information."),
     )
-    value = models.IntegerField(_("value"), default=0, validators=[MinValueValidator(0), MaxValueValidator(1)])
+    value = models.IntegerField(
+        _("value"),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -1325,7 +1371,12 @@ class PaymentDetail(models.Model):
 class AccessCode(models.Model):
     """Model representing unique access codes for server access."""
 
-    code = models.CharField(_("code"), max_length=5, unique=True, help_text=_("The unique access code value."))
+    code = models.CharField(
+        _("code"),
+        max_length=5,
+        unique=True,
+        help_text=_("The unique access code value."),
+    )
     used_by = models.ForeignKey(
         ServerOwner,
         on_delete=models.SET_NULL,
@@ -1334,7 +1385,11 @@ class AccessCode(models.Model):
         verbose_name=_("used by"),
         help_text=_("The serverowner who used the access code."),
     )
-    is_used = models.BooleanField(_("is used?"), default=False, help_text=_("Whether the access code has been used."))
+    is_used = models.BooleanField(
+        _("is used?"),
+        default=False,
+        help_text=_("Whether the access code has been used."),
+    )
     date_used = models.DateTimeField(
         _("date used"),
         blank=True,
