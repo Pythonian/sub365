@@ -470,7 +470,7 @@ def plans(request):
                     stripe_product = form.save(commit=False)
                     stripe_product.price_id = price.id
                     stripe_product.product_id = product.id
-                    stripe_product.user = serverowner
+                    stripe_product.serverowner = serverowner
                     stripe_product.save()
 
                     messages.success(request, "Your Subscription Plan has been successfully created.")
@@ -518,7 +518,7 @@ def plan_detail(request, product_id):
             form = CoinPlanForm(instance=plan)
 
     else:
-        plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
+        plan = get_object_or_404(StripePlan, id=product_id, serverowner=request.user.serverowner)
         subscribers = plan.get_plan_subscribers()
         subscribers = mk_paginator(request, subscribers, 12)
 
@@ -580,7 +580,7 @@ def deactivate_plan(request):
     else:
         if request.method == "POST":
             product_id = request.POST.get("product_id")
-            plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
+            plan = get_object_or_404(StripePlan, id=product_id, serverowner=request.user.serverowner)
 
             try:
                 # Retrieve the product ID from the plan's StripePlan object
@@ -877,7 +877,9 @@ def subscriber_dashboard(request):
         form = CoinPaymentDetailForm()
     else:
         # Retrieve the plans related to the ServerOwner
-        plans = StripePlan.objects.filter(user=serverowner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE)
+        plans = StripePlan.objects.filter(
+            serverowner=serverowner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
+        )
         plans = mk_paginator(request, plans, 9)
 
         try:

@@ -80,8 +80,8 @@ class SubscriberAdmin(admin.ModelAdmin):
 class StripePlanAdmin(admin.ModelAdmin):
     """Admin class for managing StripePlan instances."""
 
-    list_display = ["name", "user", "amount", "subscriber_count"]
-    search_fields = ["user__username"]
+    list_display = ["name", "serverowner", "amount", "subscriber_count"]
+    search_fields = ["serverowner__username"]
 
 
 @admin.register(CoinPlan)
@@ -185,31 +185,31 @@ class AffiliateInviteeInline(admin.TabularInline):
 
     model = AffiliateInvitee
     extra = 0
-    # readonly_fields = ["invitee_discord_id"]
+    readonly_fields = ["invitee_discord_id"]
 
-    # def has_delete_permission(self, request, obj=None):
-    #     """Determine whether the user has permission to delete AffiliateInvitee instances.
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete AffiliateInvitee instances.
 
-    #     Args:
-    #         request: The current request.
-    #         obj (optional): The object being edited.
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
 
-    #     Returns:
-    #         bool: True if the user has permission to delete, False otherwise.
-    #     """
-    #     return False
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
 
-    # def has_add_permission(self, request, obj=None):
-    #     """Determine whether the user has permission to add new AffiliateInvitee instances.
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new AffiliateInvitee instances.
 
-    #     Args:
-    #         request: The current request.
-    #         obj (optional): The object being edited.
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
 
-    #     Returns:
-    #         bool: True if the user has permission to add, False otherwise.
-    #     """
-    #     return False
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
 
 
 @admin.register(Affiliate)
@@ -219,7 +219,7 @@ class AffiliateAdmin(admin.ModelAdmin):
     list_display = ["subscriber", "affiliate_link", "total_commissions_paid", "last_payment_date"]
     readonly_fields = [
         "subscriber",
-        # "affiliate_link",
+        "affiliate_link",
         "discord_id",
         "server_id",
         "serverowner",

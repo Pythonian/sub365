@@ -932,12 +932,12 @@ class StripePlan(models.Model):
         ACTIVE = "A", _("Active")
         INACTIVE = "I", _("Inactive")
 
-    user = models.ForeignKey(
+    serverowner = models.ForeignKey(
         ServerOwner,
         on_delete=models.CASCADE,
         related_name="plans",
-        verbose_name=_("user"),
-        help_text=_("The server owner who created the plan."),
+        verbose_name=_("serverowner"),
+        help_text=_("The serverowner who created the plan."),
     )
     product_id = models.CharField(
         _("product id"),
@@ -964,12 +964,6 @@ class StripePlan(models.Model):
         _("description"),
         max_length=300,
         help_text=_("Description of the plan (up to 300 characters)."),
-    )
-    currency = models.CharField(
-        _("currency"),
-        max_length=3,
-        default="usd",
-        help_text=_("The currency code used for the plan."),
     )
     interval_count = models.IntegerField(
         _("interval count"),
@@ -1020,7 +1014,7 @@ class StripePlan(models.Model):
         Returns:
             Decimal: The total earnings from subscriptions.
         """
-        subscribers = Subscription.objects.filter(plan=self, subscribed_via=self.user)
+        subscribers = Subscription.objects.filter(plan=self, subscribed_via=self.serverowner)
         total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
         return total_earnings or Decimal(0)
 
@@ -1028,9 +1022,9 @@ class StripePlan(models.Model):
         """Get all subscribers for this plan, filtered by the server owner.
 
         Returns:
-            QuerySet: A queryset of subscribers for this plan and server owner.
+            QuerySet: A queryset of subscribers for this plan and serverowner.
         """
-        return Subscription.objects.filter(plan=self, subscribed_via=self.user)
+        return Subscription.objects.filter(plan=self, subscribed_via=self.serverowner)
 
     def active_subscriptions_count(self):
         """Count the number of active subscriptions for this plan.
@@ -1053,7 +1047,7 @@ class StripePlan(models.Model):
 
 
 class CoinPlan(models.Model):
-    """Model representing coin subscription plans."""
+    """Model representing Coinpayment plans."""
 
     class PlanStatus(models.TextChoices):
         """Choices for the plan status."""
@@ -1079,15 +1073,20 @@ class CoinPlan(models.Model):
         decimal_places=2,
         help_text=_("The amount in dollars for the plan."),
     )
+    description = models.TextField(
+        _("description"),
+        max_length=300,
+        help_text=_("Description of the plan (up to 300 characters)."),
+    )
     interval_count = models.IntegerField(
         _("interval count"),
         validators=[MinValueValidator(1), MaxValueValidator(12)],
         help_text=_("The number of months the plan should last."),
     )
-    description = models.TextField(
-        _("description"),
-        max_length=300,
-        help_text=_("Description of the plan (up to 300 characters)."),
+    subscriber_count = models.IntegerField(
+        _("subscriber count"),
+        default=0,
+        help_text=_("Number of subscriptions to this plan."),
     )
     status = models.CharField(
         _("status"),
@@ -1095,11 +1094,6 @@ class CoinPlan(models.Model):
         choices=PlanStatus.choices,
         default=PlanStatus.ACTIVE,
         help_text=_("Status of the plan."),
-    )
-    subscriber_count = models.IntegerField(
-        _("subscriber count"),
-        default=0,
-        help_text=_("Number of subscriptions to this plan."),
     )
     discord_role_id = models.CharField(
         _("discord role id"),
