@@ -439,8 +439,8 @@ def plans(request):
                 messages.error(request, "An error occured while creating your Plan.")
         else:
             form = CoinPlanForm()
-        coin_plans = serverowner.get_plans()
-        coin_plans = mk_paginator(request, coin_plans, 9)
+        plans = serverowner.get_plans()
+        plans = mk_paginator(request, plans, 9)
 
     else:
         if request.method == "POST":
@@ -486,23 +486,15 @@ def plans(request):
         else:
             form = PlanForm()
         # Retrieve the user's Stripe plans from the database and paginate
-        stripe_plans = serverowner.get_plans()
-        stripe_plans = mk_paginator(request, stripe_plans, 9)
+        plans = serverowner.get_plans()
+        plans = mk_paginator(request, plans, 9)
 
-    if serverowner.coinpayment_onboarding:
-        template = "serverowner/plans/coinpayment/list.html"
-        context = {
-            "serverowner": serverowner,
-            "form": form,
-            "coin_plans": coin_plans,
-        }
-    else:
-        template = "serverowner/plans/stripe/list.html"
-        context = {
-            "serverowner": serverowner,
-            "form": form,
-            "stripe_plans": stripe_plans,
-        }
+    template = "serverowner/plans/list.html"
+    context = {
+        "serverowner": serverowner,
+        "form": form,
+        "plans": plans,
+    }
     return render(request, template, context)
 
 
@@ -511,7 +503,7 @@ def plan_detail(request, product_id):
     """Display detailed information about a specific plan."""
     if request.user.serverowner.coinpayment_onboarding:
         plan = get_object_or_404(CoinPlan, id=product_id, serverowner=request.user.serverowner)
-        subscribers = plan.get_coinplan_subscribers()
+        subscribers = plan.get_plan_subscribers()
         subscribers = mk_paginator(request, subscribers, 12)
 
         if request.method == "POST":
@@ -527,7 +519,7 @@ def plan_detail(request, product_id):
 
     else:
         plan = get_object_or_404(StripePlan, id=product_id, user=request.user.serverowner)
-        subscribers = plan.get_stripeplan_subscribers()
+        subscribers = plan.get_plan_subscribers()
         subscribers = mk_paginator(request, subscribers, 12)
 
         if request.method == "POST":
@@ -561,10 +553,7 @@ def plan_detail(request, product_id):
         else:
             form = PlanForm(instance=plan)
 
-    if request.user.serverowner.coinpayment_onboarding:
-        template = "serverowner/plans/coinpayment/detail.html"
-    else:
-        template = "serverowner/plans/stripe/detail.html"
+    template = "serverowner/plans/detail.html"
     context = {
         "plan": plan,
         "form": form,
@@ -625,14 +614,10 @@ def subscribers(request):
     """Display the subscribers of a user's plans."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    if serverowner.coinpayment_onboarding:
-        template = "serverowner/subscribers/coinpayment/list.html"
-    else:
-        template = "serverowner/subscribers/stripe/list.html"
-
     subscribers = serverowner.get_subscribed_users()
     subscribers = mk_paginator(request, subscribers, 12)
 
+    template = "serverowner/subscribers/list.html"
     context = {
         "serverowner": serverowner,
         "subscribers": subscribers,
@@ -641,8 +626,8 @@ def subscribers(request):
 
 
 @login_required
-def subscriber_detail(request, id):
-    subscriber = get_object_or_404(Subscriber, id=id)
+def subscriber_detail(request, subscriber_id):
+    subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     subscriptions = subscriber.get_subscriptions()
     subscriptions = mk_paginator(request, subscriptions, 12)
 
@@ -693,8 +678,8 @@ def affiliates(request):
 
 
 @login_required
-def affiliate_detail(request, id):
-    subscriber = get_object_or_404(Subscriber, id=id)
+def affiliate_detail(request, subscriber_id):
+    subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
     invitations = affiliate.get_affiliate_invitees()
     invitations = mk_paginator(request, invitations, 12)

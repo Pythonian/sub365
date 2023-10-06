@@ -4,7 +4,7 @@
 
 {% block content %}
 
-{% if coin_plans %}
+{% if plans %}
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
         <h1 class="h3 mb-0 text-secondary">Subscription Plans Overview</h1>
@@ -24,16 +24,16 @@
 <h5 class="text-secondary mb-3">All Subscription Plans</h5>
 
 <div class="row g-4 mb-5">
-    {% for plan in coin_plans %}
+    {% for plan in plans %}
     <div class="col-lg-4 col-sm-6">
         {% include 'serverowner/plans/partials/_plan_card.html' %}
     </div>
     {% endfor %}
-    <div class="d-flex justify-content-between mt-5">
-        <p class="text-body-secondary">Showing <span>{{ coin_plans.start_index }}-{{ coin_plans.end_index }}</span>
-            of <span>{{ coin_plans.paginator.count }}</span>
-            plan{{ coin_plans.paginator.count|pluralize }}</p>
-        <div>{% include 'partials/_pagination.html' with page_obj=coin_plans %}</div>
+    <div class="d-flex justify-content-between">
+        <p class="text-body-secondary">Showing <span>{{ plans.start_index }}-{{ plans.end_index }}</span>
+            of <span>{{ plans.paginator.count }}</span>
+            plan{{ plans.paginator.count|pluralize }}</p>
+        <div>{% include 'partials/_pagination.html' with page_obj=plans %}</div>
     </div>
 </div>
 {% else %}
@@ -43,7 +43,8 @@
         <i class="fas fa-bell-concierge fa-stack-1x fa-inverse"></i>
     </span>
     <h3 class="text-dark">Start selling Subscriptions with your Plans</h3>
-    <p class="mb-5">You can create from one to an infinite number of plans, <br> and we provide you with the necessary features to manage them.</p>
+    <p class="mb-5">You can create from one to an infinite number of plans, <br> and we provide you with the necessary
+        features to manage them.</p>
     <button type="button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5" data-bs-toggle="modal"
         data-bs-target="#createPlanModal">
         <i class="fa-solid fa-plus me-1"></i> Create a Subscription Plan

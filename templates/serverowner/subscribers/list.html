@@ -32,8 +32,8 @@
                 <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">USER:</p>
-                        <span>{{ subscriber.username }}</span>
+                        <p class="p-0 m-0 text-muted fs-6">NAME:</p>
+                        <a href="{{ subscriber.get_absolute_url }}">{{ subscriber.username }}</a>
                     </li>
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
@@ -46,17 +46,10 @@
                         <span>{{ subscriber.created|date:"F j, Y" }}</span>
                     </li>
                     <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
                         <p class="p-0 m-0 text-muted fs-6">LAST SUBSCRIPTION:</p>
                         <span
                             class="badge py-2 px-3 rounded-pill bg-{% if subscriber.has_active_subscription %}success{% else %}danger{% endif %}">{% if subscriber.has_active_subscription %}Active{% else %}Inactive{% endif %}</span>
-                    </li>
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
-                        <p></p>
-                        <a href="{% url 'subscriber_detail' subscriber.id %}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-hourglass me-1"></i> View History
-                        </a>
                     </li>
                 </ul>
             </div>
@@ -86,6 +79,5 @@
             class="far fa-clipboard me-1"></i> Copy Subscription Link</button>
 </div>
 {% endif %}
-
 
 {% endblock content %}

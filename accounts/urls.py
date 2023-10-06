@@ -35,9 +35,9 @@ urlpatterns = [
                 path("plan/<int:product_id>/", views.plan_detail, name="plan"),
                 path("plan/deactivate/", views.deactivate_plan, name="deactivate_plan"),
                 path("subscribers/", views.subscribers, name="subscribers"),
-                path("subscriber/<int:id>/", views.subscriber_detail, name="subscriber_detail"),
+                path("subscriber/<uuid:subscriber_id>/", views.subscriber_detail, name="subscriber_detail"),
                 path("affiliates/", views.affiliates, name="affiliates"),
-                path("affiliate/<int:id>/", views.affiliate_detail, name="affiliate_detail"),
+                path("affiliate/<uuid:subscriber_id>/", views.affiliate_detail, name="affiliate_detail"),
                 path(
                     "affiliates/payments/pending/",
                     views.pending_affiliate_payment,

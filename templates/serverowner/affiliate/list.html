@@ -38,8 +38,7 @@
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
                         <p class="p-0 m-0 text-muted fs-6">NAME:</p>
-                        <a
-                            href="{% url 'affiliate_detail' affiliate.subscriber.id %}">{{ affiliate.subscriber.username }}</a>
+                        <a href="{{ affiliate.get_absolute_url }}">{{ affiliate.subscriber.username }}</a>
                     </li>
                     <li
                         class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">

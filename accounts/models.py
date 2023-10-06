@@ -1,9 +1,11 @@
+import uuid
 from decimal import ROUND_DOWN, Decimal
 
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q, Sum
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -489,6 +491,11 @@ class Server(models.Model):
 class Subscriber(models.Model):
     """Model representing subscribers."""
 
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -546,6 +553,9 @@ class Subscriber(models.Model):
     def __str__(self) -> str:
         """Return a string representation of the Subscriber instance."""
         return self.username
+
+    def get_absolute_url(self):
+        return reverse("subscriber_detail", args=[self.id])
 
     def has_active_subscription(self):
         """Check if the subscriber has an active subscription.
@@ -676,6 +686,9 @@ class Affiliate(models.Model):
     def __str__(self) -> str:
         """Return a string representation of the Affiliate instance."""
         return self.subscriber.username
+
+    def get_absolute_url(self):
+        return reverse("affiliate_detail", args=[self.subscriber.id])
 
     def update_last_payment_date(self):
         """Update the last payment date of the affiliate to the current date and time."""
@@ -1011,7 +1024,7 @@ class StripePlan(models.Model):
         total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
         return total_earnings or Decimal(0)
 
-    def get_stripeplan_subscribers(self):
+    def get_plan_subscribers(self):
         """Get all subscribers for this plan, filtered by the server owner.
 
         Returns:
@@ -1025,7 +1038,7 @@ class StripePlan(models.Model):
         Returns:
             int: The count of active subscriptions.
         """
-        subscribers = self.get_stripeplan_subscribers()
+        subscribers = self.get_plan_subscribers()
         active_subscriptions = subscribers.filter(status=Subscription.SubscriptionStatus.ACTIVE)
         return active_subscriptions.count()
 
@@ -1035,7 +1048,7 @@ class StripePlan(models.Model):
         Returns:
             int: The total count of subscriptions.
         """
-        subscribers = self.get_stripeplan_subscribers()
+        subscribers = self.get_plan_subscribers()
         return subscribers.count()
 
 
@@ -1123,7 +1136,7 @@ class CoinPlan(models.Model):
         total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
         return total_earnings or Decimal(0)
 
-    def get_coinplan_subscribers(self):
+    def get_plan_subscribers(self):
         """Get all subscribers for this plan, filtered by the server owner.
 
         Returns:
@@ -1137,7 +1150,7 @@ class CoinPlan(models.Model):
         Returns:
             int: The count of active subscriptions.
         """
-        subscribers = self.get_coinplan_subscribers()
+        subscribers = self.get_plan_subscribers()
         active_subscriptions = subscribers.filter(status=CoinSubscription.SubscriptionStatus.ACTIVE)
         return active_subscriptions.count()
 
@@ -1147,7 +1160,7 @@ class CoinPlan(models.Model):
         Returns:
             int: The total count of subscriptions.
         """
-        subscribers = self.get_coinplan_subscribers()
+        subscribers = self.get_plan_subscribers()
         return subscribers.count()
 
 

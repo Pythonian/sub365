@@ -12,8 +12,9 @@
                     {% csrf_token %}
 
                     {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ error }}
+                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
+                        role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
                     </div>
                     {% endfor %}
 
