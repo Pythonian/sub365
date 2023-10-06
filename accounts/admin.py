@@ -114,6 +114,7 @@ class UserAdmin(admin.ModelAdmin):
     """Admin class for managing User instances."""
 
     list_display = ["username", "is_serverowner", "is_affiliate", "is_subscriber", "is_superuser", "is_active"]
+    readonly_fields = ["password"]
 
 
 class PaymentDetailInline(admin.TabularInline):
