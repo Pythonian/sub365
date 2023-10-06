@@ -17,45 +17,9 @@
     {% include 'affiliate/partials/_subscribed_invites.html' %}
 </div>
 
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <h5 class="text-secondary">Affiliate Invitees</h5>
-</div>
+<h5 class="text-secondary mb-3">Affiliate Invitees</h5>
+{% include "affiliate/partials/_affiliate_invitee_section.html" %}
 
-<div class="row g-4 mb-5">
-    {% for invitee in invitations %}
-    <div class="col-lg-4 col-sm-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary py-2"></div>
-            <div class="card-body pb-2">
-                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">INVITEE:</p>
-                        <span>{% if invitee.get_affiliateinvitee_name %}{{ invitee.get_affiliateinvitee_name }}{% else %}{{ invitee.invitee_discord_id }}{% endif %}</span>
-                    </li>
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">TOTAL COMMISSION:</p>
-                        <span>${{ invitee.calculate_affiliate_payment_commission }}</span>
-                    </li>
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">DATE INVITED:</p>
-                        <span>{{ invitee.created|date:"F j, Y" }}</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-    <div class="d-flex justify-content-between">
-        <p class="text-body-secondary">Showing <span>{{ invitations.start_index }}-{{ invitations.end_index }}</span> of
-            <span>{{ invitations.paginator.count }}</span>
-            Invitee{{ invitations.paginator.count|pluralize }}
-        </p>
-        <div>{% include 'partials/_pagination.html' with page_obj=invitations %}</div>
-    </div>
-</div>
 {% else %}
 <div class="text-center py-5 my-5">
     <span class="text-primary fa-stack fa-4x mb-3">
