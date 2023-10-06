@@ -11,9 +11,9 @@
             <form action="{% url 'upgrade_to_affiliate' %}" method="post">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <p>You will become an Affiliate and be able to invite users to the server <span
+                    <p>You will be upgraded to an Affiliate and be able to invite users to the server <span
                             class="text-primary">{{ serverowner.get_choice_server }}</span>
-                        for a commission.</p>
+                        and earn commissions.</p>
                     <div class="col-12">
                         {% if serverowner.coinpayment_onboarding %}
                         {% for error in form.litecoin_address.errors %}

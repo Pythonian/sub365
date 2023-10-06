@@ -5,9 +5,9 @@ from . import views, webhooks
 urlpatterns = [
     # Subscriber URLs
     path("subscriber/", views.subscriber_dashboard, name="subscriber_dashboard"),
-    path("subscribe/<int:product_id>/", views.subscribe_to_plan, name="subscribe_to_plan"),
+    path("subscribe/<uuid:plan_id>/", views.subscribe_to_plan, name="subscribe_to_plan"),
     path(
-        "subscribe-to-coin/<int:plan_id>/",
+        "subscribe-to-coin/<uuid:plan_id>/",
         views.subscribe_to_coin_plan,
         name="subscribe_to_coin_plan",
     ),
@@ -32,7 +32,7 @@ urlpatterns = [
             [
                 path("", views.dashboard, name="dashboard"),
                 path("plans/", views.plans, name="plans"),
-                path("plan/<int:product_id>/", views.plan_detail, name="plan"),
+                path("plan/<uuid:plan_id>/", views.plan_detail, name="plan_detail"),
                 path("plan/deactivate/", views.deactivate_plan, name="deactivate_plan"),
                 path("subscribers/", views.subscribers, name="subscribers"),
                 path("subscriber/<uuid:subscriber_id>/", views.subscriber_detail, name="subscriber_detail"),

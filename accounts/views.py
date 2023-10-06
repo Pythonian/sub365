@@ -436,7 +436,7 @@ def plans(request):
                 messages.success(request, "Your Subscription Plan has been successfully created.")
                 return redirect("plans")
             else:
-                messages.error(request, "An error occured while creating your Plan.")
+                messages.error(request, "An error occured while creating your Plan. Please try again.")
         else:
             form = CoinPlanForm()
         plans = serverowner.get_plans()
@@ -482,7 +482,7 @@ def plans(request):
                         "An error occurred while processing your request. Please try again later.",
                     )
             else:
-                messages.error(request, "An error occured while creating your Plan.")
+                messages.error(request, "An error occured while creating your Plan. Please try again.")
         else:
             form = PlanForm()
         # Retrieve the user's Stripe plans from the database and paginate
@@ -499,10 +499,10 @@ def plans(request):
 
 
 @login_required
-def plan_detail(request, product_id):
+def plan_detail(request, plan_id):
     """Display detailed information about a specific plan."""
     if request.user.serverowner.coinpayment_onboarding:
-        plan = get_object_or_404(CoinPlan, id=product_id, serverowner=request.user.serverowner)
+        plan = get_object_or_404(CoinPlan, id=plan_id, serverowner=request.user.serverowner)
         subscribers = plan.get_plan_subscribers()
         subscribers = mk_paginator(request, subscribers, 12)
 
@@ -511,14 +511,14 @@ def plan_detail(request, product_id):
             if form.is_valid():
                 plan = form.save()
                 messages.success(request, "Your Subscription Plan has been successfully updated.")
-                return redirect("plan", product_id=plan.id)
+                return redirect(plan)
             else:
-                messages.error(request, "An error occurred while updating your Plan.")
+                messages.error(request, "An error occurred while updating your Plan. Please try again.")
         else:
             form = CoinPlanForm(instance=plan)
 
     else:
-        plan = get_object_or_404(StripePlan, id=product_id, serverowner=request.user.serverowner)
+        plan = get_object_or_404(StripePlan, id=plan_id, serverowner=request.user.serverowner)
         subscribers = plan.get_plan_subscribers()
         subscribers = mk_paginator(request, subscribers, 12)
 
@@ -540,7 +540,7 @@ def plan_detail(request, product_id):
                     plan = form.save()
 
                     messages.success(request, "Your Subscription Plan has been successfully updated.")
-                    return redirect("plan", product_id=plan.id)
+                    return redirect(plan)
                 except stripe.error.StripeError as e:
                     msg = f"An error occurred during a Stripe API call: {e}"
                     logger.exception(msg)
@@ -549,7 +549,7 @@ def plan_detail(request, product_id):
                         "An error occurred while processing your request. Please try again later.",
                     )
             else:
-                messages.error(request, "An error occurred while updating your Plan.")
+                messages.error(request, "An error occurred while updating your Plan. Please try again.")
         else:
             form = PlanForm(instance=plan)
 
@@ -576,7 +576,7 @@ def deactivate_plan(request):
             plan.save()
             messages.success(request, "Your plan has been successfully deactivated.")
 
-        return redirect("plan", plan.id)
+        return redirect(plan)
     else:
         if request.method == "POST":
             product_id = request.POST.get("product_id")
@@ -605,7 +605,7 @@ def deactivate_plan(request):
                     request,
                     "An error occurred while processing your request. Please try again later.",
                 )
-        return redirect("plan", plan.id)
+        return redirect(plan)
 
 
 @login_required
@@ -797,6 +797,7 @@ def pending_affiliate_payment(request):
             if affiliate_id is not None:
                 affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
                 if affiliate is not None:
+                    affiliate_pending_commission = affiliate.pending_commissions
                     # Update the server owner's total_pending_commissions
                     serverowner.total_pending_commissions = (
                         F("total_pending_commissions") - affiliate.pending_commissions
@@ -817,7 +818,10 @@ def pending_affiliate_payment(request):
                     )
                     affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
 
-                    messages.success(request, "Payment confirmed.")
+                    messages.success(
+                        request,
+                        f"You have marked payment of ${affiliate_pending_commission} to {affiliate.subscriber.username} as confirmed",
+                    )
                     return redirect("pending_affiliate_payment")
 
     template = "serverowner/affiliate/payment_pending.html"
@@ -997,8 +1001,8 @@ def subscribe_to_coin_plan(request, plan_id):
 
 @login_required
 @require_POST
-def subscribe_to_plan(request, product_id):
-    plan = get_object_or_404(StripePlan, id=product_id)
+def subscribe_to_plan(request, plan_id):
+    plan = get_object_or_404(StripePlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
     if subscriber.stripe_customer_id:
         try:

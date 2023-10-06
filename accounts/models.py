@@ -932,6 +932,11 @@ class StripePlan(models.Model):
         ACTIVE = "A", _("Active")
         INACTIVE = "I", _("Inactive")
 
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
     serverowner = models.ForeignKey(
         ServerOwner,
         on_delete=models.CASCADE,
@@ -1008,6 +1013,9 @@ class StripePlan(models.Model):
         """Return a string representation of the Stripe plan."""
         return self.name
 
+    def get_absolute_url(self):
+        return reverse("plan_detail", args=[self.id])
+
     def total_earnings(self):
         """Calculate the total earnings from subscriptions to this plan.
 
@@ -1055,6 +1063,11 @@ class CoinPlan(models.Model):
         ACTIVE = "A", _("Active")
         INACTIVE = "I", _("Inactive")
 
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
     serverowner = models.ForeignKey(
         ServerOwner,
         on_delete=models.CASCADE,
@@ -1119,6 +1132,9 @@ class CoinPlan(models.Model):
     def __str__(self) -> str:
         """Return a string representation of the coin plan."""
         return self.name
+
+    def get_absolute_url(self):
+        return reverse("plan_detail", args=[self.id])
 
     def total_earnings(self):
         """Calculate the total earnings from subscriptions to this plan.
