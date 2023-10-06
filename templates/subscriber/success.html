@@ -9,7 +9,7 @@
     <div class="col-12 mb-4">
         {% if subscription %}
         <div class="mb-3">
-            <a href="{% url 'subscriber_dashboard' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to
+            <a href="{% url 'subscriber_dashboard' %}" class="small"><i class="fa-solid fa-arrow-left me-1"></i> Back to
                 Dashboard</a>
         </div>
         <div class="card invoice">
@@ -83,14 +83,14 @@
         {% else %}
         <div class="text-center py-5">
             <span class="text-danger fa-stack fa-4x mb-3">
-                <i class="fas fa-circle fa-stack-2x"></i>
-                <i class="fas fa-bug fa-stack-1x fa-inverse"></i>
+                <i class="fa-solid fa-circle fa-stack-2x"></i>
+                <i class="fa-solid fa-bug fa-stack-1x fa-inverse"></i>
             </span>
             <h3 class="text-dark">You do not have a valid session</h3>
             <p class="mb-5">We do not have an information on this existing session.<br> The session ID might be
                 incorrect, expired, or associated with a different session.</p>
             <a href="{% url 'subscriber_dashboard' %}" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"><i
-                    class="fas fa-tachometer-alt me-1"></i> Return to Dashboard</a>
+                    class="fa-solid fa-tachometer-alt me-1"></i> Return to Dashboard</a>
         </div>
         {% endif %}
     </div>

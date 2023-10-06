@@ -15,7 +15,7 @@
                 <button class="btn btn-sm btn-outline-dark" type="button" data-bs-dismiss="modal">Close</button>
                 <form method="POST" action="{% url 'subscription_cancel' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-ban me-1"></i>
+                    <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-ban me-1"></i>
                         Cancel Subscription</button>
                 </form>
             </div>

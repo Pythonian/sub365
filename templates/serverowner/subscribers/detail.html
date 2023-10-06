@@ -7,7 +7,8 @@
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
-        <a href="{% url 'subscribers' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Subscribers</a>
+        <a href="{% url 'subscribers' %}" class="small"><i class="fa-solid fa-arrow-left me-1"></i> Back to
+            Subscribers</a>
     </div>
 </div>
 
@@ -64,7 +65,8 @@
     </div>
     {% endfor %}
     <div class="d-flex justify-content-between">
-        <p class="text-body-secondary">Showing <span>{{ subscriptions.start_index }}-{{ subscriptions.end_index }}</span>
+        <p class="text-body-secondary">Showing
+            <span>{{ subscriptions.start_index }}-{{ subscriptions.end_index }}</span>
             of <span>{{ subscriptions.paginator.count }}</span>
             subscription{{ subscriptions.paginator.count|pluralize }}</p>
         <div>{% include 'partials/_pagination.html' with page_obj=subscriptions %}</div>
@@ -73,8 +75,8 @@
 {% else %}
 <div class="text-center py-5">
     <span class="text-primary fa-stack fa-4x mb-3">
-        <i class="fas fa-circle fa-stack-2x"></i>
-        <i class="fas fa-face-frown fa-stack-1x fa-inverse"></i>
+        <i class="fa-solid fa-circle fa-stack-2x"></i>
+        <i class="fa-solid fa-face-frown fa-stack-1x fa-inverse"></i>
     </span>
     <h3 class="text-dark">{{ subscriber.username }} is yet to subscribe to any of your plan</h3>
     <p class="mb-5">Maybe you should personally reach out to {{ subscriber.username }}, <br> to know why they are yet to

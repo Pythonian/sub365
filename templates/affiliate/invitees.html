@@ -59,8 +59,8 @@
 {% else %}
 <div class="text-center py-5 my-5">
     <span class="text-primary fa-stack fa-4x mb-3">
-        <i class="fas fa-circle fa-stack-2x"></i>
-        <i class="fas fa-user-xmark fa-stack-1x fa-inverse"></i>
+        <i class="fa-solid fa-circle fa-stack-2x"></i>
+        <i class="fa-solid fa-user-xmark fa-stack-1x fa-inverse"></i>
     </span>
     <h3 class="text-dark">No Invitees Yet.</h3>
     <p class="mb-5">Keep promoting your affiliate link. Once a user has joined the server via your link,<br> a list of
@@ -70,7 +70,8 @@
         data-copy-link="{{ affiliate.affiliate_link }}"><i class="far fa-clipboard me-1"></i> Copy Affiliate
         Link</button>
     {% else %}
-    <a href="{% url 'affiliate_invitees' %}" class="btn btn-primary btn-sm"><i class="fas fa-rotate me-1"></i> Reload
+    <a href="{% url 'affiliate_invitees' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-rotate me-1"></i>
+        Reload
         Page for your Link</a>
     {% endif %}
 </div>

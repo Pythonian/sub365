@@ -110,7 +110,8 @@
                     <button type="button" class="btn btn-sm btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
                     <form action="{% url 'delete_account' %}" method="post">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash me-1"></i> Delete
+                        <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>
+                            Delete
                             Account</button>
                     </form>
                 </div>

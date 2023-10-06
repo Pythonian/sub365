@@ -7,7 +7,8 @@
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
-        <a href="{% url 'affiliates' %}" class="small"><i class="fas fa-arrow-left me-1"></i> Back to Affiliates</a>
+        <a href="{% url 'affiliates' %}" class="small"><i class="fa-solid fa-arrow-left me-1"></i> Back to
+            Affiliates</a>
         <h4 class="mb-0 text-secondary">Pending Payments</h4>
     </div>
 </div>
@@ -47,17 +48,18 @@
                                 <td>{{ affiliate.discord_id }}</td>
                                 <td>${{ affiliate.pending_commissions|intcomma }}</td>
                                 <td><a data-bs-toggle="modal" data-bs-target="#paymentMethod{{ affiliate.id }}"
-                                        class="btn btn-sm btn-primary"><i class="fas fa-eye me-1"></i> View Method</a>
+                                        class="btn btn-sm btn-primary"><i class="fa-solid fa-eye me-1"></i> View
+                                        Method</a>
                                 </td>
                                 <td>
                                     {% if serverowner.coinpayment_onboarding %}
                                     <a class="btn btn-success text-white btn-sm" data-bs-toggle="modal"
                                         data-bs-target="#makePayment{{ affiliate.id }}"><i
-                                            class="fas fa-money-check-dollar me-1"></i>Make Payment</a>
+                                            class="fa-solid fa-money-check-dollar me-1"></i>Make Payment</a>
                                     {% else %}
                                     <a class="btn btn-success text-white btn-sm" data-bs-toggle="modal"
                                         data-bs-target="#confirmPayment{{ affiliate.id }}"><i
-                                            class="fas fa-handshake me-1"></i>Confirm Payment</a>
+                                            class="fa-solid fa-handshake me-1"></i>Confirm Payment</a>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -107,7 +109,7 @@
                                                 <input type="hidden" name="affiliate_id"
                                                     value="{{ affiliate.discord_id }}">
                                                 <button type="submit" class="btn btn-sm btn-success text-white"><i
-                                                        class="fas fa-check me-1"></i> Proceed</button>
+                                                        class="fa-solid fa-check me-1"></i> Proceed</button>
                                             </form>
                                         </div>
                                     </div>
@@ -138,7 +140,7 @@
                                                 <input type="hidden" name="affiliate_id"
                                                     value="{{ affiliate.discord_id }}">
                                                 <button type="submit" class="btn btn-sm btn-success text-white"><i
-                                                        class="fas fa-check me-1"></i> Yes, I have</button>
+                                                        class="fa-solid fa-check me-1"></i> Yes, I have</button>
                                             </form>
                                         </div>
                                     </div>
@@ -163,14 +165,14 @@
 {% else %}
 <div class="text-center py-5">
     <span class="text-primary fa-stack fa-4x mb-3">
-        <i class="fas fa-circle fa-stack-2x"></i>
-        <i class="fas fa-file-invoice-dollar fa-stack-1x fa-inverse"></i>
+        <i class="fa-solid fa-circle fa-stack-2x"></i>
+        <i class="fa-solid fa-file-invoice-dollar fa-stack-1x fa-inverse"></i>
     </span>
     <h3 class="text-dark">No Pending Payments.</h3>
     <p class="mb-5">You currently do not have any affiliate commissions pending to be paid.</p>
     {% if serverowner.get_confirmed_affiliate_payments %}
     <a href="{% url 'confirmed_affiliate_payment' %}" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"><i
-            class="fas fa-eye me-1"></i> View Confirmed Payments</a>
+            class="fa-solid fa-eye me-1"></i> View Confirmed Payments</a>
     {% endif %}
 </div>
 {% endif %}

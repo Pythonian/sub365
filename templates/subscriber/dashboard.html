@@ -13,11 +13,11 @@
     <div>
         {% if not user.is_affiliate %}
         <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#affiliateModal"><i
-                class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
+                class="fa-solid fa-user-tie me-1"></i> Become an Affiliate</a>
         {% endif %}
         {% if subscription.status == "A" %}
         <a class="btn btn-danger btn-sm" data-bs-target="#cancelSubscription" data-bs-toggle="modal"><i
-                class="fas fa-ban me-1"></i> Cancel
+                class="fa-solid fa-ban me-1"></i> Cancel
             Subscription</a>
         {% endif %}
     </div>
@@ -43,7 +43,7 @@
     </div>
     {% if not user.is_affiliate %}
     <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#affiliateModal"><i
-            class="fas fa-user-tie me-1"></i> Become an Affiliate</a>
+            class="fa-solid fa-user-tie me-1"></i> Become an Affiliate</a>
     {% endif %}
 </div>
 

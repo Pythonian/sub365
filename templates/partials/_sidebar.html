@@ -9,63 +9,63 @@
     <li
         class="nav-item {% url 'dashboard' as dashboard_url %}{% if request.get_full_path == dashboard_url %}active{% endif %}">
         <a class="nav-link" href="{{ dashboard_url }}">
-            <i class="fas me-1 fa-tachometer-alt"></i>
+            <i class="fa-solid me-1 fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
     <li class="nav-item {% url 'plans' as plans_url %}{% if request.get_full_path == plans_url %}active{% endif %}">
         <a class="nav-link" href="{{ plans_url }}">
-            <i class="fas me-1 fa-ranking-star"></i>
+            <i class="fa-solid me-1 fa-ranking-star"></i>
             <span>Plans</span></a>
     </li>
     <li
         class="nav-item {% url 'subscribers' as subscribers_url %}{% if request.get_full_path == subscribers_url %}active{% endif %}">
         <a class="nav-link" href="{{ subscribers_url }}">
-            <i class="fas me-1 fa-people-arrows"></i>
+            <i class="fa-solid me-1 fa-people-arrows"></i>
             <span>Subscribers</span></a>
     </li>
     <li
         class="nav-item {% url 'affiliates' as affiliates_url %}{% if request.get_full_path == affiliates_url %}active{% endif %}">
         <a class="nav-link" href="{{ affiliates_url }}">
-            <i class="fas me-1 fa-hand-holding-hand"></i>
+            <i class="fa-solid me-1 fa-hand-holding-hand"></i>
             <span>Affiliates</span></a>
     </li>
     {% elif request.user.is_affiliate %}
     <li
         class="nav-item {% url 'affiliate_dashboard' as affiliate_dashboard_url %}{% if request.get_full_path == affiliate_dashboard_url %}active{% endif %}">
         <a class="nav-link" href="{{ affiliate_dashboard_url }}">
-            <i class="fas me-1 fa-tachometer-alt"></i>
+            <i class="fa-solid me-1 fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
     <li
         class="nav-item {% url 'affiliate_payments' as affiliate_payments_url %}{% if request.get_full_path == affiliate_payments_url %}active{% endif %}">
         <a class="nav-link" href="{{ affiliate_payments_url }}">
-            <i class="fas me-1 fa-file-invoice-dollar"></i>
+            <i class="fa-solid me-1 fa-file-invoice-dollar"></i>
             <span>Payments</span></a>
     </li>
     <li
         class="nav-item {% url 'affiliate_invitees' as affiliate_invitees_url %}{% if request.get_full_path == affiliate_invitees_url %}active{% endif %}">
         <a class="nav-link" href="{{ affiliate_invitees_url }}">
-            <i class="fas me-1 fa-users"></i>
+            <i class="fa-solid me-1 fa-users"></i>
             <span>Invitees</span></a>
     </li>
     <li
         class="nav-item {% url 'subscriber_dashboard' as subscriber_dashboard_url %}{% if request.get_full_path == subscriber_dashboard_url %}active{% endif %}">
         <a class="nav-link" href="{{ subscriber_dashboard_url }}">
-            <i class="fas me-1 fa-cube"></i>
+            <i class="fa-solid me-1 fa-cube"></i>
             <span>Subscription</span></a>
     </li>
     {% else %}
     <li
         class="nav-item {% url 'subscriber_dashboard' as subscriber_dashboard_url %}{% if request.get_full_path == subscriber_dashboard_url %}active{% endif %}">
         <a class="nav-link" href="{{ subscriber_dashboard_url }}">
-            <i class="fas me-1 fa-tachometer-alt"></i>
+            <i class="fa-solid me-1 fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
     {% endif %}
     <hr class="sidebar-divider">
     <li class="nav-item">
         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
-            <i class="fas fa-sign-out-alt me-1"></i>
+            <i class="fa-solid fa-sign-out-alt me-1"></i>
             <span>Logout</span>
         </a>
     </li>

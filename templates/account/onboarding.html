@@ -57,8 +57,8 @@
                                             {% endfor %}
                                             {% render_field form.server class="form-select" %}
                                             <small>{{ form.server.help_text }} <i
-                                                    class="fas fa-circle-question ms-1 small" data-bs-toggle="tooltip"
-                                                    data-bs-placement="top"
+                                                    class="fa-solid fa-circle-question ms-1 small"
+                                                    data-bs-toggle="tooltip" data-bs-placement="top"
                                                     title="You must have a Server on Discord to continue"></i></small>
                                         </div>
 
@@ -147,7 +147,8 @@
                     <button type="button" class="btn btn-sm btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
                     <form action="{% url 'delete_account' %}" method="post">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash me-1"></i> Delete
+                        <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>
+                            Delete
                             Account</button>
                     </form>
                 </div>
