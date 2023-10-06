@@ -32,9 +32,6 @@ test: ## Run tests with coverage
 	@coverage run manage.py test accounts/tests/
 	@coverage html
 
-pipupdate: ## Update project requirements
-	@$(PYTHON) manage.py pipupdates
-
 accesscodes: ## Generate access codes
 	@$(PYTHON) manage.py access_codes 20
 

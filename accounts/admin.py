@@ -41,6 +41,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
 
     list_display = ["username", "subdomain", "email", "affiliate_commission"]
     search_fields = ["username", "subdomain", "email"]
+    list_filter = ["stripe_onboarding", "coinpayment_onboarding"]
     inlines = [ServerInline]
 
 

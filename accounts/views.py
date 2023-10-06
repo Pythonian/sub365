@@ -21,7 +21,7 @@ from requests.exceptions import RequestException
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .decorators import onboarding_completed, redirect_if_no_subdomain
+from .decorators import onboarding_completed
 from .forms import (
     CoinPaymentDetailForm,
     CoinpaymentsOnboardingForm,
@@ -200,7 +200,9 @@ def subscribe_redirect(request):
 def onboarding(request):
     """Handle the onboarding of a Serverowner."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
-    if serverowner.stripe_account_id or serverowner.coinpayment_onboarding:
+    if serverowner.stripe_account_id and not serverowner.stripe_onboarding:
+        return redirect("collect_user_info")
+    elif serverowner.stripe_onboarding or serverowner.coinpayment_onboarding:
         return redirect("dashboard")
 
     if request.method == "POST":
@@ -212,9 +214,19 @@ def onboarding(request):
                 return redirect("create_stripe_account")
             elif "connect_coinbase" in request.POST:
                 form.save(user=request.user)
+                # Set the session variable to indicate the user clicked "connect_coinbase"
+                request.session["coinbase_onboarding"] = True
                 return redirect("onboarding_crypto")
     else:
         form = OnboardingForm(user=request.user)
+
+    # Check if the session variable indicates a previous "connect_coinbase" click
+    if request.session.get("coinbase_onboarding"):
+        # If so, check if coinpayment_onboarding is False, then redirect
+        if not serverowner.coinpayment_onboarding:
+            return redirect("onboarding_crypto")
+        # Clear the session variable
+        del request.session["coinbase_onboarding"]
 
     template = "account/onboarding.html"
     context = {
@@ -227,13 +239,18 @@ def onboarding(request):
 @login_required
 def onboarding_crypto(request):
     """Handle the onboarding process for connecting with coinpayment payments."""
+    serverowner = request.user.serverowner
     try:
-        serverowner = request.user.serverowner
         if serverowner.coinpayment_onboarding:
             return redirect("dashboard")
     except ObjectDoesNotExist:
         messages.error(request, "You have trespassed into forbidden territory.")
         return redirect("index")
+
+    if serverowner.stripe_account_id:
+        if serverowner.stripe_onboarding:
+            return redirect("dashboard")
+        return redirect("collect_user_info")
 
     if request.method == "POST":
         form = CoinpaymentsOnboardingForm(request.POST)
@@ -253,7 +270,6 @@ def onboarding_crypto(request):
                 response.raise_for_status()
                 result = response.json()["result"]
                 if result:
-                    serverowner = request.user.serverowner
                     serverowner.coinpayment_api_secret_key = api_secret_key
                     serverowner.coinpayment_api_public_key = api_public_key
                     serverowner.coinpayment_onboarding = True
@@ -306,6 +322,10 @@ def dashboard_view(request):
 @login_required
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
+    serverowner = request.user.serverowner
+    if serverowner.coinpayment_onboarding:
+        return redirect("dashboard")
+
     connected_account = stripe.Account.create(
         type="standard",
         email=request.user.serverowner.email,
@@ -316,7 +336,6 @@ def create_stripe_account(request):
 
     try:
         # Update the Stripe account ID for the current user
-        serverowner = request.user.serverowner
         serverowner.stripe_account_id = stripe_account_id
         serverowner.save()
     except ObjectDoesNotExist:
@@ -329,8 +348,11 @@ def create_stripe_account(request):
 @login_required
 def collect_user_info(request):
     """Collect additional user info for Stripe onboarding."""
+    serverowner = request.user.serverowner
+    if serverowner.coinpayment_onboarding:
+        return redirect("dashboard")
+
     try:
-        serverowner = request.user.serverowner
         stripe_account_id = serverowner.stripe_account_id
     except ObjectDoesNotExist:
         messages.error(request, "You have tresspassed to forbidden territory.")
@@ -351,9 +373,11 @@ def collect_user_info(request):
 @login_required
 def stripe_refresh(request):
     """Handle refreshing the Stripe account information."""
-    try:
-        serverowner = request.user.serverowner
+    serverowner = request.user.serverowner
+    if serverowner.coinpayment_onboarding:
+        return redirect("dashboard")
 
+    try:
         # Retrieve the Stripe account ID from the request or the Stripe API response
         stripe_account_id = request.GET.get("account_id")
 
@@ -382,7 +406,6 @@ def delete_account(request):
 
 
 @login_required
-@redirect_if_no_subdomain
 @onboarding_completed
 def dashboard(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -399,7 +422,6 @@ def dashboard(request):
 
 
 @login_required
-@redirect_if_no_subdomain
 @onboarding_completed
 def plans(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -485,7 +507,6 @@ def plans(request):
 
 
 @login_required
-@redirect_if_no_subdomain
 def plan_detail(request, product_id):
     """Display detailed information about a specific plan."""
     if request.user.serverowner.coinpayment_onboarding:
@@ -554,7 +575,6 @@ def plan_detail(request, product_id):
 
 
 @login_required
-@redirect_if_no_subdomain
 @require_POST
 def deactivate_plan(request):
     """Deactivate a plan."""
@@ -600,7 +620,6 @@ def deactivate_plan(request):
 
 
 @login_required
-@redirect_if_no_subdomain
 @onboarding_completed
 def subscribers(request):
     """Display the subscribers of a user's plans."""
@@ -622,7 +641,6 @@ def subscribers(request):
 
 
 @login_required
-@redirect_if_no_subdomain
 def subscriber_detail(request, id):
     subscriber = get_object_or_404(Subscriber, id=id)
     subscriptions = subscriber.get_subscriptions()
@@ -658,7 +676,6 @@ def subscriber_detail(request, id):
 
 
 @login_required
-@redirect_if_no_subdomain
 @onboarding_completed
 def affiliates(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -692,7 +709,6 @@ def affiliate_detail(request, id):
 
 
 @login_required
-@redirect_if_no_subdomain
 @onboarding_completed
 def pending_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -829,7 +845,6 @@ def pending_affiliate_payment(request):
 
 
 @login_required
-@redirect_if_no_subdomain
 @onboarding_completed
 def confirmed_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)

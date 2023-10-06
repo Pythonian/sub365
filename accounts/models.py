@@ -1336,7 +1336,7 @@ class CoinSubscription(models.Model):
 
 
 class PaymentDetail(models.Model):
-    """Model to store payment details related to affiliates and commissions."""
+    """Model to store payment details of an affiliate."""
 
     affiliate = models.OneToOneField(
         Affiliate,
@@ -1369,7 +1369,7 @@ class PaymentDetail(models.Model):
 
 
 class AccessCode(models.Model):
-    """Model representing unique access codes for server access."""
+    """Model representing unique access codes for dashboard access."""
 
     code = models.CharField(
         _("code"),
