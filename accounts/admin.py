@@ -65,6 +65,18 @@ class StripePlanInline(admin.StackedInline):
     model = StripePlan
     extra = 0
     view_on_site = False
+    readonly_fields = [
+        "name",
+        "product_id",
+        "price_id",
+        "amount",
+        "description",
+        "interval_count",
+        "subscriber_count",
+        "status",
+        "discord_role_id",
+        "permission_description",
+    ]
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete StripePlan instances.
@@ -131,12 +143,67 @@ class ServerOwnerAdmin(admin.ModelAdmin):
     search_fields = ["username", "subdomain", "email"]
     search_help_text = "Search by username, referral name or email"
     list_filter = ["stripe_onboarding", "coinpayment_onboarding"]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "user",
+                    "username",
+                    "email",
+                    "discord_id",
+                    "avatar",
+                    "subdomain",
+                )
+            },
+        ),
+        (
+            "Affiliate Commission",
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "affiliate_commission",
+                    "total_pending_commissions",
+                    "total_coin_pending_commissions",
+                ),
+            },
+        ),
+        (
+            "Stripe Connection",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "stripe_onboarding",
+                    "stripe_account_id",
+                ),
+            },
+        ),
+        (
+            "Coinpayment Connection",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "coinpayment_onboarding",
+                    "coinpayment_api_secret_key",
+                    "coinpayment_api_public_key",
+                ),
+            },
+        ),
+    )
 
     def get_inlines(self, request, obj=None):
         if obj and obj.stripe_onboarding:
             return [ServerInline, StripePlanInline]
         elif obj and obj.coinpayment_onboarding:
             return [ServerInline, CoinPlanInline]
+
+    def get_all_model_fields(self, model):
+        # Get all field names dynamically
+        return [field.name for field in model._meta.get_fields()]
+
+    def get_readonly_fields(self, request, obj=None):
+        # Override the get_readonly_fields method to make all fields read-only
+        return self.get_all_model_fields(self.model)
 
 
 @admin.register(Subscriber)
@@ -296,6 +363,33 @@ class AffiliateAdmin(admin.ModelAdmin):
         "pending_commissions",
         "pending_coin_commissions",
     ]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "subscriber",
+                    "discord_id",
+                    "affiliate_link",
+                    "serverowner",
+                    "server_id",
+                )
+            },
+        ),
+        (
+            "Commission Earnings",
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "pending_commissions",
+                    "total_commissions_paid",
+                    "pending_coin_commissions",
+                    "total_coin_commissions_paid",
+                    "last_payment_date",
+                ),
+            },
+        ),
+    )
     view_on_site = False
     inlines = [PaymentDetailInline, AffiliatePaymentInline, AffiliateInviteeInline]
 

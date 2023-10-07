@@ -16,7 +16,7 @@
         </a>
         {% if affiliate.get_affiliate_invitees %}
         <button id="copy-button" class="btn btn-sm btn-primary" data-copy-link="{{ affiliate.affiliate_link }}"><i
-                class="far fa-clipboard me-1"></i> Copy Affiliate Link</button>
+                class="fa-regular fa-clipboard me-1"></i> Copy Affiliate Link</button>
         {% endif %}
     </div>
 </div>
@@ -40,7 +40,7 @@
     <p class="mb-5">Share your affiliate link and earn a commission when users pay to join the server.<br> Copy your
         unique affiliate link below.</p>
     <button id="copy-button" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"
-        data-copy-link="{{ affiliate.affiliate_link }}"><i class="far fa-clipboard me-1"></i> Copy Affiliate
+        data-copy-link="{{ affiliate.affiliate_link }}"><i class="fa-regular fa-clipboard me-1"></i> Copy Affiliate
         Link</button>
     {% else %}
     <h3 class="text-dark">Generating affiliate link</h3>
