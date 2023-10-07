@@ -59,14 +59,84 @@ class ServerInline(admin.TabularInline):
         return False
 
 
+class StripePlanInline(admin.StackedInline):
+    """Inline admin class for managing StripePlan instances within the Serverowner admin."""
+
+    model = StripePlan
+    extra = 0
+    view_on_site = False
+
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete StripePlan instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new StripePlan instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
+
+
+class CoinPlanInline(admin.StackedInline):
+    """Inline admin class for managing CoinPlan instances within the Serverowner admin."""
+
+    model = CoinPlan
+    extra = 0
+    view_on_site = False
+
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete CoinPlan instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new CoinPlan instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
+
+
 @admin.register(ServerOwner)
 class ServerOwnerAdmin(admin.ModelAdmin):
     """Admin class for managing ServerOwner instances."""
 
     list_display = ["username", "subdomain", "email", "affiliate_commission"]
     search_fields = ["username", "subdomain", "email"]
+    search_help_text = "Search by username, referral name or email"
     list_filter = ["stripe_onboarding", "coinpayment_onboarding"]
-    inlines = [ServerInline]
+
+    def get_inlines(self, request, obj=None):
+        if obj and obj.stripe_onboarding:
+            return [ServerInline, StripePlanInline]
+        elif obj and obj.coinpayment_onboarding:
+            return [ServerInline, CoinPlanInline]
 
 
 @admin.register(Subscriber)
@@ -74,22 +144,18 @@ class SubscriberAdmin(admin.ModelAdmin):
     """Admin class for managing Subscriber instances."""
 
     list_display = ["username", "email", "subscribed_via"]
-
-
-@admin.register(StripePlan)
-class StripePlanAdmin(admin.ModelAdmin):
-    """Admin class for managing StripePlan instances."""
-
-    list_display = ["name", "serverowner", "amount", "subscriber_count"]
-    search_fields = ["serverowner__username"]
-
-
-@admin.register(CoinPlan)
-class CoinPlanAdmin(admin.ModelAdmin):
-    """Admin class for managing CoinPlan instances."""
-
-    list_display = ["name", "serverowner", "amount", "subscriber_count"]
-    search_fields = ["serverowner__username"]
+    readonly_fields = [
+        "user",
+        "username",
+        "email",
+        "subscribed_via",
+        "stripe_customer_id",
+        "avatar",
+        "discord_id",
+    ]
+    search_fields = ["username", "email"]
+    search_help_text = "Search by username or email"
+    view_on_site = False
 
 
 @admin.register(CoinSubscription)
@@ -230,6 +296,7 @@ class AffiliateAdmin(admin.ModelAdmin):
         "pending_commissions",
         "pending_coin_commissions",
     ]
+    view_on_site = False
     inlines = [PaymentDetailInline, AffiliatePaymentInline, AffiliateInviteeInline]
 
 
