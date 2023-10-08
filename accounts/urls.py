@@ -1,3 +1,4 @@
+from django.contrib.auth.views import LogoutView
 from django.urls import include, path
 
 from . import views, webhooks
@@ -6,11 +7,7 @@ urlpatterns = [
     # Subscriber URLs
     path("subscriber/", views.subscriber_dashboard, name="subscriber_dashboard"),
     path("subscribe/<uuid:plan_id>/", views.subscribe_to_plan, name="subscribe_to_plan"),
-    path(
-        "subscribe-to-coin/<uuid:plan_id>/",
-        views.subscribe_to_coin_plan,
-        name="subscribe_to_coin_plan",
-    ),
+    path("subscribe-to-coin/<uuid:plan_id>/", views.subscribe_to_coin_plan, name="subscribe_to_coin_plan"),
     path("subscription/success/", views.subscription_success, name="subscription_success"),
     path("subscription/cancel/", views.subscription_cancel, name="subscription_cancel"),
     # Affiliate URLs
@@ -25,7 +22,7 @@ urlpatterns = [
             ],
         ),
     ),
-    # Server Owner URLs
+    # Serverowner URLs
     path(
         "serverowner/",
         include(
@@ -39,9 +36,7 @@ urlpatterns = [
                 path("affiliates/", views.affiliates, name="affiliates"),
                 path("affiliate/<uuid:subscriber_id>/", views.affiliate_detail, name="affiliate_detail"),
                 path(
-                    "affiliates/payments/pending/",
-                    views.pending_affiliate_payment,
-                    name="pending_affiliate_payment",
+                    "affiliates/payments/pending/", views.pending_affiliate_payment, name="pending_affiliate_payment"
                 ),
                 path(
                     "affiliates/payments/confirmed/",
@@ -64,11 +59,22 @@ urlpatterns = [
             ],
         ),
     ),
+    # Auth URLs
+    path(
+        "accounts/",
+        include(
+            [
+                path("delete/", views.delete_account, name="delete_account"),
+                path("discord/login/", views.discord_login, name="discord_login"),
+                path("discord/login/callback/", views.discord_callback, name="discord_callback"),
+                path("logout/", LogoutView.as_view(next_page="index"), name="accounts_logout"),
+            ],
+        ),
+    ),
     # General URLs
     path("subscribe/", views.subscribe_redirect, name="subscribe_redirect"),
     path("webhook/", webhooks.stripe_webhook, name="stripe_webhook"),
     path("dashboard/", views.dashboard_view, name="dashboard_view"),
-    path("delete-account/", views.delete_account, name="delete_account"),
     path("check_pending_subscription", views.check_pending_subscription, name="check_pending_subscription"),
     path("", views.index, name="index"),
 ]

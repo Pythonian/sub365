@@ -1,4 +1,4 @@
-{% load static socialaccount %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -46,7 +46,7 @@
                         <i class="fa-solid fa-tachometer-alt me-1"></i> My Dashboard
                     </a>
                     {% else %}
-                    <form method="post" action="{% provider_login_url 'discord' %}">
+                    <form method="post" action="{% url 'discord_login' %}">
                         {% csrf_token %}
                         <button class="btn btn-primary border rounded-3 text-white" type="submit">
                             <i class="fa-brands fa-discord me-1"></i> Sign in with Discord

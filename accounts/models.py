@@ -16,11 +16,17 @@ class User(AbstractUser):
     is_serverowner = models.BooleanField(default=False)
     is_subscriber = models.BooleanField(default=False)
     is_affiliate = models.BooleanField(default=False)
+    discord_id = models.CharField(max_length=255, unique=True)
 
 
 class ServerOwner(models.Model):
     """Model representing serverowner instance."""
 
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -264,7 +270,7 @@ class ServerOwner(models.Model):
         return self.get_confirmed_affiliate_payments().count()
 
     def get_confirmed_payment_amount(self):
-        """Get the total amount of confirmed payments the server owner has paid to affiliates.
+        """Get the total amount of confirmed payments made by the serverowner to affiliates.
 
         Returns:
             Decimal: The total amount of confirmed payments.

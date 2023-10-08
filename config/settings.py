@@ -25,10 +25,6 @@ INSTALLED_APPS = [
     "django.contrib.flatpages",
     "django.contrib.sites",
     "django.contrib.humanize",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.discord",
     "accounts.apps.AccountsConfig",
     "feedback.apps.FeedbackConfig",
     "widget_tweaks",
@@ -46,7 +42,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.flatpages.middleware.FlatpageFallbackMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -132,15 +127,9 @@ MESSAGE_TAGS = {
     messages.ERROR: "danger",
 }
 
-AUTHENTICATION_BACKENDS = [
-    "allauth.account.auth_backends.AuthenticationBackend",
-    "django.contrib.auth.backends.ModelBackend",
-]
-
-SOCIALACCOUNT_ADAPTER = "accounts.adapters.DiscordAdapter"
-
 LOGIN_REDIRECT_URL = "dashboard_view"
-LOGOUT_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "index"
+LOGIN_URL = "discord_login"
 
 STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY")
 STRIPE_API_KEY = config("STRIPE_API_KEY")

@@ -1,4 +1,3 @@
-from allauth.account.models import EmailAddress
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
@@ -192,17 +191,44 @@ class ServerOwnerAdmin(admin.ModelAdmin):
     )
 
     def get_inlines(self, request, obj=None):
+        """
+        Returns a list of inline classes to be displayed in the admin change form.
+
+        Args:
+            request (HttpRequest): The HTTP request object.
+            obj (YourModel): The instance of the model being edited.
+
+        Returns:
+            list of InlineModelAdmin: A list of inline classes based on conditions.
+        """
         if obj and obj.stripe_onboarding:
             return [ServerInline, StripePlanInline]
         elif obj and obj.coinpayment_onboarding:
             return [ServerInline, CoinPlanInline]
 
     def get_all_model_fields(self, model):
-        # Get all field names dynamically
+        """
+        Retrieves all field names of a given model dynamically.
+
+        Args:
+            model (Model): The Django model for which field names are to be retrieved.
+
+        Returns:
+            list of str: A list of field names of the specified model.
+        """
         return [field.name for field in model._meta.get_fields()]
 
     def get_readonly_fields(self, request, obj=None):
-        # Override the get_readonly_fields method to make all fields read-only
+        """
+        Overrides the get_readonly_fields method to make all fields read-only.
+
+        Args:
+            request (HttpRequest): The HTTP request object.
+            obj (YourModel): The instance of the model being edited.
+
+        Returns:
+            list of str: A list of field names that should be read-only.
+        """
         return self.get_all_model_fields(self.model)
 
 
@@ -394,5 +420,4 @@ class AffiliateAdmin(admin.ModelAdmin):
     inlines = [PaymentDetailInline, AffiliatePaymentInline, AffiliateInviteeInline]
 
 
-admin.site.unregister(EmailAddress)
 admin.site.unregister(Group)

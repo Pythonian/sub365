@@ -3,13 +3,9 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from accounts.views import discord_callback
-
 urlpatterns = [
     path("admin/doc/", include("django.contrib.admindocs.urls")),
     path("admin/", admin.site.urls),
-    path("accounts/discord/login/callback/", discord_callback, name="discord_callback"),
-    path("accounts/", include("allauth.urls")),
     path("feedback/", include("feedback.urls")),
     path("", include("accounts.urls")),
 ]

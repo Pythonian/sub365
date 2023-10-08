@@ -1,15 +1,16 @@
 import logging
+import random
+import string
 from datetime import timedelta
 from decimal import Decimal
 
 import requests
 import stripe
-from allauth.account.views import LogoutView
-from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_backends, login
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LogoutView
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.http import Http404
@@ -53,11 +54,91 @@ def index(request):
     return render(request, "index.html")
 
 
+def discord_login(request):
+    """
+    View for initiating Discord OAuth2 authentication.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponseRedirect: Redirects the user to the Discord OAuth2 authorization URL.
+    """
+    if request.user.is_authenticated:
+        # If the user is already authenticated, redirect to the dashboard view
+        return redirect("dashboard_view")
+
+    # Discord OAuth2 authorization endpoint URL
+    discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
+
+    # Discord OAuth2 client ID
+    discord_client_id = settings.DISCORD_CLIENT_ID
+
+    # Generate a random state value for CSRF protection
+    state = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
+
+    # Build the URL path the user will be redirected to after authentication
+    redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
+
+    # Construct the Discord OAuth2 authorization URL
+    authorization_url = f"{discord_oauth2_authorization_url}?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email+connections+guilds&state={state}"
+
+    # Store the generated state value in the session
+    request.session["discord_oauth_state"] = state
+
+    # Redirect the user to the Discord OAuth2 authorization URL
+    return redirect(authorization_url)
+
+
+def subscribe_redirect(request):
+    """
+    View for redirecting a new subscriber to Discord for authentication.
+
+    If the user is already authenticated, they are redirected to the dashboard view.
+    Stores the subdomain in the session for later use and constructs the Discord OAuth2
+    authorization URL with the necessary parameters for subscription.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponseRedirect: Redirects the user to the Discord OAuth2 authorization URL for subscription.
+    """
+    if request.user.is_authenticated:
+        # If the user is already authenticated, redirect to the dashboard view
+        return redirect("dashboard_view")
+
+    # Get the subdomain from the query parameters
+    subdomain = request.GET.get("ref")
+
+    # Store the subdomain in the session for later use
+    request.session["subdomain_redirect"] = subdomain
+
+    # Discord OAuth2 client ID
+    discord_client_id = settings.DISCORD_CLIENT_ID
+
+    # Build the URL path the user will be redirected to after authentication
+    redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
+
+    # Construct the Discord OAuth2 authorization URL
+    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"
+
+    # Redirect the user to the Discord OAuth2 authorization URL
+    return redirect(redirect_url)
+
+
 def discord_callback(request):
     # Retrieve values from the URL parameters
     code = request.GET.get("code")
     state = request.GET.get("state")
     subdomain = request.session.get("subdomain_redirect")
+    stored_state = request.session.get("discord_oauth_state")
+
+    # Check if the state parameter matches the stored state value
+    if stored_state and state != stored_state:
+        messages.error(request, "An error occured. Your discord authorization was aborted.")
+        del request.session["discord_oauth_state"]
+        return redirect("index")
 
     if code:
         # Prepare the payload for the token request
@@ -88,20 +169,12 @@ def discord_callback(request):
                 user_info = response.json()
                 if state == "subscriber":
                     try:
-                        social_account = SocialAccount.objects.get(provider="discord", uid=user_info["id"])
-                        user = social_account.user
-                        # TODO: Remove next 3 lines and test
-                        user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
-                        login(request, user, backend=user.backend)
-                        return redirect("dashboard_view")
-                    except (SocialAccount.DoesNotExist, IndexError):
-                        # Create a new user and social account
-                        user = User.objects.create_user(username=user_info["username"], is_subscriber=True)
-                        social_account = SocialAccount.objects.create(
-                            user=user,
-                            provider="discord",
-                            uid=user_info["id"],
-                            extra_data=user_info,
+                        # Check if a user with the Discord ID already exists
+                        user = User.objects.get(discord_id=user_info["id"])
+                    except User.DoesNotExist:
+                        # Create a new user
+                        user = User.objects.create_user(
+                            username=user_info["username"], is_subscriber=True, discord_id=user_info["id"]
                         )
                         subscriber = Subscriber.objects.get(user=user)
                         subscriber.discord_id = user_info.get("id", "")
@@ -112,8 +185,7 @@ def discord_callback(request):
                         serverowner = ServerOwner.objects.get(subdomain=subdomain)
                         subscriber.subscribed_via = serverowner
                         subscriber.save()
-                    user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
-                    login(request, user, backend=user.backend)
+                    login(request, user)
                     return redirect("dashboard_view")
                 else:
                     # state is serverowner
@@ -147,16 +219,14 @@ def discord_callback(request):
                         return redirect("index")
 
                     try:
-                        social_account = SocialAccount.objects.get(provider="discord", uid=user_info["id"])
-                        user = social_account.user
-                    except (SocialAccount.DoesNotExist, IndexError):
-                        # Create a new user and social account
-                        user = User.objects.create_user(username=user_info["username"], is_serverowner=True)
-                        social_account = SocialAccount.objects.create(
-                            user=user,
-                            provider="discord",
-                            uid=user_info["id"],
-                            extra_data=user_info,
+                        # Check if a user with the Discord ID already exists
+                        user = User.objects.get(discord_id=user_info["id"])
+                    except User.DoesNotExist:
+                        # Create a new user
+                        user = User.objects.create_user(
+                            username=user_info["username"],
+                            is_serverowner=True,
+                            discord_id=user_info["id"],
                         )
                         serverowner = ServerOwner.objects.get(user=user)
                         serverowner.discord_id = user_info.get("id", "")
@@ -172,28 +242,18 @@ def discord_callback(request):
                             owner_server.icon = server["icon"]
                             owner_server.save()
 
-                    user.backend = f"{get_backends()[0].__module__}.{get_backends()[0].__class__.__name__}"
-                    login(request, user, backend=user.backend)
-
+                    # Log in the user
+                    login(request, user)
                     return redirect("dashboard_view")
+            else:
+                messages.error(request, "Failed to obtain user information from Discord.")
+                return redirect("index")
         else:
             messages.error(request, "Failed to obtain access token.")
             return redirect("index")
 
     messages.error(request, "Your discord authorization was aborted.")
     return redirect("index")
-
-
-def subscribe_redirect(request):
-    """Redirect the user to Discord authentication."""
-    if request.user.is_authenticated:
-        return redirect("dashboard_view")
-    subdomain = request.GET.get("ref")
-    request.session["subdomain_redirect"] = subdomain
-    discord_client_id = settings.DISCORD_CLIENT_ID
-    redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
-    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"
-    return redirect(redirect_url)
 
 
 @login_required

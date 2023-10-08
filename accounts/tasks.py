@@ -56,7 +56,7 @@ def check_coin_transaction_status():
                                     affiliateinvitee = AffiliateInvitee.objects.get(
                                         invitee_discord_id=subscriber.discord_id,
                                     )
-                                    affiliatepayment = AffiliatePayment.objects.create(  # noqa
+                                    AffiliatePayment.objects.create(
                                         serverowner=subscriber.subscribed_via,
                                         affiliate=affiliateinvitee.affiliate,
                                         subscriber=subscriber,
