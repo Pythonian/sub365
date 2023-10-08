@@ -39,8 +39,8 @@ from .models import (
     Server,
     ServerOwner,
     StripePlan,
+    StripeSubscription,
     Subscriber,
-    Subscription,
     User,
 )
 from .tasks import check_coin_transaction_status, send_affiliate_email
@@ -703,11 +703,11 @@ def subscriber_detail(request, subscriber_id):
     else:
         try:
             # Retrieve the latest active subscription for the subscriber
-            subscription = Subscription.objects.filter(
+            subscription = StripeSubscription.objects.filter(
                 subscriber=subscriber,
-                status=Subscription.SubscriptionStatus.ACTIVE,
+                status=StripeSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
-        except Subscription.DoesNotExist:
+        except StripeSubscription.DoesNotExist:
             subscription = None
 
     template = "serverowner/subscribers/detail.html"
@@ -948,16 +948,16 @@ def subscriber_dashboard(request):
 
         try:
             # Retrieve the latest active subscription for the subscriber
-            latest_subscription = Subscription.objects.filter(
+            latest_subscription = StripeSubscription.objects.filter(
                 subscriber=subscriber,
-                status=Subscription.SubscriptionStatus.ACTIVE,
+                status=StripeSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
-        except Subscription.DoesNotExist:
+        except StripeSubscription.DoesNotExist:
             latest_subscription = None
 
         # Retrieve all the subscriptions done by the subscriber
-        subscriptions = Subscription.objects.filter(subscriber=subscriber).exclude(
-            status=Subscription.SubscriptionStatus.INACTIVE,
+        subscriptions = StripeSubscription.objects.filter(subscriber=subscriber).exclude(
+            status=StripeSubscription.SubscriptionStatus.PENDING,
         )
         subscriptions = mk_paginator(request, subscriptions, 12)
         form = PaymentDetailForm()
@@ -1138,20 +1138,20 @@ def subscription_success(request):
         plan_id = request.GET.get("subscribed_plan")
         plan = get_object_or_404(StripePlan, id=plan_id)
 
-        if Subscription.objects.filter(session_id=session_id).exists():
+        if StripeSubscription.objects.filter(session_id=session_id).exists():
             return redirect("subscriber_dashboard")
 
         try:
             session_info = stripe.checkout.Session.retrieve(session_id)
             subscription_id = session_info.subscription
 
-            subscription = Subscription.objects.create(
+            subscription = StripeSubscription.objects.create(
                 subscriber=subscriber,
                 subscribed_via=subscriber.subscribed_via,
                 plan=plan,
                 subscription_id=subscription_id,
                 session_id=session_id,
-                status=Subscription.SubscriptionStatus.INACTIVE,
+                status=StripeSubscription.SubscriptionStatus.PENDING,
             )
 
             # Save the customer ID to the subscriber
@@ -1201,9 +1201,9 @@ def subscription_cancel(request):
         try:
             # Retrieve the active subscription for the subscriber
             subscription = get_object_or_404(
-                Subscription,
+                StripeSubscription,
                 subscriber=subscriber,
-                status=Subscription.SubscriptionStatus.ACTIVE,
+                status=StripeSubscription.SubscriptionStatus.ACTIVE,
             )
 
             # Cancel the subscription at the end of the billing period
@@ -1211,7 +1211,7 @@ def subscription_cancel(request):
             subscription_stripe.cancel_at_period_end = True
             subscription_stripe.save()
             # Update the Subscription object
-            subscription.status = Subscription.SubscriptionStatus.CANCELED
+            subscription.status = StripeSubscription.SubscriptionStatus.CANCELED
             subscription.save()
 
             messages.success(

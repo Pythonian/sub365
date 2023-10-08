@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import AffiliateInvitee, AffiliatePayment, ServerOwner, Subscription
+from .models import AffiliateInvitee, AffiliatePayment, ServerOwner, StripeSubscription
 from .tasks import send_payment_failed_email
 
 logger = logging.getLogger(__name__)
@@ -41,8 +41,8 @@ def stripe_webhook(request):
         subscription_id = event.data.object.subscription
 
         try:
-            subscription = Subscription.objects.get(subscription_id=subscription_id)
-        except Subscription.DoesNotExist:
+            subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
+        except StripeSubscription.DoesNotExist:
             msg = f"Subscription not found for ID: {subscription_id}"
             logger.exception(msg)
             return HttpResponse(status=404)
@@ -51,7 +51,7 @@ def stripe_webhook(request):
         if event.data.object.status == "paid":
             with transaction.atomic():
                 # Payment was successful
-                subscription.status = Subscription.SubscriptionStatus.ACTIVE
+                subscription.status = StripeSubscription.SubscriptionStatus.ACTIVE
                 subscription.subscription_date = timezone.now()
                 interval_count = subscription.plan.interval_count
                 subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
@@ -90,8 +90,8 @@ def stripe_webhook(request):
         subscription_id = event.data.object.subscription
 
         try:
-            subscription = Subscription.objects.get(subscription_id=subscription_id)
-        except Subscription.DoesNotExist:
+            subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
+        except StripeSubscription.DoesNotExist:
             logger.exception("Subscription not found")
             return HttpResponse(status=404)
 

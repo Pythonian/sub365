@@ -12,8 +12,8 @@ from .models import (
     Server,
     ServerOwner,
     StripePlan,
+    StripeSubscription,
     Subscriber,
-    Subscription,
     User,
 )
 
@@ -259,9 +259,9 @@ class CoinSubscriptionAdmin(admin.ModelAdmin):
     list_filter = ["status"]
 
 
-@admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
-    """Admin class for managing Subscription instances."""
+@admin.register(StripeSubscription)
+class StripeSubscriptionAdmin(admin.ModelAdmin):
+    """Admin class for managing StripeSubscription instances."""
 
     list_display = ["subscriber", "subscribed_via", "plan", "subscription_date", "expiration_date", "status"]
     search_fields = ["subscriber", "subscribed_via", "plan"]
