@@ -16,7 +16,7 @@
                         month{{ plan.interval_count|pluralize }}</small></h5>
                 <p>{{ plan.description }}</p>
                 <form
-                    action="{% if serverowner.coinpayment_onboarding %}{% url 'subscribe_to_coin_plan' plan_id=plan.id %}{% else %}{% url 'subscribe_to_plan' plan_id=plan.id %}{% endif %}"
+                    action="{% if serverowner.coinpayment_onboarding %}{% url 'subscribe_to_coin_plan' plan_id=plan.id %}{% else %}{% url 'subscribe_to_stripe_plan' plan_id=plan.id %}{% endif %}"
                     method="post">
                     {% csrf_token %}
                     <button class="btn btn-sm btn-primary" type="submit"

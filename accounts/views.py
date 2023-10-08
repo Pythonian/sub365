@@ -1061,7 +1061,7 @@ def subscribe_to_coin_plan(request, plan_id):
 
 @login_required
 @require_POST
-def subscribe_to_plan(request, plan_id):
+def subscribe_to_stripe_plan(request, plan_id):
     plan = get_object_or_404(StripePlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
     if subscriber.stripe_customer_id:
