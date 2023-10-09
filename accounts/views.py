@@ -12,6 +12,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LogoutView
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -587,20 +588,21 @@ def plan_detail(request, plan_id):
 
             if form.is_valid():
                 try:
-                    # Update the product on Stripe
-                    product_params = {
-                        "name": form.cleaned_data["name"],
-                        "description": form.cleaned_data["description"],
-                        "active": True,
-                    }
+                    with transaction.atomic():
+                        # Update the product on Stripe
+                        product_params = {
+                            "name": form.cleaned_data["name"],
+                            "description": form.cleaned_data["description"],
+                            "active": True,
+                        }
 
-                    product = stripe.Product.modify(plan.product_id, **product_params)  # noqa: F841
+                        product = stripe.Product.modify(plan.product_id, **product_params)  # noqa: F841
 
-                    # Save the updated plan details in the database
-                    plan = form.save()
+                        # Save the updated plan details in the database
+                        plan = form.save()
 
-                    messages.success(request, "Your Subscription Plan has been successfully updated.")
-                    return redirect(plan)
+                        messages.success(request, "Your Subscription Plan has been successfully updated.")
+                        return redirect(plan)
                 except stripe.error.StripeError as e:
                     msg = f"An error occurred during a Stripe API call: {e}"
                     logger.exception(msg)

@@ -145,9 +145,9 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Plan objects belonging to the server owner.
         """
         if self.coinpayment_onboarding:
-            return self.coin_plans.all()
+            return self.coinplan_plans.all()
         else:
-            return self.plans.all()
+            return self.stripeplan_plans.all()
 
     def get_plan_count(self):
         """Get the total count of plans created by the server owner.
@@ -156,9 +156,9 @@ class ServerOwner(models.Model):
             int: The total count of plans created by the server owner.
         """
         if self.coinpayment_onboarding:
-            return self.coin_plans.count()
+            return self.coinplan_plans.count()
         else:
-            return self.plans.count()
+            return self.stripeplan_plans.count()
 
     def get_active_plans_count(self):
         """Get the total number of active plans.
@@ -178,9 +178,9 @@ class ServerOwner(models.Model):
             int: The total number of inactive plans.
         """
         if self.coinpayment_onboarding:
-            return self.coin_plans.filter(status=CoinPlan.PlanStatus.INACTIVE.value).count()
+            return self.coinplan_plans.filter(status=CoinPlan.PlanStatus.INACTIVE.value).count()
         else:
-            return self.plans.filter(status=StripePlan.PlanStatus.INACTIVE.value).count()
+            return self.stripeplan_plans.filter(status=StripePlan.PlanStatus.INACTIVE.value).count()
 
     def get_popular_plans(self, limit=3):
         """Get the popular plans created by the ServerOwner based on number of subscribers.
@@ -190,11 +190,11 @@ class ServerOwner(models.Model):
                       in descending order excluding plans with no subscribers.
         """
         if self.coinpayment_onboarding:
-            return self.coin_plans.filter(status=CoinPlan.PlanStatus.ACTIVE, subscriber_count__gt=0).order_by(
+            return self.coinplan_plans.filter(status=CoinPlan.PlanStatus.ACTIVE, subscriber_count__gt=0).order_by(
                 "-subscriber_count",
             )[:limit]
         else:
-            return self.plans.filter(status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0).order_by(
+            return self.stripeplan_plans.filter(status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0).order_by(
                 "-subscriber_count",
             )[:limit]
 
@@ -931,8 +931,8 @@ class AffiliatePayment(models.Model):
         return f"#{self.id}"
 
 
-class StripePlan(models.Model):
-    """Model representing Stripe plans."""
+class BasePlan(models.Model):
+    """Base Model for Subscription plans."""
 
     class PlanStatus(models.TextChoices):
         """Choices for the plan status."""
@@ -948,30 +948,21 @@ class StripePlan(models.Model):
     serverowner = models.ForeignKey(
         ServerOwner,
         on_delete=models.CASCADE,
-        related_name="plans",
+        related_name="%(class)s_plans",
         verbose_name=_("serverowner"),
         help_text=_("The serverowner who created the plan."),
-    )
-    product_id = models.CharField(
-        _("product id"),
-        max_length=100,
-        help_text=_("The product ID associated with the plan."),
-    )
-    price_id = models.CharField(
-        _("price id"),
-        max_length=100,
-        help_text=_("The price ID associated with the plan."),
     )
     name = models.CharField(
         _("name"),
         max_length=100,
-        help_text=_("The name of the Stripe plan."),
+        help_text=_("The name of the plan."),
     )
     amount = models.DecimalField(
         _("amount"),
         max_digits=9,
         decimal_places=2,
         help_text=_("The amount in dollars for the plan."),
+        validators=[MinValueValidator(0)],
     )
     description = models.TextField(
         _("description"),
@@ -1011,18 +1002,36 @@ class StripePlan(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        abstract = True
+
+    def __str__(self) -> str:
+        """Return a string representation of the plan."""
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse("plan_detail", args=[self.id])
+
+
+class StripePlan(BasePlan):
+    """Model representing Stripe plans."""
+
+    product_id = models.CharField(
+        _("product id"),
+        max_length=100,
+        help_text=_("The product ID associated with the plan."),
+    )
+    price_id = models.CharField(
+        _("price id"),
+        max_length=100,
+        help_text=_("The price ID associated with the plan."),
+    )
+
+    class Meta:
         """Metadata options for the StripePlan model."""
 
         ordering = ["-created"]
         verbose_name = _("stripe plan")
         verbose_name_plural = _("stripe plans")
-
-    def __str__(self) -> str:
-        """Return a string representation of the Stripe plan."""
-        return self.name
-
-    def get_absolute_url(self):
-        return reverse("plan_detail", args=[self.id])
 
     def total_earnings(self):
         """Calculate the total earnings from subscriptions to this plan.
@@ -1062,73 +1071,8 @@ class StripePlan(models.Model):
         return subscribers.count()
 
 
-class CoinPlan(models.Model):
+class CoinPlan(BasePlan):
     """Model representing Coinpayment plans."""
-
-    class PlanStatus(models.TextChoices):
-        """Choices for the plan status."""
-
-        ACTIVE = "A", _("Active")
-        INACTIVE = "I", _("Inactive")
-
-    id = models.UUIDField(
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False,
-    )
-    serverowner = models.ForeignKey(
-        ServerOwner,
-        on_delete=models.CASCADE,
-        related_name="coin_plans",
-        verbose_name=_("serverowner"),
-        help_text=_("The serverowner who created the plan."),
-    )
-    name = models.CharField(
-        _("name"),
-        max_length=100,
-        help_text=_("The name of the coin plan."),
-    )
-    amount = models.DecimalField(
-        _("amount"),
-        max_digits=9,
-        decimal_places=2,
-        help_text=_("The amount in dollars for the plan."),
-    )
-    description = models.TextField(
-        _("description"),
-        max_length=300,
-        help_text=_("Description of the plan (up to 300 characters)."),
-    )
-    interval_count = models.IntegerField(
-        _("interval count"),
-        validators=[MinValueValidator(1), MaxValueValidator(12)],
-        help_text=_("The number of months the plan should last."),
-    )
-    subscriber_count = models.IntegerField(
-        _("subscriber count"),
-        default=0,
-        help_text=_("Number of subscriptions to this plan."),
-    )
-    status = models.CharField(
-        _("status"),
-        max_length=1,
-        choices=PlanStatus.choices,
-        default=PlanStatus.ACTIVE,
-        help_text=_("Status of the plan."),
-    )
-    discord_role_id = models.CharField(
-        _("discord role id"),
-        max_length=255,
-        help_text=_("The ID of the Discord role assigned to subscribers."),
-    )
-    permission_description = models.CharField(
-        _("permission description"),
-        max_length=255,
-        blank=True,
-        help_text=_("The description of permissions given to subscribers."),
-    )
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Metadata options for the CoinPlan model."""
@@ -1136,13 +1080,6 @@ class CoinPlan(models.Model):
         ordering = ["-created"]
         verbose_name = _("coin plan")
         verbose_name_plural = _("coin plans")
-
-    def __str__(self) -> str:
-        """Return a string representation of the coin plan."""
-        return self.name
-
-    def get_absolute_url(self):
-        return reverse("plan_detail", args=[self.id])
 
     def total_earnings(self):
         """Calculate the total earnings from subscriptions to this plan.
@@ -1248,7 +1185,7 @@ class BaseSubscription(models.Model):
 
     def __str__(self) -> str:
         """Return a string representation of the subscription."""
-        return f"{self._meta.verbose_name} #{self.id}"
+        return f"#{self.id}"
 
 
 class StripeSubscription(BaseSubscription):

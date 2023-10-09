@@ -108,6 +108,16 @@ class CoinPlanInline(admin.StackedInline):
     model = CoinPlan
     extra = 0
     view_on_site = False
+    readonly_fields = [
+        "name",
+        "amount",
+        "description",
+        "interval_count",
+        "subscriber_count",
+        "status",
+        "discord_role_id",
+        "permission_description",
+    ]
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete CoinPlan instances.
@@ -232,6 +242,93 @@ class ServerOwnerAdmin(admin.ModelAdmin):
         return self.get_all_model_fields(self.model)
 
 
+class CoinSubscriptionInline(admin.StackedInline):
+    """Admin inline class for managing CoinSubscription instances."""
+
+    model = CoinSubscription
+    extra = 0
+    readonly_fields = [
+        "plan",
+        "coin_amount",
+        "address",
+        "checkout_url",
+        "status_url",
+        "subscriber",
+        "subscribed_via",
+        "subscription_id",
+        "subscription_date",
+        "expiration_date",
+        "status",
+        "value",
+    ]
+
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete CoinSubscription instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new CoinSubscription instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
+
+
+class StripeSubscriptionInline(admin.StackedInline):
+    """Admin inline class for managing StripeSubscription instances."""
+
+    model = StripeSubscription
+    extra = 0
+    readonly_fields = [
+        "plan",
+        "session_id",
+        "subscriber",
+        "subscribed_via",
+        "subscription_id",
+        "subscription_date",
+        "expiration_date",
+        "status",
+        "value",
+    ]
+
+    def has_delete_permission(self, request, obj=None):
+        """Determine whether the user has permission to delete StripeSubscription instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to delete, False otherwise.
+        """
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        """Determine whether the user has permission to add new StripeSubscription instances.
+
+        Args:
+            request: The current request.
+            obj (optional): The object being edited.
+
+        Returns:
+            bool: True if the user has permission to add, False otherwise.
+        """
+        return False
+
+
 @admin.register(Subscriber)
 class SubscriberAdmin(admin.ModelAdmin):
     """Admin class for managing Subscriber instances."""
@@ -250,22 +347,21 @@ class SubscriberAdmin(admin.ModelAdmin):
     search_help_text = "Search by username or email"
     view_on_site = False
 
+    def get_inlines(self, request, obj=None):
+        """
+        Returns a list of inline classes to be displayed in the admin change form.
 
-@admin.register(CoinSubscription)
-class CoinSubscriptionAdmin(admin.ModelAdmin):
-    """Admin class for managing CoinSubscription instances."""
+        Args:
+            request (HttpRequest): The HTTP request object.
+            obj (YourModel): The instance of the model being edited.
 
-    list_display = ["subscriber", "plan", "subscription_date", "expiration_date", "coin_amount", "status"]
-    list_filter = ["status"]
-
-
-@admin.register(StripeSubscription)
-class StripeSubscriptionAdmin(admin.ModelAdmin):
-    """Admin class for managing StripeSubscription instances."""
-
-    list_display = ["subscriber", "subscribed_via", "plan", "subscription_date", "expiration_date", "status"]
-    search_fields = ["subscriber", "subscribed_via", "plan"]
-    list_filter = ["status", "subscription_date", "expiration_date"]
+        Returns:
+            list of InlineModelAdmin: A list of inline classes based on conditions.
+        """
+        if obj and obj.subscribed_via.stripe_onboarding:
+            return [StripeSubscriptionInline]
+        elif obj and obj.subscribed_via.coinpayment_onboarding:
+            return [CoinSubscriptionInline]
 
 
 @admin.register(User)
