@@ -1066,66 +1066,40 @@ def subscribe_to_coin_plan(request, plan_id):
 def subscribe_to_stripe_plan(request, plan_id):
     plan = get_object_or_404(StripePlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
-    if subscriber.stripe_customer_id:
-        try:
-            session = stripe.checkout.Session.create(
-                success_url=request.build_absolute_uri(reverse("subscription_success"))
-                + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
-                cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
-                payment_method_types=["us_bank_account"],
-                line_items=[
-                    {
-                        "price": plan.price_id,
-                        "quantity": 1,
-                    },
-                ],
-                mode="subscription",
-                customer=subscriber.stripe_customer_id,
-                subscription_data={
-                    "transfer_data": {
-                        "destination": subscriber.subscribed_via.stripe_account_id,
-                        "amount_percent": 100,
-                    },
-                },
-            )
 
-        except stripe.error.StripeError as e:
-            logger.exception("An error occurred during a Stripe API call: %s", str(e))
-            messages.error(
-                request,
-                "An error occurred while processing your request. Please try again later.",
-            )
-            return redirect("subscriber_dashboard")
-    else:
-        try:
-            session = stripe.checkout.Session.create(
-                success_url=request.build_absolute_uri(reverse("subscription_success"))
-                + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
-                cancel_url=request.build_absolute_uri(reverse("subscriber_dashboard")),
-                payment_method_types=["us_bank_account"],
-                line_items=[
-                    {
-                        "price": plan.price_id,
-                        "quantity": 1,
-                    },
-                ],
-                mode="subscription",
-                customer_email=subscriber.email,
-                subscription_data={
-                    "transfer_data": {
-                        "destination": subscriber.subscribed_via.stripe_account_id,
-                        "amount_percent": 100,
-                    },
-                },
-            )
+    session_data = {
+        "success_url": request.build_absolute_uri(reverse("subscription_success"))
+        + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
+        "cancel_url": request.build_absolute_uri(reverse("subscriber_dashboard")),
+        "payment_method_types": ["us_bank_account"],
+        "line_items": [
+            {
+                "price": plan.price_id,
+                "quantity": 1,
+            }
+        ],
+        "mode": "subscription",
+        "subscription_data": {
+            "transfer_data": {
+                "destination": subscriber.subscribed_via.stripe_account_id,
+                "amount_percent": 100,
+            },
+        },
+    }
 
-        except stripe.error.StripeError as e:
-            logger.exception("An error occurred during a Stripe API call: %s", str(e))
-            messages.error(
-                request,
-                "An error occurred while processing your request. Please try again later.",
-            )
-            return redirect("subscriber_dashboard")
+    try:
+        if subscriber.stripe_customer_id:
+            session_data["customer"] = subscriber.stripe_customer_id
+        else:
+            session_data["customer_email"] = subscriber.email
+        session = stripe.checkout.Session.create(**session_data)
+    except stripe.error.StripeError as e:
+        logger.exception(f"Stripe API Error: {e}")
+        messages.error(
+            request,
+            "An error occurred while processing your request. Please try again later.",
+        )
+        return redirect("subscriber_dashboard")
 
     return redirect(session.url)
 

@@ -37,6 +37,7 @@ jobs:
       AWS_STORAGE_BUCKET_NAME: ""
       SENTRY: ""
       CELERY_BROKER_URL: ""
+      STRIPE_API_VERSION: ""
 
     strategy:
       max-parallel: 4

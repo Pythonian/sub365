@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "storages",
     "django_celery_beat",
     "rest_framework",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
@@ -42,6 +43,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.flatpages.middleware.FlatpageFallbackMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -210,4 +212,8 @@ CELERY_BEAT_SCHEDULE = {
 }
 CELERY_IMPORTS = [
     "accounts.tasks",
+]
+
+INTERNAL_IPS = [
+    "127.0.0.1",
 ]
