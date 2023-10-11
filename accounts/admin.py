@@ -485,6 +485,8 @@ class AffiliateAdmin(admin.ModelAdmin):
         "pending_commissions",
         "pending_coin_commissions",
     ]
+    search_fields = ["subscriber__username", "subscriber__email"]
+    search_help_text = "Search by username or email"
     fieldsets = (
         (
             None,

@@ -18,7 +18,7 @@ clean: ## Clean up the project of unneeded files
 run: ## Run the development server
 	@python manage.py runserver
 
-createsuperuser: ## Create admin superuser
+admin: ## Create admin superuser
 	@python manage.py createsuperuser
 
 shell: ## Start a Django shell

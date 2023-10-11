@@ -1,0 +1,182 @@
+Table User {
+  id integer [pk, increment]
+  password varchar(128) [not null]
+  last_login datetime
+  is_superuser bool [not null]
+  username varchar(150) [not null, unique]
+  first_name varchar(150) [not null]
+  last_name varchar(150) [not null]
+  email varchar(254) [not null]
+  is_staff bool [not null]
+  is_active bool [not null]
+  date_joined datetime [not null]
+  is_serverowner bool [not null]
+  is_subscriber bool [not null]
+  is_affiliate bool [not null]
+  discord_id varchar(255) [not null, unique]
+}
+
+Table ServerOwner {
+  id char(32) [pk]
+  discord_id varchar(255) [not null, unique]
+  username varchar(255) [not null, unique]
+  avatar varchar(255)
+  subdomain varchar(20) [not null]
+  email varchar(254) [not null]
+  stripe_account_id varchar(100)
+  affiliate_commission integer
+  total_pending_commissions decimal [not null]
+  total_coin_pending_commissions decimal [not null]
+  coinpayment_api_secret_key varchar(255)
+  coinpayment_api_public_key varchar(255)
+  coinpayment_onboarding bool [not null]
+  stripe_onboarding bool [not null]
+  created datetime [not null]
+  updated datetime [not null]
+  user_id bigint [not null, ref: > User.id]
+}
+
+Table Subscriber {
+  id char(32) [pk]
+  discord_id varchar(255) [not null, unique]
+  username varchar(255) [not null, unique]
+  avatar varchar(255)
+  email varchar(254) [not null]
+  stripe_customer_id varchar(255)
+  created datetime [not null]
+  updated datetime [not null]
+  subscribed_via_id char(32) [ref: > ServerOwner.id]
+  user_id bigint [not null, ref: > User.id]
+}
+
+Table Affiliate {
+  affiliate_link varchar(255) [unique]
+  discord_id varchar(255) [pk]
+  server_id varchar(255) [not null]
+  last_payment_date datetime
+  total_commissions_paid decimal [not null]
+  total_coin_commissions_paid decimal [not null]
+  pending_commissions decimal [not null]
+  pending_coin_commissions decimal [not null]
+  created datetime [not null]
+  updated datetime [not null]
+  serverowner_id char(32) [not null, ref: > ServerOwner.id]
+}
+
+Table CoinPlan {
+  id char(32) [pk]
+  name varchar(100) [not null]
+  amount decimal [not null]
+  description text [not null]
+  interval_count integer [not null]
+  subscriber_count integer [not null]
+  status varchar(1) [not null]
+  discord_role_id varchar(255) [not null]
+  permission_description varchar(255)
+  created datetime [not null]
+  updated datetime [not null]
+  serverowner_id char(32) [not null, ref: > ServerOwner.id]
+}
+
+
+Table StripePlan {
+  id char(32) [pk]
+  name varchar(100) [not null]
+  amount decimal [not null]
+  description text [not null]
+  interval_count integer [not null]
+  subscriber_count integer [not null]
+  status varchar(1) [not null]
+  discord_role_id varchar(255) [not null]
+  permission_description varchar(255)
+  created datetime [not null]
+  updated datetime [not null]
+  product_id varchar(100) [not null]
+  price_id varchar(100) [not null]
+  serverowner_id char(32) [not null, ref: > ServerOwner.id]
+}
+
+
+Table StripeSubscription {
+  id integer [pk, increment]
+  subscription_id varchar(225) [not null]
+  subscription_date datetime
+  expiration_date datetime
+  status varchar(1) [not null]
+  value integer [not null]
+  created datetime [not null]
+  updated datetime [not null]
+  session_id varchar(200) [not null]
+  plan_id char(32) [not null, ref: > StripePlan.id]
+  subscribed_via_id char(32) [not null, ref: > ServerOwner.id]
+  subscriber_id char(32) [not null, ref: > Subscriber.id]
+}
+
+Table Server {
+  id integer [pk, increment]
+  server_id varchar(100) [not null]
+  name varchar(100) [not null]
+  icon varchar(255)
+  choice_server bool [not null]
+  created datetime [not null]
+  updated datetime [not null]
+  owner_id char(32) [not null, ref: > ServerOwner.id]
+}
+
+Table PaymentDetail {
+  id integer [pk, increment]
+  litecoin_address varchar(255) [not null]
+  body text [not null]
+  created datetime [not null]
+  updated datetime [not null]
+  affiliate_id varchar(255) [not null, ref: > Affiliate.discord_id]
+}
+
+Table CoinSubscription {
+  id integer [pk, increment]
+  subscription_id varchar(225) [not null]
+  subscription_date datetime
+  expiration_date datetime
+  status varchar(1) [not null]
+  value integer [not null]
+  created datetime [not null]
+  updated datetime [not null]
+  coin_amount decimal
+  address varchar(225) [not null]
+  checkout_url varchar(225) [not null]
+  status_url varchar(225) [not null]
+  plan_id char(32) [not null, ref: > CoinPlan.id]
+  subscribed_via_id char(32) [not null, ref: > ServerOwner.id]
+  subscriber_id char(32) [not null, ref: > Subscriber.id]
+}
+
+Table AffiliatePayment {
+  id integer [pk, increment]
+  amount decimal
+  coin_amount decimal
+  paid bool [not null]
+  date_payment_confirmed datetime
+  created datetime [not null]
+  updated datetime [not null]
+  affiliate_id varchar(255) [not null, ref: > Affiliate.discord_id]
+  serverowner_id char(32) [not null, ref: > ServerOwner.id]
+  subscriber_id char(32) [not null, ref: > Subscriber.id]
+}
+
+Table AffiliateInvitee {
+  id integer [pk, increment]
+  invitee_discord_id varchar(255) [not null, unique]
+  created datetime [not null]
+  updated datetime [not null]
+  affiliate_id varchar(255) [not null, ref: > Affiliate.discord_id]
+}
+
+Table AccessCode {
+  id integer [pk, increment]
+  code varchar(5) [not null, unique]
+  is_used bool [not null]
+  date_used datetime
+  created datetime [not null]
+  updated datetime [not null]
+  used_by_id char(32) [ref: > ServerOwner.id]
+}
