@@ -52,7 +52,9 @@ def stripe_webhook(request):
             with transaction.atomic():
                 # Payment was successful
                 subscription.status = StripeSubscription.SubscriptionStatus.ACTIVE
-                subscription.subscription_date = timezone.now()
+                # Set the subscription date if it's a new subscription
+                if subscription.subscription_date is None:
+                    subscription.subscription_date = timezone.now()
                 interval_count = subscription.plan.interval_count
                 subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
                 subscription.save()

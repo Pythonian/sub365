@@ -2,6 +2,7 @@ import uuid
 from decimal import ROUND_DOWN, Decimal
 
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q, Sum
@@ -1198,6 +1199,13 @@ class BaseSubscription(models.Model):
     def __str__(self) -> str:
         """Return a string representation of the subscription."""
         return f"#{self.id}"
+
+    def save(self, *args, **kwargs):
+        if self.status == self.SubscriptionStatus.ACTIVE:
+            # Check if the subscriber already has an active subscription
+            if self.subscriber.has_active_subscription():
+                raise ValidationError("Subscriber already has an active subscription.")
+        super().save(*args, **kwargs)
 
 
 class StripeSubscription(BaseSubscription):
