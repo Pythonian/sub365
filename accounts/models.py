@@ -1272,6 +1272,7 @@ class PaymentDetail(models.Model):
     body = models.TextField(
         _("payment information"),
         blank=True,
+        max_length=300,
         help_text=_("Payment details of the affiliate when registered via Stripe."),
     )
     created = models.DateTimeField(auto_now_add=True)

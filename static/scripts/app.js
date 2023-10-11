@@ -2,7 +2,7 @@ jQuery(function () {
     // Characters remaining counter
     var start = 0;
     var limit = 300;
-    $("#id_description").keyup(function () {
+    $("#id_description, #id_body").keyup(function () {
         start = this.value.length
         if (start > limit) {
             return false;

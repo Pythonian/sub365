@@ -91,6 +91,7 @@
                             {% endfor %}
                             <label class="form-label" for="{{ form.body.id_for_label }}">Payment Method:</label>
                             {% render_field form.body %}
+                            <span class="small" id="remainingCharacters"></span>
                             {% endif %}
                         </div>
                     </div>
