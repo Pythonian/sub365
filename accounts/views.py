@@ -696,18 +696,16 @@ def subscriber_detail(request, subscriber_id):
     if request.user.serverowner.coinpayment_onboarding:
         try:
             # Retrieve the latest active subscription for the subscriber
-            subscription = CoinSubscription.objects.filter(
+            subscription = CoinSubscription.active_subscriptions.filter(
                 subscriber=subscriber,
-                status=CoinSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except CoinSubscription.DoesNotExist:
             subscription = None
     else:
         try:
             # Retrieve the latest active subscription for the subscriber
-            subscription = StripeSubscription.objects.filter(
+            subscription = StripeSubscription.active_subscriptions.filter(
                 subscriber=subscriber,
-                status=StripeSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except StripeSubscription.DoesNotExist:
             subscription = None
@@ -921,17 +919,16 @@ def subscriber_dashboard(request):
     # Retrieve the subscriber based on the logged-in user
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
-    # Retrieve the server owner associated with the subscriber
+    # Retrieve the serverowner associated with the subscriber
     serverowner = subscriber.subscribed_via
 
     if serverowner.coinpayment_onboarding:
-        plans = CoinPlan.objects.filter(serverowner=serverowner, status=CoinPlan.PlanStatus.ACTIVE)
+        plans = CoinPlan.active_plans.filter(serverowner=serverowner)
         plans = mk_paginator(request, plans, 9)
         try:
             # Retrieve the latest active subscription for the subscriber
-            latest_subscription = CoinSubscription.objects.filter(
+            latest_subscription = CoinSubscription.active_subscriptions.filter(
                 subscriber=subscriber,
-                status=CoinSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except CoinSubscription.DoesNotExist:
             latest_subscription = None
@@ -943,16 +940,13 @@ def subscriber_dashboard(request):
         form = CoinPaymentDetailForm()
     else:
         # Retrieve the plans related to the ServerOwner
-        plans = StripePlan.objects.filter(
-            serverowner=serverowner.user.serverowner, status=StripePlan.PlanStatus.ACTIVE
-        )
+        plans = StripePlan.active_plans.filter(serverowner=serverowner)
         plans = mk_paginator(request, plans, 9)
 
         try:
             # Retrieve the latest active subscription for the subscriber
-            latest_subscription = StripeSubscription.objects.filter(
+            latest_subscription = StripeSubscription.active_subscriptions.filter(
                 subscriber=subscriber,
-                status=StripeSubscription.SubscriptionStatus.ACTIVE,
             ).latest()
         except StripeSubscription.DoesNotExist:
             latest_subscription = None

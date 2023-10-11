@@ -9,6 +9,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from .managers import (
+    ActivePlanManager,
+    ActiveSubscriptionManager,
+    PendingSubscriptionManager,
+)
+
 
 class User(AbstractUser):
     """Custom user model with additional fields."""
@@ -358,13 +364,12 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
         if self.coinpayment_onboarding:
-            return CoinSubscription.objects.filter(
+            return CoinSubscription.active_subscriptions.filter(
                 subscribed_via=self,
-                status=CoinSubscription.SubscriptionStatus.ACTIVE,
             )[:limit]
         else:
-            return StripeSubscription.objects.filter(
-                subscribed_via=self, status=StripeSubscription.SubscriptionStatus.ACTIVE
+            return StripeSubscription.active_subscriptions.filter(
+                subscribed_via=self,
             )[:limit]
 
     def get_total_earnings(self):
@@ -1001,6 +1006,9 @@ class BasePlan(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    objects = models.Manager()
+    active_plans = ActivePlanManager()
+
     class Meta:
         abstract = True
 
@@ -1175,6 +1183,10 @@ class BaseSubscription(models.Model):
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
+    objects = models.Manager()
+    active_subscriptions = ActiveSubscriptionManager()
+    pending_subscriptions = PendingSubscriptionManager()
 
     class Meta:
         """Metadata options for the Subscription model."""

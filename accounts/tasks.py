@@ -24,7 +24,7 @@ def check_coin_transaction_status():
         Exception: If an unexpected error occurs during the processing of coin transactions.
     """
     try:
-        pending_subscriptions = CoinSubscription.objects.filter(status=CoinSubscription.SubscriptionStatus.PENDING)
+        pending_subscriptions = CoinSubscription.pending_subscriptions.all()
 
         for coin_subscription in pending_subscriptions:
             try:
@@ -118,8 +118,7 @@ def check_coin_transaction_status():
 def check_and_mark_expired_subscriptions():
     """Periodic task to check and mark expired coin subscriptions."""
     now = timezone.now()
-    expired_subscriptions = CoinSubscription.objects.filter(
-        status=CoinSubscription.SubscriptionStatus.ACTIVE,
+    expired_subscriptions = CoinSubscription.active_subscriptions.filter(
         expiration_date__lte=now,
     )
 
