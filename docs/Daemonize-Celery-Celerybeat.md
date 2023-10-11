@@ -97,10 +97,8 @@
     EnvironmentFile=/etc/default/celeryd
     WorkingDirectory=/home/username/projectdir
 
-    ExecStartPre=/bin/bash -c '/bin/mkdir -p /var/run/celery'
-    ExecStartPre=/bin/bash -c '/bin/chown celery:celery /var/run/celery'
-    ConditionPathExists=!/var/run/celery
-    ConditionPathIsDirectory=/var/run/celery
+    ExecStartPre=/bin/bash -c 'if [ ! -d /var/run/celery ]; then /bin/mkdir -p /var/run/celery; fi'
+    ExecStartPre=/bin/bash -c 'if [ ! -d /var/run/celery ]; then /bin/chown celery:celery /var/run/celery; fi'
 
     ExecStart=/home/username/projectdir/venv/bin/celery multi start ${CELERYD_NODES} \
         -A ${CELERY_APP} --pidfile=${CELERYD_PID_FILE} \

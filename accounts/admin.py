@@ -209,12 +209,14 @@ class ServerOwnerAdmin(admin.ModelAdmin):
             obj (YourModel): The instance of the model being edited.
 
         Returns:
-            list of InlineModelAdmin: A list of inline classes based on conditions.
+            list of InlineModelAdmin: A list of inline classes based on conditions or None.
         """
-        if obj and obj.stripe_onboarding:
-            return [ServerInline, StripePlanInline]
-        elif obj and obj.coinpayment_onboarding:
-            return [ServerInline, CoinPlanInline]
+        if obj:
+            if obj.stripe_onboarding:
+                return [ServerInline, StripePlanInline]
+            elif obj.coinpayment_onboarding:
+                return [ServerInline, CoinPlanInline]
+        return []
 
     def get_all_model_fields(self, model):
         """
@@ -356,12 +358,14 @@ class SubscriberAdmin(admin.ModelAdmin):
             obj (YourModel): The instance of the model being edited.
 
         Returns:
-            list of InlineModelAdmin: A list of inline classes based on conditions.
+            list of InlineModelAdmin: A list of inline classes based on conditions or None.
         """
-        if obj and obj.subscribed_via.stripe_onboarding:
-            return [StripeSubscriptionInline]
-        elif obj and obj.subscribed_via.coinpayment_onboarding:
-            return [CoinSubscriptionInline]
+        if obj:
+            if obj.subscribed_via.stripe_onboarding:
+                return [StripeSubscriptionInline]
+            elif obj.subscribed_via.coinpayment_onboarding:
+                return [CoinSubscriptionInline]
+        return []
 
 
 @admin.register(User)
