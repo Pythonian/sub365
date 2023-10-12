@@ -97,8 +97,15 @@ def stripe_webhook(request):
             logger.exception("Subscription not found")
             return HttpResponse(status=404)
 
-        # Delete the subscription from the database
-        subscription.delete()
+        # Check the current status of the subscription
+        if subscription.status == StripeSubscription.SubscriptionStatus.PENDING:
+            # This is a new subscription that failed, delete it
+            subscription.delete()
+        else:
+            # This is a renewal subscription that failed, mark it as expired
+            subscription.status = StripeSubscription.SubscriptionStatus.EXPIRED
+            subscription.expiration_date = timezone.now()
+            subscription.save()
 
         # Send a notification to the subscriber
         send_payment_failed_email.delay(subscription.subscriber.email)
