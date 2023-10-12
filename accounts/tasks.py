@@ -35,69 +35,64 @@ def check_coin_transaction_status():
                     "HMAC": create_hmac_signature(data, coin_subscription.subscribed_via.coinpayment_api_secret_key),
                 }
                 response = requests.post(endpoint, data=data, headers=header)
-                result = response.json()["result"]
-                # TODO: merge lines 41 and 42 to reduce if branches.
-                # Also can batch create/update be used?
+                result = response.json().get("result")
+
                 if isinstance(result, dict):
-                    if result.get("status") == 100:
-                        if coin_subscription.status == CoinSubscription.SubscriptionStatus.PENDING:
-                            with transaction.atomic():
-                                coin_subscription.status = CoinSubscription.SubscriptionStatus.ACTIVE
-                                coin_subscription.subscription_date = timezone.now()
-                                interval_count = coin_subscription.plan.interval_count
-                                coin_subscription.expiration_date = timezone.now() + relativedelta(
-                                    months=interval_count,
+                    status = result.get("status")
+                    if status == 100 and coin_subscription.status == CoinSubscription.SubscriptionStatus.PENDING:
+                        with transaction.atomic():
+                            coin_subscription.status = CoinSubscription.SubscriptionStatus.ACTIVE
+                            coin_subscription.subscription_date = timezone.now()
+                            interval_count = coin_subscription.plan.interval_count
+                            coin_subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
+                            coin_subscription.save()
+
+                            subscriber = coin_subscription.subscriber
+
+                            try:
+                                affiliateinvitee = AffiliateInvitee.objects.get(
+                                    invitee_discord_id=subscriber.discord_id
                                 )
-                                coin_subscription.save()
+                                AffiliatePayment.objects.create(
+                                    serverowner=subscriber.subscribed_via,
+                                    affiliate=affiliateinvitee.affiliate,
+                                    subscriber=subscriber,
+                                    amount=affiliateinvitee.get_affiliate_commission_payment(),
+                                    coin_amount=affiliateinvitee.get_affiliate_coin_commission_payment(),
+                                )
 
-                                subscriber = coin_subscription.subscriber
+                                affiliateinvitee.affiliate.update_last_payment_date()
+                                affiliateinvitee.affiliate.pending_coin_commissions = (
+                                    F("pending_coin_commissions")
+                                    + affiliateinvitee.get_affiliate_coin_commission_payment()
+                                )
+                                affiliateinvitee.affiliate.pending_commissions = (
+                                    F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                                )
+                                affiliateinvitee.affiliate.save()
 
-                                try:
-                                    affiliateinvitee = AffiliateInvitee.objects.get(
-                                        invitee_discord_id=subscriber.discord_id,
-                                    )
-                                    AffiliatePayment.objects.create(
-                                        serverowner=subscriber.subscribed_via,
-                                        affiliate=affiliateinvitee.affiliate,
-                                        subscriber=subscriber,
-                                        amount=affiliateinvitee.get_affiliate_commission_payment(),
-                                        coin_amount=affiliateinvitee.get_affiliate_coin_commission_payment(),
-                                    )
+                                subscriber.subscribed_via.total_coin_pending_commissions = (
+                                    F("total_coin_pending_commissions")
+                                    + affiliateinvitee.get_affiliate_coin_commission_payment()
+                                )
+                                subscriber.subscribed_via.total_pending_commissions = (
+                                    F("total_pending_commissions")
+                                    + affiliateinvitee.get_affiliate_commission_payment()
+                                )
+                                subscriber.subscribed_via.save()
 
-                                    affiliateinvitee.affiliate.update_last_payment_date()
-                                    affiliateinvitee.affiliate.pending_coin_commissions = (
-                                        F("pending_coin_commissions")
-                                        + affiliateinvitee.get_affiliate_coin_commission_payment()
-                                    )
-                                    affiliateinvitee.affiliate.pending_commissions = (
-                                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
-                                    )
-                                    affiliateinvitee.affiliate.save()
+                            except AffiliateInvitee.DoesNotExist:
+                                affiliateinvitee = None
 
-                                    subscriber.subscribed_via.total_coin_pending_commissions = (
-                                        F("total_coin_pending_commissions")
-                                        + affiliateinvitee.get_affiliate_coin_commission_payment()
-                                    )
-                                    subscriber.subscribed_via.total_pending_commissions = (
-                                        F("total_pending_commissions")
-                                        + affiliateinvitee.get_affiliate_commission_payment()
-                                    )
-                                    subscriber.subscribed_via.save()
-
-                                except AffiliateInvitee.DoesNotExist:
-                                    affiliateinvitee = None
-
-                                # Increment the subscriber count for the plan
-                                plan = coin_subscription.plan
-                                plan.subscriber_count = F("subscriber_count") + 1
-                                plan.save()
-                        else:
-                            pass
-                    elif result.get("status") == -1:
+                            # Increment the subscriber count for the plan
+                            plan = coin_subscription.plan
+                            plan.subscriber_count = F("subscriber_count") + 1
+                            plan.save()
+                    elif status == -1:
                         # Transaction failed, Delete the subscription object
                         coin_subscription.delete()
                     else:
-                        msg = f"Transaction ID: {coin_subscription.subscription_id}, status: {result.get('status')}"
+                        msg = f"Transaction ID: {coin_subscription.subscription_id}, status: {status}"
                         logger.warning(msg)
                 else:
                     logger.warning(f"Unexpected format for 'result': {result}")
