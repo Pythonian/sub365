@@ -8,7 +8,7 @@
                 <h5 class="modal-title" id="affiliateModalLabel">Become an Affiliate</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{% url 'upgrade_to_affiliate' %}" method="post">
+            <form action="{% url 'affiliate_upgrade' %}" method="post">
                 {% csrf_token %}
                 <div class="modal-body">
                     <p>You will be upgraded to an Affiliate and be able to invite users to the server <span

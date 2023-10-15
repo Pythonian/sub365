@@ -370,7 +370,7 @@ class CoinPlanForm(forms.ModelForm):
         return permission_description
 
 
-class PaymentDetailForm(forms.ModelForm):
+class StripePaymentDetailForm(forms.ModelForm):
     class Meta:
         model = PaymentDetail
         fields = ["body"]

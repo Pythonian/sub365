@@ -29,8 +29,8 @@ from .forms import (
     CoinpaymentsOnboardingForm,
     CoinPlanForm,
     OnboardingForm,
-    PaymentDetailForm,
     PlanForm,
+    StripePaymentDetailForm,
 )
 from .models import (
     Affiliate,
@@ -84,7 +84,7 @@ def discord_login(request):
     # Construct the Discord OAuth2 authorization URL
     authorization_url = f"{discord_oauth2_authorization_url}?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email+connections+guilds&state={state}"
 
-    # Store the generated state value in the session
+    # Store the generated state value in the session for later use
     request.session["discord_oauth_state"] = state
 
     # Redirect the user to the Discord OAuth2 authorization URL
@@ -94,10 +94,6 @@ def discord_login(request):
 def subscribe_redirect(request):
     """
     View for redirecting a new subscriber to Discord for authentication.
-
-    If the user is already authenticated, they are redirected to the dashboard view.
-    Stores the subdomain in the session for later use and constructs the Discord OAuth2
-    authorization URL with the necessary parameters for subscription.
 
     Args:
         request (HttpRequest): The HTTP request object.
@@ -129,6 +125,8 @@ def subscribe_redirect(request):
 
 
 def discord_callback(request):
+    """Handles the callback URL for Discord OAuth authorization."""
+
     # Retrieve values from the URL parameters
     code = request.GET.get("code")
     state = request.GET.get("state")
@@ -175,7 +173,9 @@ def discord_callback(request):
                     except User.DoesNotExist:
                         # Create a new user
                         user = User.objects.create_user(
-                            username=user_info["username"], is_subscriber=True, discord_id=user_info["id"]
+                            username=user_info["username"],
+                            is_subscriber=True,
+                            discord_id=user_info["id"],
                         )
                         subscriber = Subscriber.objects.get(user=user)
                         subscriber.discord_id = user_info.get("id", "")
@@ -205,11 +205,7 @@ def discord_callback(request):
                                 # Check if user owns the server
                                 if serverowner:
                                     owned_servers.append(
-                                        {
-                                            "id": server_id,
-                                            "name": server_name,
-                                            "icon": server_icon,
-                                        },
+                                        {"id": server_id, "name": server_name, "icon": server_icon},
                                     )
                     else:
                         # Redirect user and show a message to create a server
@@ -242,8 +238,6 @@ def discord_callback(request):
                             owner_server.name = server["name"]
                             owner_server.icon = server["icon"]
                             owner_server.save()
-
-                    # Log in the user
                     login(request, user)
                     return redirect("dashboard_view")
             else:
@@ -342,12 +336,12 @@ def onboarding_crypto(request):
                 # RequestException includes issues like network errors, invalid responses etc.
                 msg = f"Failed to verify Coinbase API keys: {e}"
                 logger.exception(msg)
-                form.add_error(None, f"Failed to verify Coinbase API keys: {e}")
+                form.add_error(None, "Failed to verify Coinbase API keys. Please try again.")
             except ValueError as e:
                 # Raised if there is an issue with parsing JSON response
                 msg = f"Failed to verify Coinbase API keys: {e}"
                 logger.exception(msg)
-                form.add_error(None, f"Failed to parse API response: {e}")
+                form.add_error(None, "Failed to parse API response. Please try again.")
             except Exception as e:
                 # Catch any other unexpected exceptions and log them
                 msg = f"An unexpected error occurred: {e}"
@@ -389,7 +383,7 @@ def create_stripe_account(request):
 
     connected_account = stripe.Account.create(
         type="standard",
-        email=request.user.serverowner.email,
+        # email=serverowner.email,
     )
 
     # Retrieve the Stripe account ID
@@ -462,7 +456,7 @@ def delete_account(request):
 
 
 ##################################################
-#                   SERVER OWNER                 #
+#                   SERVEROWNERS                 #
 ##################################################
 
 
@@ -723,6 +717,30 @@ def subscriber_detail(request, subscriber_id):
 @login_required
 @onboarding_completed
 def affiliates(request):
+    """
+    Display a list of affiliates associated with the current serverowner.
+
+    Args:
+        - request (HttpRequest): The HTTP request object.
+
+    Returns:
+        - HttpResponse: A rendered HTML template displaying a list of affiliates.
+
+    Raises:
+        - Http404: If the current user is not associated with a server owner or if the serverowner's onboarding process is not completed, a 404 error is raised to indicate that the resource does not exist.
+
+    Template:
+        "serverowner/affiliate/list.html"
+
+    Context:
+        - "serverowner" (ServerOwner): The ServerOwner instance associated with the logged-in user.
+        - "affiliates" (Paginator): A paginated list of affiliates, with each page containing up to 9 affiliates.
+
+    Decorators:
+        - "login_required": ensures that only authenticated serverowners can access this view.
+        - "onboarding_completed": ensures the serverowner has completed the onboarding process to access this view.
+    """
+
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     affiliates = Affiliate.objects.filter(serverowner=serverowner)
@@ -739,6 +757,32 @@ def affiliates(request):
 
 @login_required
 def affiliate_detail(request, subscriber_id):
+    """
+    Display information about an affiliate and their invitees.
+
+    Args:
+        - request (HttpRequest): The HTTP request object.
+        - subscriber_id (uuid): The unique identifier of the associated subscriber for the affiliate.
+
+    Returns:
+        - HttpResponse: A rendered HTML template displaying the affiliate's details and invitees.
+
+    Raises:
+        - Http404: If either the subscriber with the provided ID or the affiliate for that subscriber
+                   is not found, a 404 error is raised to indicate the resource does not exist.
+
+    Template:
+        "serverowner/affiliate/detail.html"
+
+    Context:
+        - "affiliate" (Affiliate): The Affiliate instance for the provided subscriber.
+        - "invitations" (Paginator): A paginated list of affiliate invitees, with each page containing
+          up to 12 invitees.
+
+    Decorators:
+        - "login_required": ensures that only authenticated serverowners can access this view.
+    """
+
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
     invitations = affiliate.get_affiliate_invitees()
@@ -956,7 +1000,7 @@ def subscriber_dashboard(request):
             status=StripeSubscription.SubscriptionStatus.PENDING,
         )
         subscriptions = mk_paginator(request, subscriptions, 12)
-        form = PaymentDetailForm()
+        form = StripePaymentDetailForm()
 
     template = "subscriber/dashboard.html"
 
@@ -1169,25 +1213,26 @@ def subscription_cancel(request):
         return redirect("subscriber_dashboard")
     else:
         try:
-            # Retrieve the active subscription for the subscriber
-            subscription = get_object_or_404(
-                StripeSubscription,
-                subscriber=subscriber,
-                status=StripeSubscription.SubscriptionStatus.ACTIVE,
-            )
+            with transaction.atomic():
+                # Retrieve the active subscription for the subscriber
+                subscription = get_object_or_404(
+                    StripeSubscription,
+                    subscriber=subscriber,
+                    status=StripeSubscription.SubscriptionStatus.ACTIVE,
+                )
 
-            # Cancel the subscription at the end of the billing period
-            subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
-            subscription_stripe.cancel_at_period_end = True
-            subscription_stripe.save()
-            # Update the Subscription object
-            subscription.status = StripeSubscription.SubscriptionStatus.CANCELED
-            subscription.save()
+                # Cancel the subscription at the end of the billing period
+                subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
+                subscription_stripe.cancel_at_period_end = True
+                subscription_stripe.save()
+                # Update the Subscription object
+                subscription.status = StripeSubscription.SubscriptionStatus.CANCELED
+                subscription.save()
 
-            messages.success(
-                request,
-                f"Your subscription has been canceled successfully. It will not be renewed when it expires on {subscription.expiration_date.strftime('%B %d, %Y')}",
-            )
+                messages.success(
+                    request,
+                    f"Your subscription has been canceled successfully. It will not be renewed when it expires on {subscription.expiration_date.strftime('%B %d, %Y')}",
+                )
         except stripe.error.StripeError as e:
             msg = f"An error occurred during a Stripe API call: {e}"
             logger.exception(msg)
@@ -1215,7 +1260,7 @@ def subscription_cancel(request):
 
 @login_required
 @require_POST
-def upgrade_to_affiliate(request):
+def affiliate_upgrade(request):
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     # Check if the subscriber already has an affiliate object
@@ -1229,31 +1274,37 @@ def upgrade_to_affiliate(request):
     if subscriber.subscribed_via.coinpayment_onboarding:
         form = CoinPaymentDetailForm(request.POST)
     else:
-        form = PaymentDetailForm(request.POST)
+        form = StripePaymentDetailForm(request.POST)
 
     if form.is_valid():
-        # Form is valid, create affiliate and update user role
-        affiliate = Affiliate.objects.create(
-            subscriber=subscriber,
-            serverowner=subscriber.subscribed_via,
-            discord_id=subscriber.discord_id,
-            server_id=subscriber.subscribed_via.get_choice_server().server_id,
-        )
+        try:
+            with transaction.atomic():
+                # Form is valid, create affiliate and update user role
+                affiliate = Affiliate.objects.create(
+                    subscriber=subscriber,
+                    serverowner=subscriber.subscribed_via,
+                    discord_id=subscriber.discord_id,
+                    server_id=subscriber.subscribed_via.get_choice_server().server_id,
+                )
 
-        payment_detail = form.save(commit=False)
-        payment_detail.affiliate = affiliate
-        payment_detail.save()
+                payment_detail = form.save(commit=False)
+                payment_detail.affiliate = affiliate
+                payment_detail.save()
 
-        # Update the user's role to be an affiliate
-        subscriber.user.is_affiliate = True
-        subscriber.user.save()
+                # Update the user's role to be an affiliate
+                subscriber.user.is_affiliate = True
+                subscriber.user.save()
 
-        messages.success(request, "You have upgraded to being an Affiliate.")
-        return redirect("affiliate_dashboard")
+                messages.success(request, "You have upgraded to being an Affiliate.")
+                return redirect("affiliate_dashboard")
+        except Exception:
+            # Handle any exceptions that might occur during the transaction
+            messages.error(request, "An error occurred while upgrading to an affiliate.")
     else:
         # Form is invalid, display error message
         messages.error(request, "An error occurred while submitting your form. Please re-enter your address.")
-        return redirect("subscriber_dashboard")
+
+    return redirect("subscriber_dashboard")
 
 
 ##################################################
@@ -1263,10 +1314,49 @@ def upgrade_to_affiliate(request):
 
 @login_required
 def affiliate_dashboard(request):
+    """
+    Display the affiliate dashboard and allow the logged-in affiliate to update payment details.
+
+    This view provides the affiliate's dashboard, allowing them to view and update their payment details.
+    The affiliate's payment method options, either CoinPayments or Stripe, depend on their linked server owner's
+    onboarding status. Affiliates can update their payment details using the respective forms.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: A rendered HTML template displaying the affiliate's dashboard and payment detail forms.
+
+    Raises:
+        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber
+                 does not exist, a 404 error is raised to indicate that the resource does not exist.
+
+    Template:
+        "affiliate/dashboard.html"
+
+    Context:
+        - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
+        - "form" (Form): The payment detail form based on the affiliate's selected payment method.
+
+    Note:
+        This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.
+
+        The view checks the onboarding status of the affiliate's linked server owner. If the server owner has
+        completed the CoinPayments onboarding process, the CoinPaymentDetailForm is used. Otherwise, the
+        StripePaymentDetailForm is used.
+
+        The affiliate can update their payment details using the respective form. Successful form submissions
+        result in a confirmation message, while invalid submissions display an error message.
+    """
+
+    # Retrieve the affiliate associated with the subscriber of the logged-in user
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+
+    # Get the affiliate's payment detail instance
     payment_detail = affiliate.paymentdetail
 
     if affiliate.serverowner.coinpayment_onboarding:
+        # Use CoinPaymentDetailForm for affiliates linked to serverowners with CoinPayments onboarding
         if request.method == "POST":
             form = CoinPaymentDetailForm(request.POST, instance=payment_detail)
             if form.is_valid():
@@ -1275,33 +1365,63 @@ def affiliate_dashboard(request):
                 messages.success(request, "Your payment detail has been updated.")
                 return redirect("affiliate_dashboard")
             else:
-                messages.error(request, "An error occured while submitting your form.")
+                messages.error(request, "An error occurred while submitting your form.")
         else:
             form = CoinPaymentDetailForm(instance=payment_detail)
     else:
+        # Use StripePaymentDetailForm for affiliates linked to server owners without CoinPayments onboarding
         if request.method == "POST":
-            form = PaymentDetailForm(request.POST, instance=payment_detail)
+            form = StripePaymentDetailForm(request.POST, instance=payment_detail)
             if form.is_valid():
                 payment_detail = form.save(commit=False)
                 payment_detail.save()
                 messages.success(request, "Your payment detail has been updated.")
                 return redirect("affiliate_dashboard")
             else:
-                messages.error(request, "An error occured while submitting your form.")
+                messages.error(request, "An error occurred while submitting your form.")
         else:
-            form = PaymentDetailForm(instance=payment_detail)
+            form = StripePaymentDetailForm(instance=payment_detail)
 
+    # Define the template and context for rendering
     template = "affiliate/dashboard.html"
     context = {
         "affiliate": affiliate,
         "form": form,
     }
 
+    # Render the template with the provided context
     return render(request, template, context)
 
 
 @login_required
 def affiliate_payments(request):
+    """
+    Display a list of payments received by the logged-in affiliate.
+
+    This view provides a paginated list of payments received by the logged-in affiliate, based on the subscriber
+    linked to the current user.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: A rendered HTML template displaying a list of affiliate payments.
+
+    Raises:
+        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber
+                 does not exist, a 404 error is raised to indicate that the resource does not exist.
+
+    Template:
+        "affiliate/payments.html"
+
+    Context:
+        - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
+        - "payments" (Paginator): A paginated list of affiliate payments, with each page containing up to 12 payments.
+
+    Note:
+        This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.
+    """
+
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     payments = affiliate.get_affiliate_payments()
     payments = mk_paginator(request, payments, 12)
@@ -1317,6 +1437,34 @@ def affiliate_payments(request):
 
 @login_required
 def affiliate_invitees(request):
+    """
+    Display a list of invitees associated with the logged-in affiliate.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: A rendered HTML template displaying a list of affiliate invitees.
+
+    Raises:
+        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber
+                 does not exist, a 404 error is raised to indicate that the resource does not exist.
+
+    Template:
+        "affiliate/invitees.html"
+
+    Context:
+        - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
+        - "invitations" (Paginator): A paginated list of affiliate invitees, with each page containing
+          up to 12 invitees.
+
+    Example URL:
+        /affiliate/invitees/
+
+    Note:
+        This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.
+    """
+
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     invitations = affiliate.get_affiliate_invitees()
     invitations = mk_paginator(request, invitations, 12)

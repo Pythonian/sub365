@@ -16,7 +16,7 @@ urlpatterns = [
         include(
             [
                 path("", views.affiliate_dashboard, name="affiliate_dashboard"),
-                path("upgrade/", views.upgrade_to_affiliate, name="upgrade_to_affiliate"),
+                path("upgrade/", views.affiliate_upgrade, name="affiliate_upgrade"),
                 path("payments/", views.affiliate_payments, name="affiliate_payments"),
                 path("invitees/", views.affiliate_invitees, name="affiliate_invitees"),
             ],
