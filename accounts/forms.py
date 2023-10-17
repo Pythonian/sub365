@@ -137,21 +137,6 @@ class OnboardingForm(forms.Form):
             raise forms.ValidationError(msg)
         return affiliate_commission
 
-    def clean_server(self):
-        """Validate that the server is not already chosen by another user."""
-        server = self.cleaned_data.get("server")
-        subdomain = self.cleaned_data.get("subdomain")
-
-        if server and server.choice_server:
-            selected_server_id = server.id
-            if (
-                selected_server_id
-                and ServerOwner.objects.filter(server_id=selected_server_id, subdomain=subdomain).exists()
-            ):
-                msg = "This server has already been chosen by another user."
-                raise forms.ValidationError(msg)
-        return server
-
     def clean_access_code(self):
         access_code = self.cleaned_data.get("access_code")
         try:
