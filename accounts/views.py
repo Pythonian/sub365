@@ -968,7 +968,6 @@ def subscriber_dashboard(request):
 
     if serverowner.coinpayment_onboarding:
         plans = CoinPlan.active_plans.filter(serverowner=serverowner)
-        plans = mk_paginator(request, plans, 9)
         try:
             # Retrieve the latest active subscription for the subscriber
             latest_subscription = CoinSubscription.active_subscriptions.filter(
@@ -985,8 +984,6 @@ def subscriber_dashboard(request):
     else:
         # Retrieve the plans related to the ServerOwner
         plans = StripePlan.active_plans.filter(serverowner=serverowner)
-        plans = mk_paginator(request, plans, 9)
-
         try:
             # Retrieve the latest active subscription for the subscriber
             latest_subscription = StripeSubscription.active_subscriptions.filter(
@@ -1447,8 +1444,7 @@ def affiliate_invitees(request):
         HttpResponse: A rendered HTML template displaying a list of affiliate invitees.
 
     Raises:
-        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber
-                 does not exist, a 404 error is raised to indicate that the resource does not exist.
+        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber does not exist, a 404 error is raised to indicate that the resource does not exist.
 
     Template:
         "affiliate/invitees.html"
@@ -1457,9 +1453,6 @@ def affiliate_invitees(request):
         - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
         - "invitations" (Paginator): A paginated list of affiliate invitees, with each page containing
           up to 12 invitees.
-
-    Example URL:
-        /affiliate/invitees/
 
     Note:
         This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.

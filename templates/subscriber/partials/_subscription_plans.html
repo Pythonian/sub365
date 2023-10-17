@@ -29,12 +29,6 @@
         </div>
     </div>
     {% endfor %}
-    <div class="d-flex justify-content-between mt-4">
-        <p class="text-body-secondary">Showing <span>{{ plans.start_index }}-{{ plans.end_index }}</span>
-            of <span>{{ plans.paginator.count }}</span>
-            plan{{ plans.paginator.count|pluralize }}</p>
-        <div>{% include 'partials/_pagination.html' with page_obj=plans %}</div>
-    </div>
 </div>
 {% else %}
 <div class="text-center py-5">
