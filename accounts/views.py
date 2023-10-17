@@ -383,7 +383,7 @@ def create_stripe_account(request):
 
     connected_account = stripe.Account.create(
         type="standard",
-        # email=serverowner.email,
+        email=serverowner.email,
     )
 
     # Retrieve the Stripe account ID
