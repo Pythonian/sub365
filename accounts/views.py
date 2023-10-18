@@ -23,7 +23,7 @@ from requests.exceptions import RequestException
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .decorators import onboarding_completed
+from .decorators import onboarding_completed, redirect_authenticated_user
 from .forms import (
     CoinPaymentDetailForm,
     CoinpaymentsOnboardingForm,
@@ -55,6 +55,7 @@ def index(request):
     return render(request, "index.html")
 
 
+@redirect_authenticated_user
 def discord_login(request):
     """
     View for initiating Discord OAuth2 authentication.
@@ -65,9 +66,6 @@ def discord_login(request):
     Returns:
         HttpResponseRedirect: Redirects the user to the Discord OAuth2 authorization URL.
     """
-    if request.user.is_authenticated:
-        # If the user is already authenticated, redirect to the dashboard view
-        return redirect("dashboard_view")
 
     # Discord OAuth2 authorization endpoint URL
     discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
@@ -91,6 +89,7 @@ def discord_login(request):
     return redirect(authorization_url)
 
 
+@redirect_authenticated_user
 def subscribe_redirect(request):
     """
     View for redirecting a new subscriber to Discord for authentication.
@@ -101,9 +100,6 @@ def subscribe_redirect(request):
     Returns:
         HttpResponseRedirect: Redirects the user to the Discord OAuth2 authorization URL for subscription.
     """
-    if request.user.is_authenticated:
-        # If the user is already authenticated, redirect to the dashboard view
-        return redirect("dashboard_view")
 
     # Get the subdomain from the query parameters
     subdomain = request.GET.get("ref")
@@ -124,6 +120,7 @@ def subscribe_redirect(request):
     return redirect(redirect_url)
 
 
+@redirect_authenticated_user
 def discord_callback(request):
     """Handles the callback URL for Discord OAuth authorization."""
 
@@ -371,6 +368,7 @@ def dashboard_view(request):
     elif user.is_subscriber and not user.is_affiliate:
         return redirect("subscriber_dashboard")
     else:
+        messages.info(request, "You don't have the permission to access that. Please logout and retry.")
         return redirect("index")
 
 
