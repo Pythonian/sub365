@@ -23,7 +23,11 @@ from requests.exceptions import RequestException
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .decorators import onboarding_completed, redirect_authenticated_user
+from .decorators import (
+    onboarding_completed,
+    redirect_authenticated_user,
+    stripe_onboarding_required,
+)
 from .forms import (
     CoinPaymentDetailForm,
     CoinpaymentsOnboardingForm,
@@ -57,20 +61,9 @@ def index(request):
 
 @redirect_authenticated_user
 def discord_login(request):
-    """
-    View for initiating Discord OAuth2 authentication.
+    """View for initiating Discord OAuth2 authentication."""
 
-    Args:
-        request (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponseRedirect: Redirects the user to the Discord OAuth2 authorization URL.
-    """
-
-    # Discord OAuth2 authorization endpoint URL
     discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
-
-    # Discord OAuth2 client ID
     discord_client_id = settings.DISCORD_CLIENT_ID
 
     # Generate a random state value for CSRF protection
@@ -85,21 +78,12 @@ def discord_login(request):
     # Store the generated state value in the session for later use
     request.session["discord_oauth_state"] = state
 
-    # Redirect the user to the Discord OAuth2 authorization URL
     return redirect(authorization_url)
 
 
 @redirect_authenticated_user
 def subscribe_redirect(request):
-    """
-    View for redirecting a new subscriber to Discord for authentication.
-
-    Args:
-        request (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponseRedirect: Redirects the user to the Discord OAuth2 authorization URL for subscription.
-    """
+    """View for redirecting a new subscriber to Discord for authentication."""
 
     # Get the subdomain from the query parameters
     subdomain = request.GET.get("ref")
@@ -107,7 +91,6 @@ def subscribe_redirect(request):
     # Store the subdomain in the session for later use
     request.session["subdomain_redirect"] = subdomain
 
-    # Discord OAuth2 client ID
     discord_client_id = settings.DISCORD_CLIENT_ID
 
     # Build the URL path the user will be redirected to after authentication
@@ -116,7 +99,6 @@ def subscribe_redirect(request):
     # Construct the Discord OAuth2 authorization URL
     redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"
 
-    # Redirect the user to the Discord OAuth2 authorization URL
     return redirect(redirect_url)
 
 
@@ -373,47 +355,35 @@ def dashboard_view(request):
 
 
 @login_required
+@stripe_onboarding_required
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
     serverowner = request.user.serverowner
-    if serverowner.coinpayment_onboarding:
-        return redirect("dashboard")
 
     connected_account = stripe.Account.create(
         type="standard",
         email=serverowner.email,
     )
 
-    # Retrieve the Stripe account ID
+    # Retrieve the created Stripe account ID
     stripe_account_id = connected_account.id
 
-    try:
-        # Update the Stripe account ID for the current user
-        serverowner.stripe_account_id = stripe_account_id
-        serverowner.save()
-    except ObjectDoesNotExist:
-        messages.error(request, "You have tresspassed to forbidden territory.")
-        return redirect("index")
+    # Update the Stripe account ID for the current user
+    serverowner.stripe_account_id = stripe_account_id
+    serverowner.save()
 
     return redirect("collect_user_info")
 
 
 @login_required
+@stripe_onboarding_required
 def collect_user_info(request):
     """Collect additional user info for Stripe onboarding."""
     serverowner = request.user.serverowner
-    if serverowner.coinpayment_onboarding:
-        return redirect("dashboard")
-
-    try:
-        stripe_account_id = serverowner.stripe_account_id
-    except ObjectDoesNotExist:
-        messages.error(request, "You have tresspassed to forbidden territory.")
-        return redirect("index")
 
     # Generate an account link for the onboarding process
     account_link = stripe.AccountLink.create(
-        account=stripe_account_id,
+        account=serverowner.stripe_account_id,
         refresh_url=request.build_absolute_uri(reverse("stripe_refresh")),
         return_url=request.build_absolute_uri(reverse("dashboard")),
         type="account_onboarding",
@@ -424,22 +394,17 @@ def collect_user_info(request):
 
 
 @login_required
+@stripe_onboarding_required
 def stripe_refresh(request):
     """Handle refreshing the Stripe account information."""
     serverowner = request.user.serverowner
-    if serverowner.coinpayment_onboarding:
-        return redirect("dashboard")
 
-    try:
-        # Retrieve the Stripe account ID from the request or the Stripe API response
-        stripe_account_id = request.GET.get("account_id")
+    # Retrieve the Stripe account ID from the request or the Stripe API response
+    stripe_account_id = request.GET.get("account_id")
 
-        # Update the profile's stripe_account_id field
-        serverowner.stripe_account_id = stripe_account_id
-        serverowner.save()
-    except ObjectDoesNotExist:
-        messages.error(request, "You have tresspassed to forbidden territory.")
-        return redirect("index")
+    # Update the profile's stripe_account_id field
+    serverowner.stripe_account_id = stripe_account_id
+    serverowner.save()
 
     # Redirect the user to the onboarding process
     return redirect("collect_user_info")
@@ -958,47 +923,36 @@ def confirmed_affiliate_payment(request):
 
 @login_required
 def subscriber_dashboard(request):
-    # Retrieve the subscriber based on the logged-in user
-    subscriber = get_object_or_404(Subscriber, user=request.user)
+    """Render the subscription information of a subscriber."""
 
-    # Retrieve the serverowner associated with the subscriber
+    subscriber = get_object_or_404(Subscriber, user=request.user)
     serverowner = subscriber.subscribed_via
 
-    if serverowner.coinpayment_onboarding:
-        plans = CoinPlan.active_plans.filter(serverowner=serverowner)
-        try:
-            # Retrieve the latest active subscription for the subscriber
-            latest_subscription = CoinSubscription.active_subscriptions.filter(
-                subscriber=subscriber,
-            ).latest()
-        except CoinSubscription.DoesNotExist:
-            latest_subscription = None
-        # Retrieve all the subscriptions done by the subscriber
-        subscriptions = CoinSubscription.objects.filter(subscriber=subscriber).exclude(
-            status=CoinSubscription.SubscriptionStatus.PENDING,
-        )
-        subscriptions = mk_paginator(request, subscriptions, 12)
-        form = CoinPaymentDetailForm()
-    else:
-        # Retrieve the plans related to the ServerOwner
-        plans = StripePlan.active_plans.filter(serverowner=serverowner)
-        try:
-            # Retrieve the latest active subscription for the subscriber
-            latest_subscription = StripeSubscription.active_subscriptions.filter(
-                subscriber=subscriber,
-            ).latest()
-        except StripeSubscription.DoesNotExist:
-            latest_subscription = None
+    # Retrieve the plans related to the ServerOwner
+    plans = (
+        CoinPlan.active_plans.filter(serverowner=serverowner)
+        if serverowner.coinpayment_onboarding
+        else StripePlan.active_plans.filter(serverowner=serverowner)
+    )
 
-        # Retrieve all the subscriptions done by the subscriber
-        subscriptions = StripeSubscription.objects.filter(subscriber=subscriber).exclude(
-            status=StripeSubscription.SubscriptionStatus.PENDING,
-        )
-        subscriptions = mk_paginator(request, subscriptions, 12)
-        form = StripePaymentDetailForm()
+    subscription_model = CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
+
+    try:
+        # Retrieve the latest active subscription for the subscriber
+        latest_subscription = subscription_model.active_subscriptions.filter(subscriber=subscriber).latest()
+    except subscription_model.DoesNotExist:
+        latest_subscription = None
+
+    # Retrieve all the subscriptions done by the subscriber
+    subscriptions = subscription_model.objects.filter(subscriber=subscriber).exclude(
+        status=subscription_model.SubscriptionStatus.PENDING
+    )
+
+    subscriptions = mk_paginator(request, subscriptions, 12)
+
+    form = CoinPaymentDetailForm() if serverowner.coinpayment_onboarding else StripePaymentDetailForm()
 
     template = "subscriber/dashboard.html"
-
     context = {
         "plans": plans,
         "subscriber": subscriber,
@@ -1034,6 +988,8 @@ def check_pending_subscription(request):
 @login_required
 @require_POST
 def subscribe_to_coin_plan(request, plan_id):
+    """View for subscribing to a plan using the Coinpayments API."""
+
     plan = get_object_or_404(CoinPlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
@@ -1097,6 +1053,8 @@ def subscribe_to_coin_plan(request, plan_id):
 @login_required
 @require_POST
 def subscribe_to_stripe_plan(request, plan_id):
+    """View for subscribing to a plan using the Stripe Checkout API."""
+
     plan = get_object_or_404(StripePlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
@@ -1139,20 +1097,22 @@ def subscribe_to_stripe_plan(request, plan_id):
 
 @login_required
 def subscription_success(request):
+    """View a subscriber is redirected to after successful subscription."""
+
     if request.method == "GET" and request.GET.get("session_id"):
-        subscriber = get_object_or_404(Subscriber, user=request.user)
-        subscription = None
-
-        session_id = request.GET.get("session_id")
-        plan_id = request.GET.get("subscribed_plan")
-        plan = get_object_or_404(StripePlan, id=plan_id)
-
-        if StripeSubscription.objects.filter(session_id=session_id).exists():
-            return redirect("subscriber_dashboard")
-
         try:
+            session_id = request.GET.get("session_id")
+            plan_id = request.GET.get("subscribed_plan")
+            plan = get_object_or_404(StripePlan, id=plan_id)
+
+            if StripeSubscription.objects.filter(session_id=session_id).exists():
+                messages.info(request, "You have already subscribed to this plan.")
+                return redirect("subscriber_dashboard")
+
             session_info = stripe.checkout.Session.retrieve(session_id)
             subscription_id = session_info.subscription
+
+            subscriber = get_object_or_404(Subscriber, user=request.user)
 
             subscription = StripeSubscription.objects.create(
                 subscriber=subscriber,
@@ -1166,26 +1126,30 @@ def subscription_success(request):
             # Save the customer ID to the subscriber
             subscriber.stripe_customer_id = session_info.customer
             subscriber.save()
-        except stripe.error.InvalidRequestError as e:
-            msg = f"Stripe Session retrieval error: {e}"
-            logger.exception(msg)
-            messages.error(request, "Your checkout session was invalid. Please try again.")
+
+            template = "subscriber/success.html"
+            context = {
+                "subscription": subscription,
+            }
+
+            return render(request, template, context)
+        except stripe.error.StripeError as e:
+            logger.exception(f"Stripe Session retrieval error: {e}")
+            messages.error(request, "An error occurred during the subscription process. Please try again.")
             return redirect("subscriber_dashboard")
-
+        except Http404:
+            messages.error(request, "Invalid subscription data. Please try again.")
+            return redirect("subscriber_dashboard")
     else:
+        messages.error(request, "Invalid request. Please try again.")
         return redirect("subscriber_dashboard")
-
-    template = "subscriber/success.html"
-    context = {
-        "subscription": subscription,
-    }
-
-    return render(request, template, context)
 
 
 @login_required
 @require_POST
 def subscription_cancel(request):
+    """View to handle the subscription cancellation for a subscriber."""
+
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     if subscriber.subscribed_via.coinpayment_onboarding:
@@ -1204,8 +1168,13 @@ def subscription_cancel(request):
         except Http404:
             # If the subscription is not found, it will raise a 404 error with a message
             messages.error(request, "No active subscription found for cancellation.")
-            return redirect("subscriber_dashboard")
-        return redirect("subscriber_dashboard")
+        except Exception as e:
+            msg = f"An unexpected error occurred: {e}"
+            logger.exception(msg)
+            messages.error(
+                request,
+                "An unexpected error occurred while processing your request. Please try again later.",
+            )
     else:
         try:
             with transaction.atomic():
@@ -1235,12 +1204,10 @@ def subscription_cancel(request):
                 request,
                 "An error occurred while canceling your subscription. Please try again later.",
             )
-            return redirect("subscriber_dashboard")
 
         except Http404:
             # If the subscription is not found, it will raise a 404 error with a message
             messages.error(request, "No active subscription found for cancellation.")
-            return redirect("subscriber_dashboard")
 
         except Exception as e:
             msg = f"An unexpected error occurred: {e}"
@@ -1250,12 +1217,14 @@ def subscription_cancel(request):
                 "An unexpected error occurred while processing your request. Please try again later.",
             )
 
-        return redirect("subscriber_dashboard")
+    return redirect("subscriber_dashboard")
 
 
 @login_required
 @require_POST
 def affiliate_upgrade(request):
+    """Handle the upgrading of a subscriber to an affiliate."""
+
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     # Check if the subscriber already has an affiliate object
@@ -1297,7 +1266,7 @@ def affiliate_upgrade(request):
             messages.error(request, "An error occurred while upgrading to an affiliate.")
     else:
         # Form is invalid, display error message
-        messages.error(request, "An error occurred while submitting your form. Please re-enter your address.")
+        messages.error(request, "An error occurred while submitting your form. Please try again.")
 
     return redirect("subscriber_dashboard")
 
@@ -1309,113 +1278,41 @@ def affiliate_upgrade(request):
 
 @login_required
 def affiliate_dashboard(request):
-    """
-    Display the affiliate dashboard and allow the logged-in affiliate to update payment details.
+    """Display the affiliate dashboard and allow the affiliate to update payment details."""
 
-    This view provides the affiliate's dashboard, allowing them to view and update their payment details.
-    The affiliate's payment method options, either CoinPayments or Stripe, depend on their linked server owner's
-    onboarding status. Affiliates can update their payment details using the respective forms.
-
-    Args:
-        request (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: A rendered HTML template displaying the affiliate's dashboard and payment detail forms.
-
-    Raises:
-        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber
-                 does not exist, a 404 error is raised to indicate that the resource does not exist.
-
-    Template:
-        "affiliate/dashboard.html"
-
-    Context:
-        - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
-        - "form" (Form): The payment detail form based on the affiliate's selected payment method.
-
-    Note:
-        This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.
-
-        The view checks the onboarding status of the affiliate's linked server owner. If the server owner has
-        completed the CoinPayments onboarding process, the CoinPaymentDetailForm is used. Otherwise, the
-        StripePaymentDetailForm is used.
-
-        The affiliate can update their payment details using the respective form. Successful form submissions
-        result in a confirmation message, while invalid submissions display an error message.
-    """
-
-    # Retrieve the affiliate associated with the subscriber of the logged-in user
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
     # Get the affiliate's payment detail instance
     payment_detail = affiliate.paymentdetail
 
     if affiliate.serverowner.coinpayment_onboarding:
-        # Use CoinPaymentDetailForm for affiliates linked to serverowners with CoinPayments onboarding
-        if request.method == "POST":
-            form = CoinPaymentDetailForm(request.POST, instance=payment_detail)
-            if form.is_valid():
-                payment_detail = form.save(commit=False)
-                payment_detail.save()
-                messages.success(request, "Your payment detail has been updated.")
-                return redirect("affiliate_dashboard")
-            else:
-                messages.error(request, "An error occurred while submitting your form.")
-        else:
-            form = CoinPaymentDetailForm(instance=payment_detail)
+        form_class = CoinPaymentDetailForm
     else:
-        # Use StripePaymentDetailForm for affiliates linked to server owners without CoinPayments onboarding
-        if request.method == "POST":
-            form = StripePaymentDetailForm(request.POST, instance=payment_detail)
-            if form.is_valid():
-                payment_detail = form.save(commit=False)
-                payment_detail.save()
-                messages.success(request, "Your payment detail has been updated.")
-                return redirect("affiliate_dashboard")
-            else:
-                messages.error(request, "An error occurred while submitting your form.")
-        else:
-            form = StripePaymentDetailForm(instance=payment_detail)
+        form_class = StripePaymentDetailForm
 
-    # Define the template and context for rendering
+    if request.method == "POST":
+        form = form_class(request.POST, instance=payment_detail)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your payment detail has been updated.")
+            return redirect("affiliate_dashboard")
+        else:
+            messages.error(request, "An error occurred while updating your payment details.")
+    else:
+        form = form_class(instance=payment_detail)
+
     template = "affiliate/dashboard.html"
     context = {
         "affiliate": affiliate,
         "form": form,
     }
 
-    # Render the template with the provided context
     return render(request, template, context)
 
 
 @login_required
 def affiliate_payments(request):
-    """
-    Display a list of payments received by the logged-in affiliate.
-
-    This view provides a paginated list of payments received by the logged-in affiliate, based on the subscriber
-    linked to the current user.
-
-    Args:
-        request (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: A rendered HTML template displaying a list of affiliate payments.
-
-    Raises:
-        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber
-                 does not exist, a 404 error is raised to indicate that the resource does not exist.
-
-    Template:
-        "affiliate/payments.html"
-
-    Context:
-        - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
-        - "payments" (Paginator): A paginated list of affiliate payments, with each page containing up to 12 payments.
-
-    Note:
-        This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.
-    """
+    """Display a paginated list of payments received by the affiliate."""
 
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     payments = affiliate.get_affiliate_payments()
@@ -1432,29 +1329,7 @@ def affiliate_payments(request):
 
 @login_required
 def affiliate_invitees(request):
-    """
-    Display a list of invitees associated with the logged-in affiliate.
-
-    Args:
-        request (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: A rendered HTML template displaying a list of affiliate invitees.
-
-    Raises:
-        Http404: If the current user is not associated with an affiliate or if the affiliate's subscriber does not exist, a 404 error is raised to indicate that the resource does not exist.
-
-    Template:
-        "affiliate/invitees.html"
-
-    Context:
-        - "affiliate" (Affiliate): The Affiliate instance associated with the logged-in subscriber.
-        - "invitations" (Paginator): A paginated list of affiliate invitees, with each page containing
-          up to 12 invitees.
-
-    Note:
-        This view is protected by the 'login_required' decorator, ensuring that only authenticated users can access it.
-    """
+    """Display a paginated list of invitees associated with affiliate."""
 
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     invitations = affiliate.get_affiliate_invitees()

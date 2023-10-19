@@ -6,14 +6,7 @@ from django.shortcuts import redirect
 
 
 def onboarding_completed(view_func):
-    """Decorator to check for user onboarding status.
-
-    Args:
-        view_func (function): The view function to be wrapped.
-
-    Returns:
-        function: Wrapped view function that performs redirection as needed.
-    """
+    """Decorator to check for user onboarding status."""
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
@@ -48,20 +41,30 @@ def onboarding_completed(view_func):
 
 
 def redirect_authenticated_user(view_func):
-    """
-    Decorator to redirect authenticated users to the 'dashboard_view'.
-
-    Args:
-        view_func (function): The view function to be wrapped.
-
-    Returns:
-        function: The decorated view function.
-    """
+    """Decorator to redirect authenticated users to the "dashboard_view"."""
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect("dashboard_view")
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+def stripe_onboarding_required(view_func):
+    """Decorator to redirect user to "dashboard" if user onboarded via coinpayment."""
+
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        try:
+            serverowner = request.user.serverowner
+            if serverowner.coinpayment_onboarding:
+                return redirect("dashboard")
+        except ObjectDoesNotExist:
+            # Handle the case where the ServerOwner object does not exist for the user
+            messages.error(request, "You have trespassed into forbidden territory.")
+            return redirect("index")
         return view_func(request, *args, **kwargs)
 
     return wrapper
