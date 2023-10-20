@@ -33,8 +33,8 @@ from .forms import (
     CoinpaymentsOnboardingForm,
     CoinPlanForm,
     OnboardingForm,
-    PlanForm,
     StripePaymentDetailForm,
+    StripePlanForm,
 )
 from .models import (
     Affiliate,
@@ -426,6 +426,8 @@ def delete_account(request):
 @login_required
 @onboarding_completed
 def dashboard(request):
+    """View for rendering the serverowner's dashboard."""
+
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     discord_client_id = settings.DISCORD_CLIENT_ID
@@ -442,29 +444,21 @@ def dashboard(request):
 @login_required
 @onboarding_completed
 def plans(request):
+    """View to display a serverowner's plans and handle new plan creation."""
+
     serverowner = get_object_or_404(ServerOwner, user=request.user)
+    coinpayment_onboarding = serverowner.coinpayment_onboarding
 
-    if serverowner.coinpayment_onboarding:
-        if request.method == "POST":
-            form = CoinPlanForm(request.POST)
-            if form.is_valid():
-                coin_plan = form.save(commit=False)
-                coin_plan.serverowner = serverowner
-                coin_plan.save()
-                messages.success(request, "Your Subscription Plan has been successfully created.")
-                return redirect("plans")
-            else:
-                messages.error(request, "An error occured while creating your Plan. Please try again.")
-        else:
-            form = CoinPlanForm()
-        plans = serverowner.get_plans()
-        plans = mk_paginator(request, plans, 9)
+    if request.method == "POST":
+        form = CoinPlanForm(request.POST) if coinpayment_onboarding else StripePlanForm(request.POST)
 
-    else:
-        if request.method == "POST":
-            form = PlanForm(request.POST)
-            if form.is_valid():
-                try:
+        if form.is_valid():
+            try:
+                if coinpayment_onboarding:
+                    coin_plan = form.save(commit=False)
+                    coin_plan.serverowner = serverowner
+                    coin_plan.save()
+                else:
                     interval_count = form.cleaned_data["interval_count"]
                     # Create a product on Stripe
                     product = stripe.Product.create(
@@ -472,7 +466,6 @@ def plans(request):
                         description=form.cleaned_data["description"],
                         active=True,
                     )
-
                     # Create a price for the product
                     price = stripe.Price.create(
                         product=product.id,
@@ -483,29 +476,24 @@ def plans(request):
                             "interval_count": interval_count,
                         },
                     )
-
-                    # Save the product and price details
                     stripe_product = form.save(commit=False)
                     stripe_product.price_id = price.id
                     stripe_product.product_id = product.id
                     stripe_product.serverowner = serverowner
                     stripe_product.save()
 
-                    messages.success(request, "Your Subscription Plan has been successfully created.")
-                    return redirect("plans")
-                except stripe.error.StripeError as e:
-                    logger.exception("An error occurred during a Stripe API call: %s", str(e))
-                    messages.error(
-                        request,
-                        "An error occurred while processing your request. Please try again later.",
-                    )
-            else:
-                messages.error(request, "An error occured while creating your Plan. Please try again.")
+                messages.success(request, "Your Subscription Plan has been successfully created.")
+                return redirect("plans")
+            except stripe.error.StripeError as e:
+                logger.exception("An error occurred during a Stripe API call: %s", str(e))
+                messages.error(request, "An error occurred while processing your request. Please try again later.")
         else:
-            form = PlanForm()
-        # Retrieve the user's Stripe plans from the database and paginate
-        plans = serverowner.get_plans()
-        plans = mk_paginator(request, plans, 9)
+            messages.error(request, "An error occurred while creating your Plan. Please try again.")
+    else:
+        form = CoinPlanForm() if coinpayment_onboarding else StripePlanForm()
+
+    plans = serverowner.get_plans()
+    plans = mk_paginator(request, plans, 9)
 
     template = "serverowner/plans/list.html"
     context = {
@@ -513,37 +501,31 @@ def plans(request):
         "form": form,
         "plans": plans,
     }
+
     return render(request, template, context)
 
 
 @login_required
 def plan_detail(request, plan_id):
-    """Display detailed information about a specific plan."""
-    if request.user.serverowner.coinpayment_onboarding:
-        plan = get_object_or_404(CoinPlan, id=plan_id, serverowner=request.user.serverowner)
-        subscribers = plan.get_plan_subscribers()
-        subscribers = mk_paginator(request, subscribers, 12)
+    """View to display detailed information about a specific plan."""
 
-        if request.method == "POST":
-            form = CoinPlanForm(request.POST, instance=plan)
-            if form.is_valid():
+    coinpayment_onboarding = request.user.serverowner.coinpayment_onboarding
+
+    PlanModel = CoinPlan if coinpayment_onboarding else StripePlan
+    plan = get_object_or_404(PlanModel, id=plan_id, serverowner=request.user.serverowner)
+    subscribers = plan.get_plan_subscribers()
+    subscribers = mk_paginator(request, subscribers, 12)
+
+    FormClass = CoinPlanForm if coinpayment_onboarding else StripePlanForm
+
+    if request.method == "POST":
+        form = FormClass(request.POST, instance=plan)
+        if form.is_valid():
+            if coinpayment_onboarding:
                 plan = form.save()
                 messages.success(request, "Your Subscription Plan has been successfully updated.")
                 return redirect(plan)
             else:
-                messages.error(request, "An error occurred while updating your Plan. Please try again.")
-        else:
-            form = CoinPlanForm(instance=plan)
-
-    else:
-        plan = get_object_or_404(StripePlan, id=plan_id, serverowner=request.user.serverowner)
-        subscribers = plan.get_plan_subscribers()
-        subscribers = mk_paginator(request, subscribers, 12)
-
-        if request.method == "POST":
-            form = PlanForm(request.POST, instance=plan)
-
-            if form.is_valid():
                 try:
                     with transaction.atomic():
                         # Update the product on Stripe
@@ -552,12 +534,10 @@ def plan_detail(request, plan_id):
                             "description": form.cleaned_data["description"],
                             "active": True,
                         }
-
                         product = stripe.Product.modify(plan.product_id, **product_params)  # noqa: F841
 
                         # Save the updated plan details in the database
                         plan = form.save()
-
                         messages.success(request, "Your Subscription Plan has been successfully updated.")
                         return redirect(plan)
                 except stripe.error.StripeError as e:
@@ -567,10 +547,10 @@ def plan_detail(request, plan_id):
                         request,
                         "An error occurred while processing your request. Please try again later.",
                     )
-            else:
-                messages.error(request, "An error occurred while updating your Plan. Please try again.")
         else:
-            form = PlanForm(instance=plan)
+            messages.error(request, "An error occurred while updating your Plan. Please try again.")
+    else:
+        form = FormClass(instance=plan)
 
     template = "serverowner/plans/detail.html"
     context = {
@@ -585,52 +565,54 @@ def plan_detail(request, plan_id):
 @login_required
 @require_POST
 def deactivate_plan(request):
-    """Deactivate a plan."""
-    if request.user.serverowner.coinpayment_onboarding:
+    """View to handle the deactivation of a plan."""
+
+    serverowner = request.user.serverowner
+
+    try:
+        PlanModel = CoinPlan if serverowner.coinpayment_onboarding else StripePlan
+
         if request.method == "POST":
             product_id = request.POST.get("product_id")
-            plan = get_object_or_404(CoinPlan, id=product_id, serverowner=request.user.serverowner)
-            # Update the plan status in the database
-            plan.status = CoinPlan.PlanStatus.INACTIVE
-            plan.save()
-            messages.success(request, "Your plan has been successfully deactivated.")
+            plan = get_object_or_404(PlanModel, id=product_id, serverowner=serverowner)
 
-        return redirect(plan)
-    else:
-        if request.method == "POST":
-            product_id = request.POST.get("product_id")
-            plan = get_object_or_404(StripePlan, id=product_id, serverowner=request.user.serverowner)
-
-            try:
-                # Retrieve the product ID from the plan's StripePlan object
-                product_id = plan.product_id
-
-                # Deactivate the product on Stripe
-                stripe.Product.modify(product_id, active=False)
-
-                # Deactivate the prices associated with the product
-                prices = stripe.Price.list(product=product_id, active=True, limit=100)
-                for price in prices:
-                    stripe.Price.modify(price.id, active=False)
-
+            if serverowner.coinpayment_onboarding:
                 # Update the plan status in the database
-                plan.status = StripePlan.PlanStatus.INACTIVE
+                plan.status = CoinPlan.PlanStatus.INACTIVE
                 plan.save()
-
                 messages.success(request, "Your plan has been successfully deactivated.")
-            except stripe.error.StripeError as e:
-                logger.exception("An error occurred during a Stripe API call: %s", str(e))
-                messages.error(
-                    request,
-                    "An error occurred while processing your request. Please try again later.",
-                )
+            else:
+                try:
+                    # Retrieve the product ID from the plan's StripePlan object
+                    product_id = plan.product_id
+                    # Deactivate the product on Stripe
+                    stripe.Product.modify(product_id, active=False)
+                    # Deactivate the prices associated with the product
+                    prices = stripe.Price.list(product=product_id, active=True, limit=100)
+                    for price in prices:
+                        stripe.Price.modify(price.id, active=False)
+
+                    # Update the plan status in the database
+                    plan.status = StripePlan.PlanStatus.INACTIVE
+                    plan.save()
+                    messages.success(request, "Your plan has been successfully deactivated.")
+                except stripe.error.StripeError as e:
+                    logger.exception("An error occurred during a Stripe API call: %s", str(e))
+                    messages.error(
+                        request,
+                        "An error occurred while processing your request. Please try again later.",
+                    )
         return redirect(plan)
+    except Http404:
+        messages.error(request, "Plan not found.")
+        return redirect("plans")
 
 
 @login_required
 @onboarding_completed
 def subscribers(request):
-    """Display the subscribers of a user's plans."""
+    """Display the subscribers of a serverowner's plans."""
+
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     subscribers = serverowner.get_subscribed_users()
@@ -641,31 +623,27 @@ def subscribers(request):
         "serverowner": serverowner,
         "subscribers": subscribers,
     }
+
     return render(request, template, context)
 
 
 @login_required
 def subscriber_detail(request, subscriber_id):
+    """View to display information about a subscriber."""
+
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     subscriptions = subscriber.get_subscriptions()
     subscriptions = mk_paginator(request, subscriptions, 12)
 
-    if request.user.serverowner.coinpayment_onboarding:
-        try:
-            # Retrieve the latest active subscription for the subscriber
-            subscription = CoinSubscription.active_subscriptions.filter(
-                subscriber=subscriber,
-            ).latest()
-        except CoinSubscription.DoesNotExist:
-            subscription = None
-    else:
-        try:
-            # Retrieve the latest active subscription for the subscriber
-            subscription = StripeSubscription.active_subscriptions.filter(
-                subscriber=subscriber,
-            ).latest()
-        except StripeSubscription.DoesNotExist:
-            subscription = None
+    subscription_model = CoinSubscription if request.user.serverowner.coinpayment_onboarding else StripeSubscription
+
+    try:
+        # Retrieve the latest active subscription for the subscriber
+        subscription = subscription_model.active_subscriptions.filter(
+            subscriber=subscriber,
+        ).latest()
+    except subscription_model.DoesNotExist:
+        subscription = None
 
     template = "serverowner/subscribers/detail.html"
     context = {
@@ -680,32 +658,9 @@ def subscriber_detail(request, subscriber_id):
 @login_required
 @onboarding_completed
 def affiliates(request):
-    """
-    Display a list of affiliates associated with the current serverowner.
-
-    Args:
-        - request (HttpRequest): The HTTP request object.
-
-    Returns:
-        - HttpResponse: A rendered HTML template displaying a list of affiliates.
-
-    Raises:
-        - Http404: If the current user is not associated with a server owner or if the serverowner's onboarding process is not completed, a 404 error is raised to indicate that the resource does not exist.
-
-    Template:
-        "serverowner/affiliate/list.html"
-
-    Context:
-        - "serverowner" (ServerOwner): The ServerOwner instance associated with the logged-in user.
-        - "affiliates" (Paginator): A paginated list of affiliates, with each page containing up to 9 affiliates.
-
-    Decorators:
-        - "login_required": ensures that only authenticated serverowners can access this view.
-        - "onboarding_completed": ensures the serverowner has completed the onboarding process to access this view.
-    """
+    """Display a list of affiliates associated with the serverowner."""
 
     serverowner = get_object_or_404(ServerOwner, user=request.user)
-
     affiliates = Affiliate.objects.filter(serverowner=serverowner)
     affiliates = mk_paginator(request, affiliates, 9)
 
@@ -720,31 +675,7 @@ def affiliates(request):
 
 @login_required
 def affiliate_detail(request, subscriber_id):
-    """
-    Display information about an affiliate and their invitees.
-
-    Args:
-        - request (HttpRequest): The HTTP request object.
-        - subscriber_id (uuid): The unique identifier of the associated subscriber for the affiliate.
-
-    Returns:
-        - HttpResponse: A rendered HTML template displaying the affiliate's details and invitees.
-
-    Raises:
-        - Http404: If either the subscriber with the provided ID or the affiliate for that subscriber
-                   is not found, a 404 error is raised to indicate the resource does not exist.
-
-    Template:
-        "serverowner/affiliate/detail.html"
-
-    Context:
-        - "affiliate" (Affiliate): The Affiliate instance for the provided subscriber.
-        - "invitations" (Paginator): A paginated list of affiliate invitees, with each page containing
-          up to 12 invitees.
-
-    Decorators:
-        - "login_required": ensures that only authenticated serverowners can access this view.
-    """
+    """Display information about an affiliate and their invitees."""
 
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
@@ -903,6 +834,8 @@ def pending_affiliate_payment(request):
 @login_required
 @onboarding_completed
 def confirmed_affiliate_payment(request):
+    """View to list affiliates a serverowner has paid commissions."""
+
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = serverowner.get_confirmed_affiliate_payments()
     affiliates = mk_paginator(request, affiliates, 12)

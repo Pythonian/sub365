@@ -10,57 +10,19 @@ from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, St
 
 def forbidden_subdomain_validator(value):
     forbidden_subdomain = [
-        "about",
-        "account",
         "accounts",
-        "activity",
         "admin",
         "administrator",
         "affiliate",
-        "auth",
-        "authentication",
-        "blog",
-        "blogs",
-        "config",
-        "contact",
-        "cookie",
-        "create",
         "delete",
         "disable",
-        "edit",
-        "email",
         "feedback",
-        "help",
-        "home",
-        "login",
-        "logout",
-        "logs",
-        "mail",
         "media",
-        "newsletter",
-        "plan",
-        "privacy",
-        "register",
-        "registration",
-        "remove",
         "root",
-        "setting",
-        "settings",
-        "signin",
-        "signout",
-        "signup",
         "static",
-        "status",
         "sub365",
         "subscribe",
         "subscriber",
-        "support",
-        "term",
-        "terms",
-        "update",
-        "user",
-        "username",
-        "users",
     ]
     if value.lower() in forbidden_subdomain:
         msg = "You are not allowed to use this name."
@@ -203,7 +165,7 @@ class CoinpaymentsOnboardingForm(forms.Form):
             raise forms.ValidationError(msg)
 
 
-class PlanForm(forms.ModelForm):
+class StripePlanForm(forms.ModelForm):
     """Form for creating a Stripe Product."""
 
     interval_count = forms.IntegerField(
