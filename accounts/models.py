@@ -23,7 +23,6 @@ class User(AbstractUser):
     is_serverowner = models.BooleanField(default=False)
     is_subscriber = models.BooleanField(default=False)
     is_affiliate = models.BooleanField(default=False)
-    discord_id = models.CharField(max_length=255, unique=True)
 
 
 class ServerOwner(models.Model):

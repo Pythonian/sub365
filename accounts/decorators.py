@@ -14,7 +14,7 @@ def onboarding_completed(view_func):
             serverowner = request.user.serverowner
             stripe_account_id = serverowner.stripe_account_id
 
-            # Check if subdomain is missing
+            # Check if referral name is missing
             if not serverowner.subdomain:
                 return redirect("onboarding")
 
@@ -22,11 +22,12 @@ def onboarding_completed(view_func):
             if stripe_account_id and not serverowner.stripe_onboarding:
                 return redirect("collect_user_info")
 
-            # When a user onboards with stripe and not coinpayments?
+            # Handle when a user onboards with stripe and not coinpayments
             if serverowner.stripe_onboarding and (
                 not serverowner.coinpayment_api_public_key or not serverowner.coinpayment_api_secret_key
             ):
                 return view_func(request, *args, **kwargs)
+            # Check when a user neither has the api keys set
             elif not serverowner.coinpayment_api_public_key and not serverowner.coinpayment_api_secret_key:
                 return redirect("onboarding_crypto")
 

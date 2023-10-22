@@ -109,6 +109,8 @@ def discord_callback(request):
     # Retrieve values from the URL parameters
     code = request.GET.get("code")
     state = request.GET.get("state")
+
+    # Retrieve values stored in the session
     referral = request.session.get("referral_redirect")
     stored_state = request.session.get("discord_oauth_state")
 
@@ -145,30 +147,32 @@ def discord_callback(request):
             if response.status_code == 200:
                 # Get the user information from the response
                 user_info = response.json()
+                # This user is registering via a referral link
                 if state == "subscriber":
                     try:
-                        # Check if a user with the Discord ID already exists
-                        user = User.objects.get(discord_id=user_info["id"])
+                        # Check if the user already exists
+                        user = User.objects.get(username=user_info["username"])
                     except User.DoesNotExist:
-                        # Create a new user
+                        # Create a new user as a subscriber
                         user = User.objects.create_user(
                             username=user_info["username"],
                             is_subscriber=True,
-                            discord_id=user_info["id"],
                         )
+                        # Update the subscriber object created by the signal for the user.
                         subscriber = Subscriber.objects.get(user=user)
-                        subscriber.discord_id = user_info.get("id", "")
-                        subscriber.username = user_info.get("username", "")
+                        subscriber.discord_id = user_info.get("id")
+                        subscriber.username = user_info.get("username")
                         subscriber.avatar = user_info.get("avatar", "")
-                        subscriber.email = user_info.get("email", "")
+                        subscriber.email = user_info.get("email")
                         subscriber.save()
+                        # Connect the subscriber to the referring server owner
                         serverowner = ServerOwner.objects.get(subdomain=referral)
                         subscriber.subscribed_via = serverowner
                         subscriber.save()
                     login(request, user)
                     return redirect("dashboard_view")
                 else:
-                    # state is serverowner
+                    # This is a serverowner
                     guild_response = requests.get("https://discord.com/api/users/@me/guilds", headers=headers)
                     if guild_response.status_code == 200:
                         # Gets all the discord servers joined by the user
@@ -181,7 +185,7 @@ def discord_callback(request):
                                 server_name = server["name"]
                                 server_icon = server.get("icon", "")
                                 serverowner = server["owner"]
-                                # Check if user owns the server
+                                # Check if the user owns the server
                                 if serverowner:
                                     owned_servers.append(
                                         {"id": server_id, "name": server_name, "icon": server_icon},
@@ -195,22 +199,22 @@ def discord_callback(request):
                         return redirect("index")
 
                     try:
-                        # Check if a user with the Discord ID already exists
-                        user = User.objects.get(discord_id=user_info["id"])
+                        # Check if a user already exists
+                        user = User.objects.get(username=user_info["username"])
                     except User.DoesNotExist:
-                        # Create a new user
+                        # Create a new user as a serverowner
                         user = User.objects.create_user(
                             username=user_info["username"],
                             is_serverowner=True,
-                            discord_id=user_info["id"],
                         )
+                        # Update the serverowner object created by the signal
                         serverowner = ServerOwner.objects.get(user=user)
-                        serverowner.discord_id = user_info.get("id", "")
-                        serverowner.username = user_info.get("username", "")
+                        serverowner.discord_id = user_info.get("id")
+                        serverowner.username = user_info.get("username")
                         serverowner.avatar = user_info.get("avatar", "")
-                        serverowner.email = user_info.get("email", "")
+                        serverowner.email = user_info.get("email")
                         serverowner.save()
-
+                        # Save server objects associated with the serverowner
                         for server in owned_servers:
                             owner_server = Server.objects.create(owner=serverowner)
                             owner_server.server_id = server["id"]
@@ -920,7 +924,7 @@ def check_pending_subscription(request):
 
 @login_required
 @require_POST
-def subscribe_to_coin_plan(request, plan_id):
+def subscription_coin(request, plan_id):
     """View for subscribing to a plan using the Coinpayments API."""
 
     plan = get_object_or_404(CoinPlan, id=plan_id)
@@ -985,7 +989,7 @@ def subscribe_to_coin_plan(request, plan_id):
 
 @login_required
 @require_POST
-def subscribe_to_stripe_plan(request, plan_id):
+def subscription_stripe(request, plan_id):
     """View for subscribing to a plan using the Stripe Checkout API."""
 
     plan = get_object_or_404(StripePlan, id=plan_id)

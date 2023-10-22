@@ -6,8 +6,8 @@ from . import views, webhooks
 urlpatterns = [
     # Subscriber URLs
     path("subscriber/", views.subscriber_dashboard, name="subscriber_dashboard"),
-    path("subscribe/stripe/<uuid:plan_id>/", views.subscribe_to_stripe_plan, name="subscribe_to_stripe_plan"),
-    path("subscribe/coin/<uuid:plan_id>/", views.subscribe_to_coin_plan, name="subscribe_to_coin_plan"),
+    path("subscribe/stripe/<uuid:plan_id>/", views.subscription_stripe, name="subscription_stripe"),
+    path("subscribe/coin/<uuid:plan_id>/", views.subscription_coin, name="subscription_coin"),
     path("subscription/success/", views.subscription_success, name="subscription_success"),
     path("subscription/cancel/", views.subscription_cancel, name="subscription_cancel"),
     # Affiliate URLs

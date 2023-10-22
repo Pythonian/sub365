@@ -46,10 +46,19 @@ class Uppercase(forms.CharField):
 class OnboardingForm(forms.Form):
     """Form for choosing a server and referral name."""
 
-    referral = Lowercase(min_length=4, max_length=20)
+    referral = Lowercase(
+        min_length=4,
+        max_length=20,
+    )
     server = forms.ModelChoiceField(queryset=Server.objects.none())
-    affiliate_commission = forms.IntegerField(min_value=1, max_value=99)
-    access_code = Uppercase(min_length=5, max_length=5)
+    affiliate_commission = forms.IntegerField(
+        min_value=1,
+        max_value=99,
+    )
+    access_code = Uppercase(
+        min_length=5,
+        max_length=5,
+    )
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the form with the user and populate the server choices with
