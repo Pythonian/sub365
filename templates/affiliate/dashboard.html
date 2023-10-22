@@ -65,32 +65,24 @@
                     {% csrf_token %}
 
                     {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ error }}
-                    </div>
+                    {% include "partials/_form_errors.html" %}
                     {% endfor %}
 
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             {% if affiliate.serverowner.coinpayment_onboarding %}
                             {% for error in form.litecoin_address.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.litecoin_address.id_for_label }}">Litecoin
                                 Address:</label>
-                            {% render_field form.litecoin_address %}
+                            {% render_field form.litecoin_address|attr:"required" class="form-control" placeholder="Enter your Litecoin Address" %}
                             {% else %}
                             {% for error in form.body.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.body.id_for_label }}">Payment Method:</label>
-                            {% render_field form.body %}
+                            {% render_field form.body|attr:"required" rows="4" class="form-control" placeholder="Describe how you will like to be paid your commission." %}
                             <span class="small" id="remainingCharacters"></span>
                             {% endif %}
                         </div>

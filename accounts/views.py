@@ -85,11 +85,11 @@ def discord_login(request):
 def subscribe_redirect(request):
     """View for redirecting a new subscriber to Discord for authentication."""
 
-    # Get the subdomain from the query parameters
-    subdomain = request.GET.get("ref")
+    # Get the referral name from the query parameters
+    referral = request.GET.get("ref")
 
-    # Store the subdomain in the session for later use
-    request.session["subdomain_redirect"] = subdomain
+    # Store the referral name in the session for later use
+    request.session["referral_redirect"] = referral
 
     discord_client_id = settings.DISCORD_CLIENT_ID
 
@@ -97,7 +97,7 @@ def subscribe_redirect(request):
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
 
     # Construct the Discord OAuth2 authorization URL
-    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&subdomain={subdomain}"
+    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&referral={referral}"
 
     return redirect(redirect_url)
 
@@ -109,7 +109,7 @@ def discord_callback(request):
     # Retrieve values from the URL parameters
     code = request.GET.get("code")
     state = request.GET.get("state")
-    subdomain = request.session.get("subdomain_redirect")
+    referral = request.session.get("referral_redirect")
     stored_state = request.session.get("discord_oauth_state")
 
     # Check if the state parameter matches the stored state value
@@ -162,7 +162,7 @@ def discord_callback(request):
                         subscriber.avatar = user_info.get("avatar", "")
                         subscriber.email = user_info.get("email", "")
                         subscriber.save()
-                        serverowner = ServerOwner.objects.get(subdomain=subdomain)
+                        serverowner = ServerOwner.objects.get(subdomain=referral)
                         subscriber.subscribed_via = serverowner
                         subscriber.save()
                     login(request, user)

@@ -8,7 +8,7 @@ from django.utils import timezone
 from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, StripePlan
 
 
-def forbidden_subdomain_validator(value):
+def forbidden_referralname_validator(value):
     forbidden_subdomain = [
         "accounts",
         "admin",
@@ -44,30 +44,12 @@ class Uppercase(forms.CharField):
 
 
 class OnboardingForm(forms.Form):
-    """Form for choosing a server and subdomain."""
+    """Form for choosing a server and referral name."""
 
-    subdomain = Lowercase(
-        label="Subdomain",
-        min_length=4,
-        max_length=20,
-        help_text="A unique name to invite subscribers to your server.",
-        widget=forms.TextInput(attrs={"placeholder": "Enter a referral name", "class": "form-control"}),
-    )
-    server = forms.ModelChoiceField(
-        queryset=Server.objects.none(),
-        help_text="Choose from a Discord server you own.",
-    )
-    affiliate_commission = forms.IntegerField(
-        min_value=1,
-        max_value=99,
-        help_text="Percentage of commission to be given to Affiliates.",
-        widget=forms.NumberInput(attrs={"placeholder": "Enter affiliate commission", "class": "form-control"}),
-    )
-    access_code = Uppercase(
-        min_length=5,
-        max_length=5,
-        widget=forms.TextInput(attrs={"placeholder": "Enter access code", "class": "form-control"}),
-    )
+    referral = Lowercase(min_length=4, max_length=20)
+    server = forms.ModelChoiceField(queryset=Server.objects.none())
+    affiliate_commission = forms.IntegerField(min_value=1, max_value=99)
+    access_code = Uppercase(min_length=5, max_length=5)
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the form with the user and populate the server choices with
@@ -78,18 +60,18 @@ class OnboardingForm(forms.Form):
         if user:
             self.fields["server"].queryset = Server.objects.filter(owner__user=user)
             self.fields["server"].empty_label = "Choose a server"
-            self.fields["subdomain"].validators.append(forbidden_subdomain_validator)
+            self.fields["referral"].validators.append(forbidden_referralname_validator)
 
-    def clean_subdomain(self):
-        """Validate that the subdomain is unique."""
-        subdomain = self.cleaned_data.get("subdomain")
-        if ServerOwner.objects.filter(subdomain__iexact=subdomain).exists():
-            msg = "This subdomain has already been chosen."
+    def clean_referral(self):
+        """Validate that the referral name is unique."""
+        referral = self.cleaned_data.get("referral")
+        if ServerOwner.objects.filter(subdomain__iexact=referral).exists():
+            msg = "This referral name has already been chosen."
             raise forms.ValidationError(msg)
-        if not re.match(r"^[a-z0-9_]+$", subdomain):
-            msg = "Subdomain can only contain lowercase letters, numbers, and hyphens."
+        if not re.match(r"^[a-z0-9_]+$", referral):
+            msg = "Referral name can only contain lowercase letters, numbers, and hyphens."
             raise forms.ValidationError(msg)
-        return subdomain
+        return referral
 
     def clean_affiliate_commission(self):
         """Validate that the commission is between 1 and 99."""
@@ -112,11 +94,11 @@ class OnboardingForm(forms.Form):
         return access_code
 
     def save(self, user):
-        subdomain = self.cleaned_data["subdomain"]
+        referral = self.cleaned_data["referral"]
         server = self.cleaned_data["server"]
         affiliate_commission = self.cleaned_data["affiliate_commission"]
         serverowner = ServerOwner.objects.get(user=user)
-        serverowner.subdomain = subdomain
+        serverowner.subdomain = referral
         serverowner.affiliate_commission = affiliate_commission
         serverowner.save()
         server.choice_server = True
@@ -130,24 +112,14 @@ class OnboardingForm(forms.Form):
 
 
 class CoinpaymentsOnboardingForm(forms.Form):
+    """Form to enable serverowners add Coinpayment API keys."""
+
     coinpayment_api_secret_key = forms.CharField(
         max_length=255,
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": "Enter your Coinpayments API secret key",
-                "class": "form-control",
-            },
-        ),
         required=True,
     )
     coinpayment_api_public_key = forms.CharField(
         max_length=255,
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": "Enter your Coinpayments API public key",
-                "class": "form-control",
-            },
-        ),
         required=True,
     )
 
@@ -168,19 +140,6 @@ class CoinpaymentsOnboardingForm(forms.Form):
 class StripePlanForm(forms.ModelForm):
     """Form for creating a Stripe Product."""
 
-    interval_count = forms.IntegerField(
-        label="Plan Duration in Months",
-        min_value=1,
-        max_value=12,
-        widget=forms.NumberInput(
-            attrs={
-                "placeholder": "Enter a value between 1 to 12",
-                "class": "form-control",
-            },
-        ),
-        required=True,
-    )
-
     class Meta:
         model = StripePlan
         fields = [
@@ -191,13 +150,6 @@ class StripePlanForm(forms.ModelForm):
             "discord_role_id",
             "permission_description",
         ]
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "amount": forms.NumberInput(attrs={"class": "form-control"}),
-            "description": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
-            "discord_role_id": forms.TextInput(attrs={"class": "form-control"}),
-            "permission_description": forms.TextInput(attrs={"class": "form-control"}),
-        }
 
     def clean_amount(self):
         """Validate that the amount is a positive value."""
@@ -244,19 +196,6 @@ class StripePlanForm(forms.ModelForm):
 class CoinPlanForm(forms.ModelForm):
     """Form for creating a Coin plan."""
 
-    interval_count = forms.IntegerField(
-        label="Plan Duration in Months",
-        min_value=1,
-        max_value=12,
-        widget=forms.NumberInput(
-            attrs={
-                "placeholder": "Enter a value between 1 to 12",
-                "class": "form-control",
-            },
-        ),
-        required=True,
-    )
-
     class Meta:
         model = CoinPlan
         fields = [
@@ -267,13 +206,6 @@ class CoinPlanForm(forms.ModelForm):
             "discord_role_id",
             "permission_description",
         ]
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "amount": forms.NumberInput(attrs={"class": "form-control"}),
-            "description": forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
-            "discord_role_id": forms.TextInput(attrs={"class": "form-control"}),
-            "permission_description": forms.TextInput(attrs={"class": "form-control"}),
-        }
 
     def clean_amount(self):
         """Validate that the amount is a positive value."""
@@ -318,34 +250,19 @@ class CoinPlanForm(forms.ModelForm):
 
 
 class StripePaymentDetailForm(forms.ModelForm):
+    """Form for affiliate to add payment details."""
+
     class Meta:
         model = PaymentDetail
         fields = ["body"]
-        widgets = {
-            "body": forms.Textarea(
-                attrs={
-                    "rows": 4,
-                    "class": "form-control",
-                    "required": True,
-                    "placeholder": "Describe how you will like to be paid your commission.",
-                },
-            ),
-        }
 
 
 class CoinPaymentDetailForm(forms.ModelForm):
+    """Form for affiliate to add Litecoin payment address."""
+
     class Meta:
         model = PaymentDetail
         fields = ["litecoin_address"]
-        widgets = {
-            "litecoin_address": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "required": True,
-                    "placeholder": "Enter your Litecoin Address",
-                },
-            ),
-        }
 
     def clean_litecoin_address(self):
         """Validate the Litecoin address."""

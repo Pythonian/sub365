@@ -149,7 +149,7 @@ class ServerOwner(models.Model):
         """Retrieve the server owner's plans from the database.
 
         Returns:
-            QuerySet: QuerySet of Plan objects belonging to the server owner.
+            QuerySet: QuerySet of Plan objects belonging to the serverowner.
         """
         if self.coinpayment_onboarding:
             return self.coinplan_plans.all()
@@ -157,10 +157,10 @@ class ServerOwner(models.Model):
             return self.stripeplan_plans.all()
 
     def get_plan_count(self):
-        """Get the total count of plans created by the server owner.
+        """Get the total count of plans created by the serverowner.
 
         Returns:
-            int: The total count of plans created by the server owner.
+            int: The total count of plans created by the serverowner.
         """
         if self.coinpayment_onboarding:
             return self.coinplan_plans.count()
@@ -454,7 +454,7 @@ class ServerOwner(models.Model):
 
 
 class Server(models.Model):
-    """Model representing server instance."""
+    """Model representing a discord server instance."""
 
     owner = models.ForeignKey(
         ServerOwner,

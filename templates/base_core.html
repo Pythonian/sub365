@@ -42,9 +42,15 @@
             <div class="collapse navbar-collapse" id="navbarToggler">
                 <div class="d-flex ms-lg-auto mb-3 mb-lg-0 mt-3 mt-lg-0">
                     {% if request.user.is_authenticated %}
+                    {% if user.is_superuser %}
+                    <a class="btn btn-dark rounded-3 text-white me-1" href="{% url 'admin:index' %}">
+                        <i class="fa-solid fa-tachometer-alt me-1"></i> Admin Dashboard
+                    </a>
+                    {% else %}
                     <a class="btn btn-primary border rounded-3 text-white me-1" href="{% url 'dashboard_view' %}">
                         <i class="fa-solid fa-tachometer-alt me-1"></i> My Dashboard
                     </a>
+                    {% endif %}
                     <a data-bs-target="#logoutModal" data-bs-toggle="modal"
                         class="btn btn-danger border border-danger rounded-3 text-white"><i
                             class="fa-solid fa-sign-out-alt me-1"></i>

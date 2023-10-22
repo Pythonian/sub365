@@ -12,83 +12,62 @@
                     {% csrf_token %}
 
                     {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                        role="alert">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                    </div>
+                    {% include "partials/_form_errors.html" %}
                     {% endfor %}
 
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             {% for error in form.name.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.name.id_for_label }}">Plan Name:</label>
-                            {% render_field form.name placeholder="Enter a unique name" %}
+                            {% render_field form.name class="form-control" placeholder="Enter a unique name" %}
                         </div>
                         <div class="col-md-5">
                             {% for error in form.amount.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.amount.id_for_label }}">Plan Amount:</label>
                             <div class="input-group">
-                                {% render_field form.amount %}
+                                {% render_field form.amount class="form-control" %}
                                 <span class="input-group-text" id="amount"><i class="fa-solid fa-dollar"></i></span>
                             </div>
                         </div>
                         <div class="col-md-7">
                             {% for error in form.interval_count.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.interval_count.id_for_label }}">Plan Duration in
                                 Months:</label>
-                            {% render_field form.interval_count placeholder="Enter a value between 1 - 12" %}
+                            {% render_field form.interval_count placeholder="Enter a value between 1 - 12" class="form-control" min="1" max="12" %}
                         </div>
                         <div class="col-12">
                             {% for error in form.discord_role_id.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.discord_role_id.id_for_label }}">Discord Role
                                 ID:</label>
-                            {% render_field form.discord_role_id %}
+                            {% render_field form.discord_role_id class="form-control" %}
                             <a class="small" role="button" data-bs-container="body" data-bs-toggle="popover"
                                 data-bs-content="To get a role's ID, enable developer mode in the Appearance section of your user settings, then go to the server settings, open the role menu, right-click on the desired role, and choose 'Copy ID'.">How
                                 do I get this?</a>
                         </div>
                         <div class="col-12">
                             {% for error in form.permission_description.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.permission_description.id_for_label }}">Describe
                                 subscribers permissions
                                 (Optional):</label>
-                            {% render_field form.permission_description %}
+                            {% render_field form.permission_description class="form-control" %}
                         </div>
                         <div class="col-12">
                             {% for error in form.description.errors %}
-                            <div class="alert alert-danger border-5 border-danger border-top-0 border-end-0 border-bottom-0 mb-1"
-                                role="alert">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
-                            </div>
+                            {% include "partials/_form_errors.html" %}
                             {% endfor %}
                             <label class="form-label" for="{{ form.description.id_for_label }}">Description of the
                                 Plan:</label>
-                            {% render_field form.description %}
+                            {% render_field form.description class="form-control" rows="4" %}
                             <span class="small" id="remainingCharacters"></span>
                         </div>
                     </div>
