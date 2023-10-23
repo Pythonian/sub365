@@ -62,7 +62,6 @@ def index(request):
 @redirect_authenticated_user
 def discord_login(request):
     """View for initiating Discord OAuth2 authentication."""
-
     discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
     discord_client_id = settings.DISCORD_CLIENT_ID
 
@@ -84,7 +83,6 @@ def discord_login(request):
 @redirect_authenticated_user
 def subscribe_redirect(request):
     """View for redirecting a new subscriber to Discord for authentication."""
-
     # Get the referral name from the query parameters
     referral = request.GET.get("ref")
 
@@ -105,7 +103,6 @@ def subscribe_redirect(request):
 @redirect_authenticated_user
 def discord_callback(request):
     """Handles the callback URL for Discord OAuth authorization."""
-
     # Retrieve values from the URL parameters
     code = request.GET.get("code")
     state = request.GET.get("state")
@@ -417,6 +414,7 @@ def stripe_refresh(request):
 @login_required
 @require_POST
 def delete_account(request):
+    """View to delete account during onboarding process."""
     request.user.delete()
     messages.success(request, "Your account has been deleted.")
     return LogoutView.as_view()(request)
@@ -431,7 +429,6 @@ def delete_account(request):
 @onboarding_completed
 def dashboard(request):
     """View for rendering the serverowner's dashboard."""
-
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     discord_client_id = settings.DISCORD_CLIENT_ID
@@ -449,7 +446,6 @@ def dashboard(request):
 @onboarding_completed
 def plans(request):
     """View to display a serverowner's plans and handle new plan creation."""
-
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     coinpayment_onboarding = serverowner.coinpayment_onboarding
 
@@ -512,7 +508,6 @@ def plans(request):
 @login_required
 def plan_detail(request, plan_id):
     """View to display detailed information about a specific plan."""
-
     coinpayment_onboarding = request.user.serverowner.coinpayment_onboarding
 
     PlanModel = CoinPlan if coinpayment_onboarding else StripePlan
@@ -570,7 +565,6 @@ def plan_detail(request, plan_id):
 @require_POST
 def deactivate_plan(request):
     """View to handle the deactivation of a plan."""
-
     serverowner = request.user.serverowner
 
     try:
@@ -616,7 +610,6 @@ def deactivate_plan(request):
 @onboarding_completed
 def subscribers(request):
     """Display the subscribers of a serverowner's plans."""
-
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     subscribers = serverowner.get_subscribed_users()
@@ -634,7 +627,6 @@ def subscribers(request):
 @login_required
 def subscriber_detail(request, subscriber_id):
     """View to display information about a subscriber."""
-
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     subscriptions = subscriber.get_subscriptions()
     subscriptions = mk_paginator(request, subscriptions, 12)
@@ -663,7 +655,6 @@ def subscriber_detail(request, subscriber_id):
 @onboarding_completed
 def affiliates(request):
     """Display a list of affiliates associated with the serverowner."""
-
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = Affiliate.objects.filter(serverowner=serverowner)
     affiliates = mk_paginator(request, affiliates, 9)
@@ -680,7 +671,6 @@ def affiliates(request):
 @login_required
 def affiliate_detail(request, subscriber_id):
     """Display information about an affiliate and their invitees."""
-
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
     invitations = affiliate.get_affiliate_invitees()
@@ -839,7 +829,6 @@ def pending_affiliate_payment(request):
 @onboarding_completed
 def confirmed_affiliate_payment(request):
     """View to list affiliates a serverowner has paid commissions."""
-
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = serverowner.get_confirmed_affiliate_payments()
     affiliates = mk_paginator(request, affiliates, 12)
@@ -861,7 +850,6 @@ def confirmed_affiliate_payment(request):
 @login_required
 def subscriber_dashboard(request):
     """Render the subscription information of a subscriber."""
-
     subscriber = get_object_or_404(Subscriber, user=request.user)
     serverowner = subscriber.subscribed_via
 
@@ -882,7 +870,7 @@ def subscriber_dashboard(request):
 
     # Retrieve all the subscriptions done by the subscriber
     subscriptions = subscription_model.objects.filter(subscriber=subscriber).exclude(
-        status=subscription_model.SubscriptionStatus.PENDING
+        status=subscription_model.SubscriptionStatus.PENDING,
     )
 
     subscriptions = mk_paginator(request, subscriptions, 12)
@@ -926,7 +914,6 @@ def check_pending_subscription(request):
 @require_POST
 def subscription_coin(request, plan_id):
     """View for subscribing to a plan using the Coinpayments API."""
-
     plan = get_object_or_404(CoinPlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
@@ -991,7 +978,6 @@ def subscription_coin(request, plan_id):
 @require_POST
 def subscription_stripe(request, plan_id):
     """View for subscribing to a plan using the Stripe Checkout API."""
-
     plan = get_object_or_404(StripePlan, id=plan_id)
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
@@ -1004,7 +990,7 @@ def subscription_stripe(request, plan_id):
             {
                 "price": plan.price_id,
                 "quantity": 1,
-            }
+            },
         ],
         "mode": "subscription",
         "subscription_data": {
@@ -1035,7 +1021,6 @@ def subscription_stripe(request, plan_id):
 @login_required
 def subscription_success(request):
     """View a subscriber is redirected to after successful subscription."""
-
     if request.method == "GET" and request.GET.get("session_id"):
         try:
             session_id = request.GET.get("session_id")
@@ -1086,7 +1071,6 @@ def subscription_success(request):
 @require_POST
 def subscription_cancel(request):
     """View to handle the subscription cancellation for a subscriber."""
-
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     if subscriber.subscribed_via.coinpayment_onboarding:
@@ -1161,7 +1145,6 @@ def subscription_cancel(request):
 @require_POST
 def affiliate_upgrade(request):
     """Handle the upgrading of a subscriber to an affiliate."""
-
     subscriber = get_object_or_404(Subscriber, user=request.user)
 
     # Check if the subscriber already has an affiliate object
@@ -1216,7 +1199,6 @@ def affiliate_upgrade(request):
 @login_required
 def affiliate_dashboard(request):
     """Display the affiliate dashboard and allow the affiliate to update payment details."""
-
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
     # Get the affiliate's payment detail instance
@@ -1250,7 +1232,6 @@ def affiliate_dashboard(request):
 @login_required
 def affiliate_payments(request):
     """Display a paginated list of payments received by the affiliate."""
-
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     payments = affiliate.get_affiliate_payments()
     payments = mk_paginator(request, payments, 12)
@@ -1267,7 +1248,6 @@ def affiliate_payments(request):
 @login_required
 def affiliate_invitees(request):
     """Display a paginated list of invitees associated with affiliate."""
-
     affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
     invitations = affiliate.get_affiliate_invitees()
     invitations = mk_paginator(request, invitations, 12)

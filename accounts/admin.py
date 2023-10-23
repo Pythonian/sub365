@@ -163,7 +163,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
                     "discord_id",
                     "avatar",
                     "subdomain",
-                )
+                ),
             },
         ),
         (
@@ -201,8 +201,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
     )
 
     def get_inlines(self, request, obj=None):
-        """
-        Returns a list of inline classes to be displayed in the admin change form.
+        """Returns a list of inline classes to be displayed in the admin change form.
 
         Args:
             request (HttpRequest): The HTTP request object.
@@ -219,8 +218,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
         return []
 
     def get_all_model_fields(self, model):
-        """
-        Retrieves all field names of a given model dynamically.
+        """Retrieves all field names of a given model dynamically.
 
         Args:
             model (Model): The Django model for which field names are to be retrieved.
@@ -231,8 +229,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
         return [field.name for field in model._meta.get_fields()]
 
     def get_readonly_fields(self, request, obj=None):
-        """
-        Overrides the get_readonly_fields method to make all fields read-only.
+        """Overrides the get_readonly_fields method to make all fields read-only.
 
         Args:
             request (HttpRequest): The HTTP request object.
@@ -350,8 +347,7 @@ class SubscriberAdmin(admin.ModelAdmin):
     view_on_site = False
 
     def get_inlines(self, request, obj=None):
-        """
-        Returns a list of inline classes to be displayed in the admin change form.
+        """Returns a list of inline classes to be displayed in the admin change form.
 
         Args:
             request (HttpRequest): The HTTP request object.
@@ -501,7 +497,7 @@ class AffiliateAdmin(admin.ModelAdmin):
                     "affiliate_link",
                     "serverowner",
                     "server_id",
-                )
+                ),
             },
         ),
         (

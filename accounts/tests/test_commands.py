@@ -17,8 +17,8 @@ class GenerateAccessCodesTest(TestCase):
 
         # Check if the access codes were generated and saved correctly
         generated_codes = AccessCode.objects.count()
-        self.assertEqual(generated_codes, num_codes_to_generate)
+        assert generated_codes == num_codes_to_generate
 
         # Check if the output message indicates successful generation
         expected_output = f"Successfully generated {num_codes_to_generate} access codes."
-        self.assertIn(expected_output, out.getvalue())
+        assert expected_output in out.getvalue()

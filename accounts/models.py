@@ -597,7 +597,7 @@ class Subscriber(models.Model):
             ).order_by("-created")
         else:
             subscriptions = self.stripesubscription_subscriptions.filter(
-                status=StripeSubscription.SubscriptionStatus.PENDING
+                status=StripeSubscription.SubscriptionStatus.PENDING,
             ).order_by(
                 "-created",
             )
@@ -1203,7 +1203,8 @@ class BaseSubscription(models.Model):
         if self.status == self.SubscriptionStatus.ACTIVE:
             # Check if the subscriber already has an active subscription
             if self.subscriber.has_active_subscription():
-                raise ValidationError("Subscriber already has an active subscription.")
+                msg = "Subscriber already has an active subscription."
+                raise ValidationError(msg)
         super().save(*args, **kwargs)
 
 

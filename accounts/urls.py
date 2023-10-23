@@ -36,7 +36,9 @@ urlpatterns = [
                 path("affiliates/", views.affiliates, name="affiliates"),
                 path("affiliate/<uuid:subscriber_id>/", views.affiliate_detail, name="affiliate_detail"),
                 path(
-                    "affiliates/payments/pending/", views.pending_affiliate_payment, name="pending_affiliate_payment"
+                    "affiliates/payments/pending/",
+                    views.pending_affiliate_payment,
+                    name="pending_affiliate_payment",
                 ),
                 path(
                     "affiliates/payments/confirmed/",

@@ -16,7 +16,7 @@ class SignalReceiverTest(TestCase):
         create_user_profile(sender=User, instance=user, created=True)
 
         # Check if a ServerOwner profile was created for the user
-        self.assertTrue(ServerOwner.objects.filter(user=user).exists())
+        assert ServerOwner.objects.filter(user=user).exists()
 
     def test_create_user_profile_subscriber(self):
         # Create a User instance with is_subscriber=True
@@ -26,7 +26,7 @@ class SignalReceiverTest(TestCase):
         create_user_profile(sender=User, instance=user, created=True)
 
         # Check if a Subscriber profile was created for the user
-        self.assertTrue(Subscriber.objects.filter(user=user).exists())
+        assert Subscriber.objects.filter(user=user).exists()
 
     def test_create_user_profile_existing_user(self):
         # Create a User instance with is_serverowner=True
@@ -36,5 +36,5 @@ class SignalReceiverTest(TestCase):
         create_user_profile(sender=User, instance=user, created=False)
 
         # Check that no new profile was created
-        self.assertFalse(ServerOwner.objects.filter(user=user).exists())
-        self.assertFalse(Subscriber.objects.filter(user=user).exists())
+        assert not ServerOwner.objects.filter(user=user).exists()
+        assert not Subscriber.objects.filter(user=user).exists()
