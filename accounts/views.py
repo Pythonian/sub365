@@ -581,19 +581,20 @@ def deactivate_plan(request):
                 messages.success(request, "Your plan has been successfully deactivated.")
             else:
                 try:
-                    # Retrieve the product ID from the plan's StripePlan object
-                    product_id = plan.product_id
-                    # Deactivate the product on Stripe
-                    stripe.Product.modify(product_id, active=False)
-                    # Deactivate the prices associated with the product
-                    prices = stripe.Price.list(product=product_id, active=True, limit=100)
-                    for price in prices:
-                        stripe.Price.modify(price.id, active=False)
+                    with transaction.atomic():
+                        # Retrieve the product ID from the plan's StripePlan object
+                        product_id = plan.product_id
+                        # Deactivate the product on Stripe
+                        stripe.Product.modify(product_id, active=False)
+                        # Deactivate the prices associated with the product
+                        prices = stripe.Price.list(product=product_id, active=True, limit=100)
+                        for price in prices:
+                            stripe.Price.modify(price.id, active=False)
 
-                    # Update the plan status in the database
-                    plan.status = StripePlan.PlanStatus.INACTIVE
-                    plan.save()
-                    messages.success(request, "Your plan has been successfully deactivated.")
+                        # Update the plan status in the database
+                        plan.status = StripePlan.PlanStatus.INACTIVE
+                        plan.save()
+                        messages.success(request, "Your plan has been successfully deactivated.")
                 except stripe.error.StripeError as e:
                     logger.exception("An error occurred during a Stripe API call: %s", str(e))
                     messages.error(
