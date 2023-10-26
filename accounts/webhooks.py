@@ -47,7 +47,7 @@ def stripe_webhook(request):
             logger.exception(msg)
             return HttpResponse(status=404)
 
-        # Check if the payment was successful
+        # Handle new subscription payment or subscription renewal
         if event.data.object.status == "paid":
             with transaction.atomic():
                 # Payment was successful
@@ -88,6 +88,7 @@ def stripe_webhook(request):
                 plan.subscriber_count = F("subscriber_count") + 1
                 plan.save()
 
+    # Handle when subscription payment fails
     elif event.type == "invoice.payment_failed":
         subscription_id = event.data.object.subscription
 
@@ -110,6 +111,7 @@ def stripe_webhook(request):
         # Send a notification to the subscriber
         send_payment_failed_email.delay(subscription.subscriber.email)
 
+    # Handle when a new user onboards via stripe
     elif event.type == "account.updated":
         account = event.data.object
         charges_enabled = account.charges_enabled

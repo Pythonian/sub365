@@ -566,6 +566,7 @@ class Subscriber(models.Model):
         return self.username
 
     def get_absolute_url(self):
+        """Returns the absolute URL for a subscriber instance."""
         return reverse("subscriber_detail", args=[self.id])
 
     def has_active_subscription(self):
@@ -701,6 +702,7 @@ class Affiliate(models.Model):
         return self.subscriber.username
 
     def get_absolute_url(self):
+        """Returns the absolute URL for an affiliate instance."""
         return reverse("affiliate_detail", args=[self.subscriber.id])
 
     def update_last_payment_date(self):
@@ -1017,6 +1019,7 @@ class BasePlan(models.Model):
         return self.name
 
     def get_absolute_url(self):
+        """Returns the absolute URL for a plan instance."""
         return reverse("plan_detail", args=[self.id])
 
 

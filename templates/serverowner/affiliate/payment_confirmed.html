@@ -66,6 +66,10 @@
     </span>
     <h3 class="text-dark">No Payments Made.</h3>
     <p class="mb-5">You currently have no payments made to an Affiliate.</p>
+    {% if serverowner.get_pending_affiliate_payments %}
+    <a href="{% url 'pending_affiliate_payment' %}" class="btn py-2 px-4 btn-primary shadow-sm rounded-5"><i
+            class="fa-solid fa-eye me-1"></i> View Pending Payments</a>
+    {% endif %}
 </div>
 {% endif %}
 {% endblock content %}
