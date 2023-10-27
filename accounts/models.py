@@ -145,15 +145,13 @@ class ServerOwner(models.Model):
     # ===== SERVEROWNER PLAN METHODS ===== #
 
     def get_plans(self):
-        """Retrieve the server owner's plans from the database.
+        """Retrieve the serverowner's plans from the database.
 
         Returns:
             QuerySet: QuerySet of Plan objects belonging to the serverowner.
         """
-        if self.coinpayment_onboarding:
-            return self.coinplan_plans.all()
-        else:
-            return self.stripeplan_plans.all()
+        plans_model = self.coinplan_plans if self.coinpayment_onboarding else self.stripeplan_plans
+        return plans_model.all()
 
     def get_plan_count(self):
         """Get the total count of plans created by the serverowner.
@@ -161,10 +159,8 @@ class ServerOwner(models.Model):
         Returns:
             int: The total count of plans created by the serverowner.
         """
-        if self.coinpayment_onboarding:
-            return self.coinplan_plans.count()
-        else:
-            return self.stripeplan_plans.count()
+        plans_model = self.coinplan_plans if self.coinpayment_onboarding else self.stripeplan_plans
+        return plans_model.count()
 
     def get_active_plans_count(self):
         """Get the total number of active plans.
@@ -172,10 +168,8 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of active plans.
         """
-        if self.coinpayment_onboarding:
-            return self.get_plans().filter(status=CoinPlan.PlanStatus.ACTIVE.value).count()
-        else:
-            return self.get_plans().filter(status=StripePlan.PlanStatus.ACTIVE.value).count()
+        PlanModel = CoinPlan if self.coinpayment_onboarding else StripePlan
+        return self.get_plans().filter(status=PlanModel.PlanStatus.ACTIVE.value).count()
 
     def get_inactive_plans_count(self):
         """Get the total number of inactive plans.
@@ -183,10 +177,8 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of inactive plans.
         """
-        if self.coinpayment_onboarding:
-            return self.coinplan_plans.filter(status=CoinPlan.PlanStatus.INACTIVE.value).count()
-        else:
-            return self.stripeplan_plans.filter(status=StripePlan.PlanStatus.INACTIVE.value).count()
+        PlanModel = CoinPlan if self.coinpayment_onboarding else StripePlan
+        return self.get_plans().filter(status=PlanModel.PlanStatus.INACTIVE.value).count()
 
     def get_popular_plans(self, limit=3):
         """Get the popular plans created by the ServerOwner based on number of subscribers.
@@ -195,22 +187,22 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Plan objects ordered by subscriber count
                       in descending order excluding plans with no subscribers.
         """
-        if self.coinpayment_onboarding:
-            return self.coinplan_plans.filter(status=CoinPlan.PlanStatus.ACTIVE, subscriber_count__gt=0).order_by(
+        PlanModel = CoinPlan if self.coinpayment_onboarding else StripePlan
+        return (
+            self.get_plans()
+            .filter(status=PlanModel.PlanStatus.ACTIVE, subscriber_count__gt=0)
+            .order_by(
                 "-subscriber_count",
             )[:limit]
-        else:
-            return self.stripeplan_plans.filter(status=StripePlan.PlanStatus.ACTIVE, subscriber_count__gt=0).order_by(
-                "-subscriber_count",
-            )[:limit]
+        )
 
     # ===== SERVEROWNER AFFILIATE METHODS ===== #
 
     def get_total_payments_to_affiliates(self):
-        """Get the total payments the server owner has paid to affiliates.
+        """Get the total payments the serverowner has paid to affiliates.
 
         Returns:
-            Decimal: The total payments the server owner has paid to affiliates.
+            Decimal: The total payments the serverowner has paid to affiliates.
         """
         return self.affiliate_set.aggregate(total_payments=Sum("total_commissions_paid")).get(
             "total_payments",
@@ -222,13 +214,10 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Affiliate objects with pending commissions.
         """
-        if self.coinpayment_onboarding:
-            return self.affiliate_set.exclude(pending_coin_commissions=0)
-        else:
-            return self.affiliate_set.exclude(pending_commissions=0)
+        return self.affiliate_set.exclude(pending_commissions=0)
 
     def get_pending_affiliates_count(self):
-        """Get the total number of affiliates who are yet to be paid by server owner.
+        """Get the total number of affiliates who are yet to be paid by serverowner.
 
         Returns:
             int: The total number of pending affiliates.
@@ -236,23 +225,23 @@ class ServerOwner(models.Model):
         return self.get_pending_affiliates().count()
 
     def get_affiliates(self):
-        """Get a list of all affiliates associated with the server owner.
+        """Get a list of all affiliates associated with the serverowner.
 
         Returns:
-            QuerySet: QuerySet of Affiliate objects associated with the server owner.
+            QuerySet: QuerySet of Affiliate objects associated with the serverowner.
         """
         return Affiliate.objects.filter(serverowner=self)
 
     def get_affiliate_payments(self):
-        """Get the list of Affiliate payments associated with the server owner.
+        """Get the list of Affiliate payments associated with the serverowner.
 
         Returns:
-            QuerySet: QuerySet of AffiliatePayment objects associated with the server owner.
+            QuerySet: QuerySet of AffiliatePayment objects associated with the serverowner.
         """
         return AffiliatePayment.objects.filter(serverowner=self)
 
     def get_pending_affiliate_payments(self):
-        """Get the pending commissions the server owner is to pay affiliates.
+        """Get the pending commissions the serverowner is to pay affiliates.
 
         Returns:
             QuerySet: QuerySet of AffiliatePayment objects with pending commissions.
@@ -260,7 +249,7 @@ class ServerOwner(models.Model):
         return self.get_affiliate_payments().filter(paid=False)
 
     def get_confirmed_affiliate_payments(self):
-        """Get the confirmed payment of commissions the server owner has paid to affiliates.
+        """Get the confirmed payment of commissions the serverowner has paid to affiliates.
 
         Returns:
             QuerySet: QuerySet of AffiliatePayment objects with confirmed payments.
@@ -268,7 +257,7 @@ class ServerOwner(models.Model):
         return self.get_affiliate_payments().filter(paid=True)
 
     def get_affiliates_confirmed_payment_count(self):
-        """Get the total number of affiliates who have been paid by the server owner.
+        """Get the total number of affiliates who have been paid by the serverowner.
 
         Returns:
             int: The total number of affiliates with confirmed payments.
@@ -283,9 +272,7 @@ class ServerOwner(models.Model):
         """
         confirmed_payments = self.get_confirmed_affiliate_payments()
         total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
-        if total_amount is None:
-            total_amount = 0
-        return total_amount
+        return Decimal(total_amount).quantize(Decimal("0.00")) if total_amount is not None else Decimal("0.00")
 
     def calculate_affiliate_commission(self, subscription_amount):
         """Calculate the affiliate commission based on the subscription
@@ -363,14 +350,10 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
-        if self.coinpayment_onboarding:
-            return CoinSubscription.active_subscriptions.filter(
-                subscribed_via=self,
-            )[:limit]
-        else:
-            return StripeSubscription.active_subscriptions.filter(
-                subscribed_via=self,
-            )[:limit]
+        SubscriptionModel = CoinSubscription if self.coinpayment_onboarding else StripeSubscription
+        return SubscriptionModel.active_subscriptions.filter(
+            subscribed_via=self,
+        )[:limit]
 
     def get_total_earnings(self):
         """Calculate the total earnings of the ServerOwner based on subscriptions with
@@ -379,32 +362,19 @@ class ServerOwner(models.Model):
         Returns:
             Decimal: The total earnings amount formatted with two decimal places.
         """
-        if self.coinpayment_onboarding:
-            total_earnings = (
-                CoinSubscription.objects.filter(
-                    subscribed_via=self,
-                    status__in=[
-                        CoinSubscription.SubscriptionStatus.ACTIVE,
-                        CoinSubscription.SubscriptionStatus.EXPIRED,
-                        CoinSubscription.SubscriptionStatus.CANCELED,
-                    ],
-                )
-                .aggregate(total=Sum("plan__amount"))
-                .get("total")
+        SubscriptionModel = CoinSubscription if self.coinpayment_onboarding else StripeSubscription
+        total_earnings = (
+            SubscriptionModel.objects.filter(
+                subscribed_via=self,
+                status__in=[
+                    SubscriptionModel.SubscriptionStatus.ACTIVE,
+                    SubscriptionModel.SubscriptionStatus.EXPIRED,
+                    SubscriptionModel.SubscriptionStatus.CANCELED,
+                ],
             )
-        else:
-            total_earnings = (
-                StripeSubscription.objects.filter(
-                    subscribed_via=self,
-                    status__in=[
-                        StripeSubscription.SubscriptionStatus.ACTIVE,
-                        StripeSubscription.SubscriptionStatus.EXPIRED,
-                        StripeSubscription.SubscriptionStatus.CANCELED,
-                    ],
-                )
-                .aggregate(total=Sum("plan__amount"))
-                .get("total")
-            )
+            .aggregate(total=Sum("plan__amount"))
+            .get("total")
+        )
 
         if total_earnings is not None:
             total_earnings = Decimal(total_earnings)

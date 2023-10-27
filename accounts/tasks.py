@@ -61,7 +61,7 @@ def check_coin_transaction_status():
                                     coin_amount=affiliateinvitee.get_affiliate_coin_commission_payment(),
                                 )
 
-                                affiliateinvitee.affiliate.update_last_payment_date()
+                                # TODO: affiliateinvitee.affiliate.update_last_payment_date()
                                 affiliateinvitee.affiliate.pending_coin_commissions = (
                                     F("pending_coin_commissions")
                                     + affiliateinvitee.get_affiliate_coin_commission_payment()
