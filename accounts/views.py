@@ -68,36 +68,37 @@ def discord_login(request):
     # Generate a random state value for CSRF protection
     state = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
 
+    # Store the generated state value in the session for later use
+    request.session["discord_oauth_state"] = state
+
     # Build the URL path the user will be redirected to after authentication
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
 
     # Construct the Discord OAuth2 authorization URL
     authorization_url = f"{discord_oauth2_authorization_url}?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email+connections+guilds&state={state}"
 
-    # Store the generated state value in the session for later use
-    request.session["discord_oauth_state"] = state
-
     return redirect(authorization_url)
 
 
 @redirect_authenticated_user
 def subscribe_redirect(request):
-    """View for redirecting a new subscriber to Discord for authentication."""
+    """View for redirecting a new subscriber to Discord OAuth2 for authentication."""
+    discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
+    discord_client_id = settings.DISCORD_CLIENT_ID
+
     # Get the referral name from the query parameters
     referral = request.GET.get("ref")
 
     # Store the referral name in the session for later use
     request.session["referral_redirect"] = referral
 
-    discord_client_id = settings.DISCORD_CLIENT_ID
-
     # Build the URL path the user will be redirected to after authentication
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
 
     # Construct the Discord OAuth2 authorization URL
-    redirect_url = f"https://discord.com/api/oauth2/authorize?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&referral={referral}"
+    authorization_url = f"{discord_oauth2_authorization_url}?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&referral={referral}"
 
-    return redirect(redirect_url)
+    return redirect(authorization_url)
 
 
 @redirect_authenticated_user

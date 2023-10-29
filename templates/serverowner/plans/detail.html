@@ -5,7 +5,7 @@
 {% block content %}
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <div>
+    <div class="mb-3 mb-lg-0">
         <a href="{% url 'plans' %}" class="small"><i class="fa-solid fa-arrow-left me-1"></i> Back to Plans</a>
         <h3 class="mb-0 text-secondary">Plan: {{ plan.name }} <span class="text-primary h6">(${{ plan.amount|intcomma }}
                 <small>/{{ plan.interval_count }} month{{ plan.interval_count|pluralize }}</small>)</span></h3>

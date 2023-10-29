@@ -20,7 +20,7 @@
         <div id="content-wrapper" class="d-flex flex-column">
             <div id="content">
 
-                <nav class="navbar navbar-expand navbar-light bg-white topbar static-top shadow px-5">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar static-top shadow px-lg-5 px-3">
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle me-3">
                         <i class="fa fa-bars"></i>
                     </button>
@@ -32,7 +32,7 @@
                                     {{ user.date_joined|date:"j F, Y" }}</span>
                             </span>
                         </li>
-                        <div class="topbar-divider d-none d-sm-block"></div>
+                        <div class="topbar-divider d-none d-lg-block"></div>
                         <li class="nav-item">
                             <span class="nav-link">
                                 {% if user.is_serverowner %}
