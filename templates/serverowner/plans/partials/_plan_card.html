@@ -14,8 +14,7 @@
             <a class="btn btn-sm btn-primary" href="{{ plan.get_absolute_url }}">
                 <i class="fa-solid fa-eye me-1"></i> View Plan
             </a>
-            <span class="font-monospace">{{ plan.subscriber_count }}
-                Subscription{{ plan.subscriber_count|pluralize }}</span>
+            <span>{{ plan.subscriber_count }} Subscription{{ plan.subscriber_count|pluralize }}</span>
         </div>
     </div>
 </div>

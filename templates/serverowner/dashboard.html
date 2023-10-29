@@ -25,7 +25,7 @@
 <h5 class="text-secondary mb-3">Popular Plans</h5>
 <div class="row g-4 mb-5">
     {% for plan in serverowner.get_popular_plans %}
-    <div class="col-xl-4 col-lg-5">
+    <div class="col-xl-4 col-md-6 col-12">
         {% include 'serverowner/plans/partials/_plan_card.html' %}
     </div>
     {% endfor %}
@@ -36,7 +36,7 @@
 <h5 class="text-secondary mb-3">Latest Subscriptions</h5>
 <div class="row g-4 mb-5">
     {% for subscriber in serverowner.get_latest_subscriptions.all %}
-    <div class="col-lg-4">
+    <div class="col-xl-4 col-md-6 col-12">
         {% include 'serverowner/partials/_subscriber_card.html' %}
     </div>
     {% endfor %}
