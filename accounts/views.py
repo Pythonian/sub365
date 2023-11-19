@@ -1,7 +1,7 @@
 import logging
 import random
 import string
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import requests
@@ -38,6 +38,7 @@ from .forms import (
 )
 from .models import (
     Affiliate,
+    AffiliateInvitee,
     AffiliatePayment,
     CoinPlan,
     CoinSubscription,
@@ -163,7 +164,7 @@ def discord_callback(request):
                         subscriber.avatar = user_info.get("avatar", "")
                         subscriber.email = user_info.get("email")
                         subscriber.save()
-                        # Connect the subscriber to the referring server owner
+                        # Connect the subscriber to the referring serverowner
                         serverowner = ServerOwner.objects.get(subdomain=referral)
                         subscriber.subscribed_via = serverowner
                         subscriber.save()
@@ -534,8 +535,7 @@ def plan_detail(request, plan_id):
                             "description": form.cleaned_data["description"],
                             "active": True,
                         }
-                        product = stripe.Product.modify(plan.product_id, **product_params)  # noqa: F841
-
+                        stripe.Product.modify(plan.product_id, **product_params)
                         # Save the updated plan details in the database
                         plan = form.save()
                         messages.success(request, "Your Subscription Plan has been successfully updated.")
@@ -987,7 +987,7 @@ def subscription_stripe(request, plan_id):
         "success_url": request.build_absolute_uri(reverse("subscription_success"))
         + f"?session_id={{CHECKOUT_SESSION_ID}}&subscribed_plan={plan.id}",
         "cancel_url": request.build_absolute_uri(reverse("subscriber_dashboard")),
-        "payment_method_types": ["us_bank_account"],
+        "payment_method_types": ["card"],
         "line_items": [
             {
                 "price": plan.price_id,
@@ -1022,8 +1022,9 @@ def subscription_stripe(request, plan_id):
 
 @login_required
 def subscription_success(request):
-    """View a subscriber is redirected to after successful subscription."""
     if request.method == "GET" and request.GET.get("session_id"):
+        subscriber = get_object_or_404(Subscriber, user=request.user)
+        subscription = None
         try:
             session_id = request.GET.get("session_id")
             plan_id = request.GET.get("subscribed_plan")
@@ -1034,39 +1035,123 @@ def subscription_success(request):
                 return redirect("subscriber_dashboard")
 
             session_info = stripe.checkout.Session.retrieve(session_id)
-            subscription_id = session_info.subscription
 
-            subscriber = get_object_or_404(Subscriber, user=request.user)
+            subscription_id = session_info.subscription
+            subscription_info = stripe.Subscription.retrieve(subscription_id)
+
+            current_period_end = subscription_info.current_period_end
+            expiration_date = datetime.fromtimestamp(current_period_end)
 
             subscription = StripeSubscription.objects.create(
                 subscriber=subscriber,
                 subscribed_via=subscriber.subscribed_via,
                 plan=plan,
+                subscription_date=timezone.now(),
+                expiration_date=expiration_date,
                 subscription_id=subscription_id,
                 session_id=session_id,
-                status=StripeSubscription.SubscriptionStatus.PENDING,
+                status=StripeSubscription.SubscriptionStatus.ACTIVE,
             )
 
             # Save the customer ID to the subscriber
             subscriber.stripe_customer_id = session_info.customer
             subscriber.save()
 
-            template = "subscriber/success.html"
-            context = {
-                "subscription": subscription,
-            }
+            # Handle affiliate logic
+            try:
+                affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
+                AffiliatePayment.objects.create(
+                    serverowner=subscriber.subscribed_via,
+                    affiliate=affiliateinvitee.affiliate,
+                    subscriber=subscriber,
+                    amount=affiliateinvitee.get_affiliate_commission_payment(),
+                )
 
-            return render(request, template, context)
+                affiliateinvitee.affiliate.update_last_payment_date()
+                affiliateinvitee.affiliate.pending_commissions = (
+                    F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                )
+                affiliateinvitee.affiliate.save()
+
+                subscriber.subscribed_via.total_pending_commissions = (
+                    F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                )
+                subscriber.subscribed_via.save()
+
+            except ObjectDoesNotExist:
+                affiliateinvitee = None
+
+            # Increment the subscriber count for the plan
+            plan.subscriber_count = F("subscriber_count") + 1
+            plan.save()
+
         except stripe.error.StripeError as e:
             logger.exception(f"Stripe Session retrieval error: {e}")
             messages.error(request, "An error occurred during the subscription process. Please try again.")
             return redirect("subscriber_dashboard")
+
         except Http404:
             messages.error(request, "Invalid subscription data. Please try again.")
             return redirect("subscriber_dashboard")
+
     else:
-        messages.error(request, "Invalid request. Please try again.")
         return redirect("subscriber_dashboard")
+
+    template = "subscriber/success.html"
+    context = {
+        "subscription": subscription,
+    }
+
+    return render(request, template, context)
+
+
+# @login_required
+# def subscription_success(request):
+#     """View a subscriber is redirected to after successful subscription."""
+#     if request.method == "GET" and request.GET.get("session_id"):
+#         try:
+#             session_id = request.GET.get("session_id")
+#             plan_id = request.GET.get("subscribed_plan")
+#             plan = get_object_or_404(StripePlan, id=plan_id)
+
+#             if StripeSubscription.objects.filter(session_id=session_id).exists():
+#                 messages.info(request, "You have already subscribed to this plan.")
+#                 return redirect("subscriber_dashboard")
+
+#             session_info = stripe.checkout.Session.retrieve(session_id)
+#             subscription_id = session_info.subscription
+
+#             subscriber = get_object_or_404(Subscriber, user=request.user)
+
+#             subscription = StripeSubscription.objects.create(
+#                 subscriber=subscriber,
+#                 subscribed_via=subscriber.subscribed_via,
+#                 plan=plan,
+#                 subscription_id=subscription_id,
+#                 session_id=session_id,
+#                 status=StripeSubscription.SubscriptionStatus.PENDING,
+#             )
+
+#             # Save the customer ID to the subscriber
+#             subscriber.stripe_customer_id = session_info.customer
+#             subscriber.save()
+
+#             template = "subscriber/success.html"
+#             context = {
+#                 "subscription": subscription,
+#             }
+
+#             return render(request, template, context)
+#         except stripe.error.StripeError as e:
+#             logger.exception(f"Stripe Session retrieval error: {e}")
+#             messages.error(request, "An error occurred during the subscription process. Please try again.")
+#             return redirect("subscriber_dashboard")
+#         except Http404:
+#             messages.error(request, "Invalid subscription data. Please try again.")
+#             return redirect("subscriber_dashboard")
+#     else:
+#         messages.error(request, "Invalid request. Please try again.")
+#         return redirect("subscriber_dashboard")
 
 
 @login_required

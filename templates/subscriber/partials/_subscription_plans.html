@@ -11,7 +11,7 @@
                     <span class="text-primary fw-bold">{{ plan.name }}</span>
                     <span>{{ plan.subscriber_count }} Subscription{{ plan.subscriber_count|pluralize }}</span>
                 </div>
-                <h5 class="fw-semibold my-3">${{ plan.amount|intcomma }}<small> /{{ plan.interval_count }}
+                <h5 class="fw-bold my-3">${{ plan.amount|intcomma }}<small> /{{ plan.interval_count }}
                         month{{ plan.interval_count|pluralize }}</small></h5>
                 <p>{{ plan.description }}</p>
                 <form

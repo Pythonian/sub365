@@ -7,7 +7,7 @@
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
                 <p class="p-0 m-0 text-muted fs-6">NAME:</p>
-                <span>{{ subscriber.subscriber.username }}</span>
+                <a href="{{ subscriber.subscriber.get_absolute_url }}">{{ subscriber.subscriber.username }}</a>
             </li>
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
@@ -30,7 +30,7 @@
                 <p class="p-0 m-0 text-muted fs-6">EXPIRATION DATE:</p>
                 <span>{{ subscriber.expiration_date|date:"F j, Y" }}</span>
             </li>
-            <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+            <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3">
                 <p class="p-0 m-0 text-muted fs-6">STATUS</p>
                 <span
                     class="badge py-2 px-3 rounded-pill bg-{% if subscriber.status == 'A' %}success{% else %}danger{% endif %}">{{ subscriber.get_status_display }}</span>
