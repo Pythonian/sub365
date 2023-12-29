@@ -426,7 +426,7 @@ class Server(models.Model):
     """Model representing a discord server instance."""
 
     owner = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.CASCADE,
         related_name="servers",
         verbose_name=_("owner"),
@@ -507,7 +507,7 @@ class Subscriber(models.Model):
         help_text=_("Email address of the subscriber."),
     )
     subscribed_via = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -619,7 +619,7 @@ class Affiliate(models.Model):
         help_text=_("The ID of the server associated with the affiliate."),
     )
     serverowner = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.CASCADE,
         verbose_name=_("server owner"),
         help_text=_("The server owner associated with the affiliate."),
@@ -761,7 +761,7 @@ class AffiliateInvitee(models.Model):
     """Model representing Affiliate invitee."""
 
     affiliate = models.ForeignKey(
-        Affiliate,
+        "Affiliate",
         on_delete=models.CASCADE,
         verbose_name=_("affiliate"),
         help_text=_("The affiliate who invited the user."),
@@ -848,19 +848,19 @@ class AffiliatePayment(models.Model):
     """Model representing Affiliate payments."""
 
     serverowner = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.CASCADE,
         verbose_name=_("serverowner"),
         help_text=_("The serverowner who is to pay the affiliate."),
     )
     affiliate = models.ForeignKey(
-        Affiliate,
+        "Affiliate",
         on_delete=models.CASCADE,
         verbose_name=_("affiliate"),
         help_text=_("Discord ID of the Affiliate to be paid."),
     )
     subscriber = models.ForeignKey(
-        Subscriber,
+        "Subscriber",
         on_delete=models.CASCADE,
         verbose_name=_("subscriber"),
         help_text=_("The Affiliate Invitee who subscribed."),
@@ -923,7 +923,7 @@ class BasePlan(models.Model):
         editable=False,
     )
     serverowner = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.CASCADE,
         related_name="%(class)s_plans",
         verbose_name=_("serverowner"),
@@ -1112,14 +1112,14 @@ class BaseSubscription(models.Model):
         CANCELED = "C", _("Canceled")
 
     subscriber = models.ForeignKey(
-        Subscriber,
+        "Subscriber",
         on_delete=models.CASCADE,
         related_name="%(class)s_subscriptions",
         verbose_name=_("subscriber"),
         help_text=_("The user subscribing to the plan."),
     )
     subscribed_via = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.CASCADE,
         verbose_name=_("subscribed via"),
         help_text=_("The serverowner for whom this subscription is intended."),
@@ -1185,7 +1185,7 @@ class StripeSubscription(BaseSubscription):
     """Model representing Stripe subscriptions."""
 
     plan = models.ForeignKey(
-        StripePlan,
+        "StripePlan",
         on_delete=models.CASCADE,
         verbose_name=_("plan"),
         help_text=_("The Stripe plan being subscribed to."),
@@ -1208,7 +1208,7 @@ class CoinSubscription(BaseSubscription):
     """Model representing subscriptions for coin plans."""
 
     plan = models.ForeignKey(
-        CoinPlan,
+        "CoinPlan",
         on_delete=models.CASCADE,
         verbose_name=_("plan"),
         help_text=_("The coin plan being subscribed to."),
@@ -1291,7 +1291,7 @@ class AccessCode(models.Model):
         help_text=_("The unique access code value."),
     )
     used_by = models.ForeignKey(
-        ServerOwner,
+        "ServerOwner",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
