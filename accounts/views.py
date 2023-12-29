@@ -1291,14 +1291,10 @@ def affiliate_dashboard(request):
 
     # Get the affiliate's payment detail instance
     payment_detail = affiliate.paymentdetail
-
-    if affiliate.serverowner.coinpayment_onboarding:
-        form_class = CoinPaymentDetailForm
-    else:
-        form_class = StripePaymentDetailForm
+    FormClass = CoinPaymentDetailForm if affiliate.serverowner.coinpayment_onboarding else StripePaymentDetailForm
 
     if request.method == "POST":
-        form = form_class(request.POST, instance=payment_detail)
+        form = FormClass(request.POST, instance=payment_detail)
         if form.is_valid():
             form.save()
             messages.success(request, "Your payment detail has been updated.")
@@ -1306,7 +1302,7 @@ def affiliate_dashboard(request):
         else:
             messages.error(request, "An error occurred while updating your payment details.")
     else:
-        form = form_class(instance=payment_detail)
+        form = FormClass(instance=payment_detail)
 
     template = "affiliate/dashboard.html"
     context = {
