@@ -276,7 +276,7 @@ def onboarding(request):
 @login_required
 def onboarding_crypto(request):
     """Handle the onboarding process for connecting with coinpayment payments."""
-    serverowner = request.user.serverowner
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
     try:
         if serverowner.coinpayment_onboarding:
             return redirect("dashboard")
@@ -361,7 +361,7 @@ def dashboard_view(request):
 @stripe_onboarding_required
 def create_stripe_account(request):
     """Create a Stripe account for the user."""
-    serverowner = request.user.serverowner
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     connected_account = stripe.Account.create(
         type="standard",
@@ -382,7 +382,7 @@ def create_stripe_account(request):
 @stripe_onboarding_required
 def collect_user_info(request):
     """Collect additional user info for Stripe onboarding."""
-    serverowner = request.user.serverowner
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     # Generate an account link for the onboarding process
     account_link = stripe.AccountLink.create(
@@ -400,7 +400,7 @@ def collect_user_info(request):
 @stripe_onboarding_required
 def stripe_refresh(request):
     """Handle refreshing the Stripe account information."""
-    serverowner = request.user.serverowner
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     # Retrieve the Stripe account ID from the request or the Stripe API response
     stripe_account_id = request.GET.get("account_id")
@@ -510,10 +510,11 @@ def plans(request):
 @login_required
 def plan_detail(request, plan_id):
     """View to display detailed information about a specific plan."""
-    coinpayment_onboarding = request.user.serverowner.coinpayment_onboarding
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
+    coinpayment_onboarding = serverowner.coinpayment_onboarding
 
     PlanModel = CoinPlan if coinpayment_onboarding else StripePlan
-    plan = get_object_or_404(PlanModel, id=plan_id, serverowner=request.user.serverowner)
+    plan = get_object_or_404(PlanModel, id=plan_id, serverowner=serverowner)
     subscribers = plan.get_plan_subscribers()
     subscribers = mk_paginator(request, subscribers, 12)
 
@@ -566,7 +567,7 @@ def plan_detail(request, plan_id):
 @require_POST
 def deactivate_plan(request):
     """View to handle the deactivation of a plan."""
-    serverowner = request.user.serverowner
+    serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     try:
         PlanModel = CoinPlan if serverowner.coinpayment_onboarding else StripePlan
