@@ -1067,7 +1067,7 @@ def subscription_success(request):
                     amount=affiliateinvitee.get_affiliate_commission_payment(),
                 )
 
-                affiliateinvitee.affiliate.update_last_payment_date()
+                # TODO: affiliateinvitee.affiliate.update_last_payment_date()
                 affiliateinvitee.affiliate.pending_commissions = (
                     F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
                 )

@@ -1,12 +1,16 @@
 import logging
 
 import stripe
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
+from django.db.models import F
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import ServerOwner, StripeSubscription
+from .models import AffiliateInvitee, AffiliatePayment, ServerOwner, StripeSubscription
 from .tasks import send_payment_failed_email
 
 logger = logging.getLogger(__name__)
@@ -85,8 +89,61 @@ def stripe_webhook(request):
     #             plan.subscriber_count = F("subscriber_count") + 1
     #             plan.save()
 
+    if event.type == "invoice.paid":
+        subscription_id = event.data.object.subscription
+        # TODO: Ensure that this webhook doesnt update twice a subscription, after checkoutsession
+        # completed
+        try:
+            subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
+        except StripeSubscription.DoesNotExist:
+            msg = f"Subscription not found for ID: {subscription_id}"
+            logger.exception(msg)
+            return HttpResponse(status=404)
+
+        # Handle new subscription payment or subscription renewal
+        if event.data.object.status == "paid":
+            with transaction.atomic():
+                # Payment was successful
+                subscription.status = StripeSubscription.SubscriptionStatus.ACTIVE
+                # Set the subscription date if it's a new subscription
+                if subscription.subscription_date is None:
+                    subscription.subscription_date = timezone.now()
+                interval_count = subscription.plan.interval_count
+                # TODO: Can i get the expiration date from Stripe response?
+                subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
+                subscription.save()
+
+                subscriber = subscription.subscriber
+                try:
+                    affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
+                    AffiliatePayment.objects.create(
+                        serverowner=subscriber.subscribed_via,
+                        affiliate=affiliateinvitee.affiliate,
+                        subscriber=subscriber,
+                        amount=affiliateinvitee.get_affiliate_commission_payment(),
+                    )
+
+                    # TODO: affiliateinvitee.affiliate.update_last_payment_date()
+                    affiliateinvitee.affiliate.pending_commissions = (
+                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                    )
+                    affiliateinvitee.affiliate.save()
+
+                    subscriber.subscribed_via.total_pending_commissions = (
+                        F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                    )
+                    subscriber.subscribed_via.save()
+
+                except ObjectDoesNotExist:
+                    affiliateinvitee = None
+
+                # Increment the subscriber count for the plan
+                plan = subscription.plan
+                plan.subscriber_count = F("subscriber_count") + 1
+                plan.save()
+
     # Handle when subscription payment fails
-    if event.type == "invoice.payment_failed":
+    elif event.type == "invoice.payment_failed":
         subscription_id = event.data.object.subscription
 
         try:

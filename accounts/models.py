@@ -548,12 +548,12 @@ class Subscriber(models.Model):
         if self.subscribed_via.coinpayment_onboarding:
             return self.coinsubscription_subscriptions.filter(
                 status=CoinSubscription.SubscriptionStatus.ACTIVE,
-                expiration_date__gt=timezone.now(),
+                # expiration_date__gt=timezone.now(),
             ).exists()
         else:
             return self.stripesubscription_subscriptions.filter(
                 status=StripeSubscription.SubscriptionStatus.ACTIVE,
-                expiration_date__gt=timezone.now(),
+                # expiration_date__gt=timezone.now(),
             ).exists()
 
     def get_latest_pending_subscription(self):
