@@ -1,8 +1,6 @@
-{% extends "base_core.html" %}
+{% extends "base_error.html" %}
 
 {% block title %}400 Bad Request{% endblock title %}
-
-{% block header %}{% endblock header %}
 
 {% block content %}
 <div class="container">
@@ -17,10 +15,8 @@
             <h5 class="text-primary mb-3">Bad Request</h5>
             <p class="mb-5 text-dark">Oops! Something went wrong with your request. Please check your request and try
                 again.</p>
-            <a href="{% url 'index' %}" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
+            <a href="/" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
         </div>
     </div>
 </div>
 {% endblock content %}
-
-{% block footer %}{% endblock footer %}

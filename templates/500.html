@@ -1,8 +1,6 @@
-{% extends "base_core.html" %}
+{% extends "base_error.html" %}
 
 {% block title %}500 Server Error{% endblock title %}
-
-{% block header %}{% endblock header %}
 
 {% block content %}
 <div class="container">
@@ -16,10 +14,8 @@
                     class="fa-solid fa-0"></i></h1>
             <h5 class="text-primary mb-3">Server Error</h5>
             <p class="mb-5 text-dark">Oops! Something went wrong on the server. Please try again later!</p>
-            <a href="{% url 'index' %}" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
+            <a href="/" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
         </div>
     </div>
 </div>
 {% endblock content %}
-
-{% block footer %}{% endblock footer %}

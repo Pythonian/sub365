@@ -1,8 +1,6 @@
-{% extends "base_core.html" %}
+{% extends "base_error.html" %}
 
 {% block title %}405 Method Not Allowed{% endblock title %}
-
-{% block header %}{% endblock header %}
 
 {% block content %}
 <div class="container">
@@ -16,10 +14,8 @@
                     class="fa-solid fa-5"></i></h1>
             <h5 class="text-primary mb-3">Method Not Allowed</h5>
             <p class="mb-5 text-dark">We are sorry, but you are not allowed to perform this action.</p>
-            <a href="{% url 'index' %}" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
+            <a href="/" class="btn btn-primary fw-bold px-4 py-3">Go To Home</a>
         </div>
     </div>
 </div>
 {% endblock content %}
-
-{% block footer %}{% endblock footer %}
