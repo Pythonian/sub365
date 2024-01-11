@@ -54,7 +54,7 @@ def redirect_authenticated_user(view_func):
 
 
 def stripe_onboarding_required(view_func):
-    """Decorator to redirect user to "dashboard" if user onboarded via coinpayment."""
+    """Decorator to redirect user to "dashboard" if user didn't onboarded via stripe."""
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
