@@ -1240,62 +1240,74 @@ def affiliate_upgrade(request):
 @login_required
 def affiliate_dashboard(request):
     """Display the affiliate dashboard and allow the affiliate to update payment details."""
-    affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+    try:
+        affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
 
-    # Get the affiliate's payment detail instance
-    payment_detail = affiliate.paymentdetail
-    FormClass = CoinPaymentDetailForm if affiliate.serverowner.coinpayment_onboarding else StripePaymentDetailForm
+        # Get the affiliate's payment detail instance
+        payment_detail = affiliate.paymentdetail
+        FormClass = CoinPaymentDetailForm if affiliate.serverowner.coinpayment_onboarding else StripePaymentDetailForm
 
-    if request.method == "POST":
-        form = FormClass(request.POST, instance=payment_detail)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Your payment detail has been updated.")
-            return redirect("affiliate_dashboard")
+        if request.method == "POST":
+            form = FormClass(request.POST, instance=payment_detail)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Your payment detail has been updated.")
+                return redirect("affiliate_dashboard")
+            else:
+                messages.error(request, "An error occurred while updating your payment details.")
         else:
-            messages.error(request, "An error occurred while updating your payment details.")
-    else:
-        form = FormClass(instance=payment_detail)
+            form = FormClass(instance=payment_detail)
 
-    template = "affiliate/dashboard.html"
-    context = {
-        "affiliate": affiliate,
-        "form": form,
-    }
+        template = "affiliate/dashboard.html"
+        context = {
+            "affiliate": affiliate,
+            "form": form,
+        }
 
-    return render(request, template, context)
+        return render(request, template, context)
+    except ObjectDoesNotExist:
+        messages.error(request, "You have trespassed into forbidden territory.")
+        return redirect("index")
 
 
 @login_required
 def affiliate_payments(request):
     """Display a paginated list of payments received by the affiliate."""
-    affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
-    payments = affiliate.get_affiliate_payments()
-    payments = mk_paginator(request, payments, 12)
+    try:
+        affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+        payments = affiliate.get_affiliate_payments()
+        payments = mk_paginator(request, payments, 12)
 
-    template = "affiliate/payments.html"
-    context = {
-        "affiliate": affiliate,
-        "payments": payments,
-    }
+        template = "affiliate/payments.html"
+        context = {
+            "affiliate": affiliate,
+            "payments": payments,
+        }
 
-    return render(request, template, context)
+        return render(request, template, context)
+    except ObjectDoesNotExist:
+        messages.error(request, "You have trespassed into forbidden territory.")
+        return redirect("index")
 
 
 @login_required
 def affiliate_invitees(request):
     """Display a paginated list of invitees associated with affiliate."""
-    affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
-    invitations = affiliate.get_affiliate_invitees()
-    invitations = mk_paginator(request, invitations, 12)
+    try:
+        affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
+        invitations = affiliate.get_affiliate_invitees()
+        invitations = mk_paginator(request, invitations, 12)
 
-    template = "affiliate/invitees.html"
-    context = {
-        "affiliate": affiliate,
-        "invitations": invitations,
-    }
+        template = "affiliate/invitees.html"
+        context = {
+            "affiliate": affiliate,
+            "invitations": invitations,
+        }
 
-    return render(request, template, context)
+        return render(request, template, context)
+    except ObjectDoesNotExist:
+        messages.error(request, "You have trespassed into forbidden territory.")
+        return redirect("index")
 
 
 ##################################################
