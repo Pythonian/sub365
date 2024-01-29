@@ -12,14 +12,13 @@ def onboarding_completed(view_func):
     def wrapper(request, *args, **kwargs):
         try:
             serverowner = request.user.serverowner
-            stripe_account_id = serverowner.stripe_account_id
 
             # Check if referral name is missing
             if not serverowner.subdomain:
                 return redirect("onboarding")
 
             # Check if stripe onboarding is not completed
-            if stripe_account_id and not serverowner.stripe_onboarding:
+            if serverowner.stripe_account_id and not serverowner.stripe_onboarding:
                 return redirect("collect_user_info")
 
             # Handle when a user onboards with stripe and not coinpayments

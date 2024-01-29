@@ -275,7 +275,7 @@ def onboarding(request):
 
 @login_required
 def onboarding_crypto(request):
-    """Handle the onboarding process for connecting with coinpayment payments."""
+    """Handle the onboarding process for connecting with coinpayment."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     try:
         if serverowner.coinpayment_onboarding:
@@ -628,6 +628,7 @@ def subscribers(request):
 
 
 @login_required
+@onboarding_completed
 def subscriber_detail(request, subscriber_id):
     """View to display information about a subscriber."""
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
@@ -672,6 +673,7 @@ def affiliates(request):
 
 
 @login_required
+@onboarding_completed
 def affiliate_detail(request, subscriber_id):
     """Display information about an affiliate and their invitees."""
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
@@ -1104,55 +1106,6 @@ def subscription_success(request):
     }
 
     return render(request, template, context)
-
-
-# @login_required
-# def subscription_success(request):
-#     """View a subscriber is redirected to after successful subscription."""
-#     if request.method == "GET" and request.GET.get("session_id"):
-#         try:
-#             session_id = request.GET.get("session_id")
-#             plan_id = request.GET.get("subscribed_plan")
-#             plan = get_object_or_404(StripePlan, id=plan_id)
-
-#             if StripeSubscription.objects.filter(session_id=session_id).exists():
-#                 messages.info(request, "You have already subscribed to this plan.")
-#                 return redirect("subscriber_dashboard")
-
-#             session_info = stripe.checkout.Session.retrieve(session_id)
-#             subscription_id = session_info.subscription
-
-#             subscriber = get_object_or_404(Subscriber, user=request.user)
-
-#             subscription = StripeSubscription.objects.create(
-#                 subscriber=subscriber,
-#                 subscribed_via=subscriber.subscribed_via,
-#                 plan=plan,
-#                 subscription_id=subscription_id,
-#                 session_id=session_id,
-#                 status=StripeSubscription.SubscriptionStatus.PENDING,
-#             )
-
-#             # Save the customer ID to the subscriber
-#             subscriber.stripe_customer_id = session_info.customer
-#             subscriber.save()
-
-#             template = "subscriber/success.html"
-#             context = {
-#                 "subscription": subscription,
-#             }
-
-#             return render(request, template, context)
-#         except stripe.error.StripeError as e:
-#             logger.exception(f"Stripe Session retrieval error: {e}")
-#             messages.error(request, "An error occurred during the subscription process. Please try again.")
-#             return redirect("subscriber_dashboard")
-#         except Http404:
-#             messages.error(request, "Invalid subscription data. Please try again.")
-#             return redirect("subscriber_dashboard")
-#     else:
-#         messages.error(request, "Invalid request. Please try again.")
-#         return redirect("subscriber_dashboard")
 
 
 @login_required
