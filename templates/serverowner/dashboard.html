@@ -63,7 +63,7 @@
                     </div>
                     <div>
                         <a href="https://discord.com/api/oauth2/authorize?client_id={{ discord_client_id }}&permissions=8&scope=bot"
-                            class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5" target="_blank">
+                            class="btn py-2 px-3 btn-outline-primary shadow-sm rounded-5" target="_blank">
                             <i class="fa-solid fa-robot me-1"></i> Invite Discord Bot
                         </a>
                     </div>
@@ -82,7 +82,7 @@
                         </div>
                     </div>
                     <div>
-                        <a href="{% url 'plans' %}" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5">
+                        <a href="{% url 'plans' %}" class="btn py-2 px-3 btn-outline-primary shadow-sm rounded-5">
                             <i class="fa-solid fa-plus me-1"></i> Create a Subscription Plan
                         </a>
                     </div>
@@ -102,7 +102,7 @@
                         </div>
                     </div>
                     <div>
-                        <button id="copy-button" class="btn py-2 px-4 btn-outline-primary shadow-sm rounded-5"
+                        <button id="copy-button" class="btn py-2 px-3 btn-outline-primary shadow-sm rounded-5"
                             data-copy-link="{{ request.scheme }}://{{ request.get_host }}/subscribe/?ref={{ serverowner.subdomain }}"><i
                                 class="fa-regular fa-clipboard me-1"></i> Copy Subscription Link</button>
                     </div>

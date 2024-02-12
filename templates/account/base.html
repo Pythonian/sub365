@@ -25,7 +25,7 @@
                             <p class="text-center">If you want to terminate account creation,<br>
                                 <a data-bs-toggle="modal" data-bs-target="#deleteAccount"
                                     class="btn btn-sm btn-link">Click
-                                    Here</a>.
+                                    Here</a>
                             </p>
                         </div>
                     </div>
@@ -52,30 +52,7 @@
         </footer>
     </div>
 
-    <div id="deleteAccount" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="deleteAccountLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Account Deletion</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Maybe you have clicked on a wrong link or need to register as a subscriber, you can delete your
-                        account and start afresh.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
-                    <form action="{% url 'delete_account' %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash me-1"></i>
-                            Delete
-                            Account</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% include "modals/_delete_account_modal.html" %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

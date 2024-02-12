@@ -52,8 +52,12 @@ from .models import (
 from .tasks import check_coin_transaction_status, send_affiliate_email
 from .utils import create_hmac_signature, mk_paginator
 
+discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
+
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_API_KEY
+
+PAGINATION_ITEMS = 12
 
 
 def index(request):
@@ -63,8 +67,6 @@ def index(request):
 @redirect_authenticated_user
 def discord_login(request):
     """View for initiating Discord OAuth2 authentication."""
-    discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
-    discord_client_id = settings.DISCORD_CLIENT_ID
 
     # Generate a random state value for CSRF protection
     state = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
@@ -76,7 +78,7 @@ def discord_login(request):
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
 
     # Construct the Discord OAuth2 authorization URL
-    authorization_url = f"{discord_oauth2_authorization_url}?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email+connections+guilds&state={state}"
+    authorization_url = f"{discord_oauth2_authorization_url}?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email+connections+guilds&state={state}"
 
     return redirect(authorization_url)
 
@@ -84,8 +86,6 @@ def discord_login(request):
 @redirect_authenticated_user
 def subscribe_redirect(request):
     """View for redirecting a new subscriber to Discord OAuth2 for authentication."""
-    discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
-    discord_client_id = settings.DISCORD_CLIENT_ID
 
     # Get the referral name from the query parameters
     referral = request.GET.get("ref")
@@ -97,7 +97,7 @@ def subscribe_redirect(request):
     redirect_uri = request.build_absolute_uri(reverse("discord_callback"))
 
     # Construct the Discord OAuth2 authorization URL
-    authorization_url = f"{discord_oauth2_authorization_url}?client_id={discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&referral={referral}"
+    authorization_url = f"{discord_oauth2_authorization_url}?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={redirect_uri}&response_type=code&scope=identify+email&state=subscriber&referral={referral}"
 
     return redirect(authorization_url)
 
@@ -299,11 +299,11 @@ def onboarding_crypto(request):
                 # Make the API request to verify the coinpayment API keys
                 endpoint = "https://www.coinpayments.net/api.php"
                 data = f"version=1&cmd=get_basic_info&key={api_public_key}&format=json"
-                header = {
+                headers = {
                     "Content-Type": "application/x-www-form-urlencoded",
                     "HMAC": create_hmac_signature(data, api_secret_key),
                 }
-                response = requests.post(endpoint, data=data, headers=header)
+                response = requests.post(endpoint, data=data, headers=headers)
                 response.raise_for_status()
                 result = response.json()["result"]
                 if result:
@@ -433,12 +433,10 @@ def dashboard(request):
     """View for rendering the serverowner's dashboard."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
-    discord_client_id = settings.DISCORD_CLIENT_ID
-
     template = "serverowner/dashboard.html"
     context = {
         "serverowner": serverowner,
-        "discord_client_id": discord_client_id,
+        "discord_client_id": settings.DISCORD_CLIENT_ID,
     }
 
     return render(request, template, context)
@@ -495,7 +493,7 @@ def plans(request):
         form = CoinPlanForm() if coinpayment_onboarding else StripePlanForm()
 
     plans = serverowner.get_plans()
-    plans = mk_paginator(request, plans, 9)
+    plans = mk_paginator(request, plans, PAGINATION_ITEMS)
 
     template = "serverowner/plans/list.html"
     context = {
@@ -508,6 +506,7 @@ def plans(request):
 
 
 @login_required
+@onboarding_completed
 def plan_detail(request, plan_id):
     """View to display detailed information about a specific plan."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
@@ -516,7 +515,7 @@ def plan_detail(request, plan_id):
     PlanModel = CoinPlan if coinpayment_onboarding else StripePlan
     plan = get_object_or_404(PlanModel, id=plan_id, serverowner=serverowner)
     subscribers = plan.get_plan_subscribers()
-    subscribers = mk_paginator(request, subscribers, 12)
+    subscribers = mk_paginator(request, subscribers, PAGINATION_ITEMS)
 
     FormClass = CoinPlanForm if coinpayment_onboarding else StripePlanForm
 
@@ -616,7 +615,7 @@ def subscribers(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     subscribers = serverowner.get_subscribed_users()
-    subscribers = mk_paginator(request, subscribers, 12)
+    subscribers = mk_paginator(request, subscribers, PAGINATION_ITEMS)
 
     template = "serverowner/subscribers/list.html"
     context = {
@@ -633,16 +632,16 @@ def subscriber_detail(request, subscriber_id):
     """View to display information about a subscriber."""
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     subscriptions = subscriber.get_subscriptions()
-    subscriptions = mk_paginator(request, subscriptions, 12)
+    subscriptions = mk_paginator(request, subscriptions, PAGINATION_ITEMS)
 
-    subscription_model = CoinSubscription if request.user.serverowner.coinpayment_onboarding else StripeSubscription
+    SubscriptionModel = CoinSubscription if request.user.serverowner.coinpayment_onboarding else StripeSubscription
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        subscription = subscription_model.active_subscriptions.filter(
+        subscription = SubscriptionModel.active_subscriptions.filter(
             subscriber=subscriber,
         ).latest()
-    except subscription_model.DoesNotExist:
+    except SubscriptionModel.DoesNotExist:
         subscription = None
 
     template = "serverowner/subscribers/detail.html"
@@ -661,7 +660,7 @@ def affiliates(request):
     """Display a list of affiliates associated with the serverowner."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = Affiliate.objects.filter(serverowner=serverowner)
-    affiliates = mk_paginator(request, affiliates, 9)
+    affiliates = mk_paginator(request, affiliates, PAGINATION_ITEMS)
 
     template = "serverowner/affiliate/list.html"
     context = {
@@ -679,7 +678,7 @@ def affiliate_detail(request, subscriber_id):
     subscriber = get_object_or_404(Subscriber, id=subscriber_id)
     affiliate = get_object_or_404(Affiliate, subscriber=subscriber)
     invitations = affiliate.get_affiliate_invitees()
-    invitations = mk_paginator(request, invitations, 12)
+    invitations = mk_paginator(request, invitations, PAGINATION_ITEMS)
 
     template = "serverowner/affiliate/detail.html"
     context = {
@@ -695,7 +694,7 @@ def affiliate_detail(request, subscriber_id):
 def pending_affiliate_payment(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = serverowner.get_pending_affiliates()
-    affiliates = mk_paginator(request, affiliates, 20)
+    affiliates = mk_paginator(request, affiliates, PAGINATION_ITEMS)
 
     if serverowner.coinpayment_onboarding:
         if request.method == "POST":
@@ -710,11 +709,11 @@ def pending_affiliate_payment(request):
                             + settings.COINBASE_CURRENCY
                             + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.litecoin_address}&key={serverowner.coinpayment_api_public_key}&format=json"
                         )
-                        header = {
+                        headers = {
                             "Content-Type": "application/x-www-form-urlencoded",
                             "HMAC": create_hmac_signature(data, serverowner.coinpayment_api_secret_key),
                         }
-                        response = requests.post(endpoint, data=data, headers=header)
+                        response = requests.post(endpoint, data=data, headers=headers)
                         response.raise_for_status()
                         result = response.json()["result"]
                         if result.get("status") == 1:
@@ -817,7 +816,7 @@ def pending_affiliate_payment(request):
 
                     messages.success(
                         request,
-                        f"You have marked payment of ${affiliate_pending_commission} to {affiliate.subscriber.username} as confirmed",
+                        f"You have marked payment of ${affiliate_pending_commission} to {affiliate.subscriber.username} as confirmed.",
                     )
                     return redirect("pending_affiliate_payment")
 
@@ -836,7 +835,7 @@ def confirmed_affiliate_payment(request):
     """View to list affiliates a serverowner has paid commissions."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = serverowner.get_confirmed_affiliate_payments()
-    affiliates = mk_paginator(request, affiliates, 12)
+    affiliates = mk_paginator(request, affiliates, PAGINATION_ITEMS)
 
     template = "serverowner/affiliate/payment_confirmed.html"
     context = {
@@ -865,20 +864,20 @@ def subscriber_dashboard(request):
         else StripePlan.active_plans.filter(serverowner=serverowner)
     )
 
-    subscription_model = CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
+    SubscriptionModel = CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        latest_subscription = subscription_model.active_subscriptions.filter(subscriber=subscriber).latest()
-    except subscription_model.DoesNotExist:
+        latest_subscription = SubscriptionModel.active_subscriptions.filter(subscriber=subscriber).latest()
+    except SubscriptionModel.DoesNotExist:
         latest_subscription = None
 
     # Retrieve all the subscriptions done by the subscriber
-    subscriptions = subscription_model.objects.filter(subscriber=subscriber).exclude(
-        status=subscription_model.SubscriptionStatus.PENDING,
+    subscriptions = SubscriptionModel.objects.filter(subscriber=subscriber).exclude(
+        status=SubscriptionModel.SubscriptionStatus.PENDING,
     )
 
-    subscriptions = mk_paginator(request, subscriptions, 12)
+    subscriptions = mk_paginator(request, subscriptions, PAGINATION_ITEMS)
 
     form = CoinPaymentDetailForm() if serverowner.coinpayment_onboarding else StripePaymentDetailForm()
 
@@ -929,11 +928,11 @@ def subscription_coin(request, plan_id):
             + settings.COINBASE_CURRENCY
             + f"&buyer_email={subscriber.email}&key={subscriber.subscribed_via.coinpayment_api_public_key}&format=json"
         )
-        header = {
+        headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "HMAC": create_hmac_signature(data, subscriber.subscribed_via.coinpayment_api_secret_key),
         }
-        response = requests.post(endpoint, data=data, headers=header)
+        response = requests.post(endpoint, data=data, headers=headers)
         response.raise_for_status()
         result = response.json()["result"]
         if result:
@@ -1042,14 +1041,16 @@ def subscription_success(request):
             subscription_id = session_info.subscription
             subscription_info = stripe.Subscription.retrieve(subscription_id)
 
+            # Extract the dates directly from Stripe API response
+            subscription_date = datetime.fromtimestamp(session_info.created, tz=timezone.utc)
             current_period_end = subscription_info.current_period_end
-            expiration_date = datetime.fromtimestamp(current_period_end)
+            expiration_date = datetime.fromtimestamp(current_period_end, tz=timezone.utc)
 
             subscription = StripeSubscription.objects.create(
                 subscriber=subscriber,
                 subscribed_via=subscriber.subscribed_via,
                 plan=plan,
-                subscription_date=timezone.now(),
+                subscription_date=subscription_date,
                 expiration_date=expiration_date,
                 subscription_id=subscription_id,
                 session_id=session_id,
@@ -1276,7 +1277,7 @@ def affiliate_payments(request):
     try:
         affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
         payments = affiliate.get_affiliate_payments()
-        payments = mk_paginator(request, payments, 12)
+        payments = mk_paginator(request, payments, PAGINATION_ITEMS)
 
         template = "affiliate/payments.html"
         context = {
@@ -1296,7 +1297,7 @@ def affiliate_invitees(request):
     try:
         affiliate = get_object_or_404(Affiliate, subscriber=request.user.subscriber)
         invitations = affiliate.get_affiliate_invitees()
-        invitations = mk_paginator(request, invitations, 12)
+        invitations = mk_paginator(request, invitations, PAGINATION_ITEMS)
 
         template = "affiliate/invitees.html"
         context = {

@@ -30,7 +30,6 @@ class ServerInline(admin.TabularInline):
     """Inline admin class for managing Discord Server instances within the Serverowner admin."""
 
     model = Server
-    extra = 0
     readonly_fields = ["name", "server_id", "icon", "choice_server"]
 
     def has_delete_permission(self, request, obj=None):
@@ -62,7 +61,6 @@ class StripePlanInline(admin.StackedInline):
     """Inline admin class for managing StripePlan instances within the Serverowner admin."""
 
     model = StripePlan
-    extra = 0
     view_on_site = False
     readonly_fields = [
         "name",
@@ -106,7 +104,6 @@ class CoinPlanInline(admin.StackedInline):
     """Inline admin class for managing CoinPlan instances within the Serverowner admin."""
 
     model = CoinPlan
-    extra = 0
     view_on_site = False
     readonly_fields = [
         "name",
@@ -245,7 +242,6 @@ class CoinSubscriptionInline(admin.StackedInline):
     """Admin inline class for managing CoinSubscription instances."""
 
     model = CoinSubscription
-    extra = 0
     readonly_fields = [
         "plan",
         "coin_amount",
@@ -290,7 +286,6 @@ class StripeSubscriptionInline(admin.StackedInline):
     """Admin inline class for managing StripeSubscription instances."""
 
     model = StripeSubscription
-    extra = 0
     readonly_fields = [
         "plan",
         "session_id",
@@ -376,7 +371,6 @@ class PaymentDetailInline(admin.TabularInline):
     """Inline admin class for managing PaymentDetail instances within the Affiliate admin."""
 
     model = PaymentDetail
-    extra = 0
     readonly_fields = ["litecoin_address", "body"]
 
     def has_delete_permission(self, request, obj=None):
@@ -408,7 +402,6 @@ class AffiliatePaymentInline(admin.TabularInline):
     """Inline admin class for managing AffiliatePayment instances within the Affiliate admin."""
 
     model = AffiliatePayment
-    extra = 0
     readonly_fields = ["serverowner", "subscriber", "amount", "coin_amount", "paid", "date_payment_confirmed"]
 
     def has_delete_permission(self, request, obj=None):
@@ -440,7 +433,6 @@ class AffiliateInviteeInline(admin.TabularInline):
     """Inline admin class for managing AffiliateInvitee instances within the Affiliate admin."""
 
     model = AffiliateInvitee
-    extra = 0
     readonly_fields = ["invitee_discord_id"]
 
     def has_delete_permission(self, request, obj=None):
