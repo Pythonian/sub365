@@ -1,7 +1,6 @@
 import logging
 
 import stripe
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -91,8 +90,6 @@ def stripe_webhook(request):
 
     if event.type == "invoice.paid":
         subscription_id = event.data.object.subscription
-        # TODO: Ensure that this webhook doesnt update twice a subscription, after checkoutsession
-        # completed
         try:
             subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
         except StripeSubscription.DoesNotExist:
@@ -107,10 +104,16 @@ def stripe_webhook(request):
                 subscription.status = StripeSubscription.SubscriptionStatus.ACTIVE
                 # Set the subscription date if it's a new subscription
                 if subscription.subscription_date is None:
-                    subscription.subscription_date = timezone.now()
-                interval_count = subscription.plan.interval_count
-                # TODO: Can i get the expiration date from Stripe response?
-                subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
+                    # Set the subscription date using the 'created' timestamp from the event
+                    subscription.subscription_date = timezone.datetime.fromtimestamp(
+                        event.data.object.created, tz=timezone.utc
+                    )
+
+                # Retrieve expiration date and update subscription
+                current_period_end = event.data.object.lines.data[0].period.end
+                expiration_date = timezone.datetime.fromtimestamp(current_period_end, tz=timezone.utc)
+                subscription.expiration_date = expiration_date
+
                 subscription.save()
 
                 subscriber = subscription.subscriber
