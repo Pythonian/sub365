@@ -822,18 +822,16 @@ class AffiliateInvitee(models.Model):
         """
         subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
         if subscriber:
-            if self.affiliate.serverowner.coinpayment_onboarding:
-                subscription = subscriber.coinsubscription_subscriptions.order_by("-created").first()
-                if subscription:
-                    subscription_amount = subscription.plan.amount
-                    serverowner = self.affiliate.serverowner
-                    return serverowner.calculate_affiliate_commission(subscription_amount)
-            else:
-                subscription = subscriber.stripesubscription_subscriptions.order_by("-created").first()
-                if subscription:
-                    subscription_amount = subscription.plan.amount
-                    serverowner = self.affiliate.serverowner
-                    return serverowner.calculate_affiliate_commission(subscription_amount)
+            subscription_model = (
+                subscriber.coinsubscription_subscriptions
+                if self.affiliate.serverowner.coinpayment_onboarding
+                else subscriber.stripesubscription_subscriptions
+            )
+            latest_subscription = subscription_model.order_by("-created").first()
+            if latest_subscription:
+                subscription_amount = latest_subscription.plan.amount
+                serverowner = self.affiliate.serverowner
+                return serverowner.calculate_affiliate_commission(subscription_amount)
         return Decimal(0)
 
     def get_affiliate_coin_commission_payment(self):
