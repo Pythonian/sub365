@@ -807,12 +807,12 @@ class AffiliateInvitee(models.Model):
         """Get the username of the Invitee.
 
         Returns:
-            str or None: The username of the invitee, or None if not found.
+            str: The username of the invitee, or the discord id if username not found.
         """
         subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
         if subscriber:
             return subscriber.username
-        return None
+        return self.invitee_discord_id
 
     def get_affiliate_commission_payment(self):
         """Get the affiliate commission payment received for this Invitee.

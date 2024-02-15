@@ -5,7 +5,7 @@
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
                 <p class="p-0 m-0 text-muted fs-6">INVITEE:</p>
-                <span>{% if invitee.get_affiliateinvitee_name %}{{ invitee.get_affiliateinvitee_name }}{% else %}{{ invitee.invitee_discord_id }}{% endif %}</span>
+                <span>{{ invitee.get_affiliateinvitee_name }}</span>
             </li>
             <li
                 class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
