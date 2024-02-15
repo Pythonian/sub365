@@ -24,29 +24,8 @@
 
 <div class="row g-4 mb-5">
     {% for affiliate in affiliates %}
-    <div class="col-lg-4 col-sm-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary py-1"></div>
-            <div class="card-body">
-                <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">AFFILIATE:</p>
-                        <span>{{ affiliate.affiliate }}</span>
-                    </li>
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
-                        <span>${{ affiliate.amount|intcomma }}</span>
-                    </li>
-                    <li
-                        class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
-                        <p class="p-0 m-0 text-muted fs-6">CONFIRMED DATE:</p>
-                        <span>{{ affiliate.date_payment_confirmed|date:"F j, Y" }}</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
+    <div class="col-xl-4 col-md-6 col-12">
+        {% include 'serverowner/partials/_payouts_card.html' %}
     </div>
     {% endfor %}
     <div class="d-flex justify-content-between">

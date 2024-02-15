@@ -43,6 +43,17 @@
 </div>
 {% endif %}
 
+{% if serverowner.get_latest_payouts %}
+<h5 class="text-secondary mb-3">Latest Payouts</h5>
+<div class="row g-4 mb-5">
+    {% for affiliate in serverowner.get_latest_payouts.all %}
+    <div class="col-xl-4 col-md-6 col-12">
+        {% include 'serverowner/partials/_payouts_card.html' %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 {% else %}
 <div class="row mb-4 mt-5">
     <h1 class="h3 mb-1 text-dark">Complete setting up your dashboard</h1>

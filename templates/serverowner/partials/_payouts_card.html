@@ -1,0 +1,22 @@
+{% load humanize %}
+<div class="card shadow">
+    <div class="card-header bg-primary py-1"></div>
+    <div class="card-body">
+        <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+            <li
+                class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                <p class="p-0 m-0 text-muted fs-6">AFFILIATE:</p>
+                <span>{{ affiliate.affiliate }}</span>
+            </li>
+            <li
+                class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                <p class="p-0 m-0 text-muted fs-6">AMOUNT:</p>
+                <span>${{ affiliate.amount|intcomma }}</span>
+            </li>
+            <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                <p class="p-0 m-0 text-muted fs-6">CONFIRMED DATE:</p>
+                <span>{{ affiliate.date_payment_confirmed|date:"F j, Y" }}</span>
+            </li>
+        </ul>
+    </div>
+</div>

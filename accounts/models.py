@@ -255,6 +255,14 @@ class ServerOwner(models.Model):
         """
         return self.get_affiliate_payments().filter(paid=True)
 
+    def get_latest_payouts(self, limit=3):
+        """Get the latest confirmed payment of commissions the serverowner has paid to affiliates.
+
+        Returns:
+            QuerySet: QuerySet of latest limit AffiliatePayment objects with confirmed payments.
+        """
+        return self.get_confirmed_affiliate_payments()[:limit]
+
     def get_affiliates_confirmed_payment_count(self):
         """Get the total number of affiliates who have been paid by the serverowner.
 
