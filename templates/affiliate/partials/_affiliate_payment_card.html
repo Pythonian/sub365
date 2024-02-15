@@ -1,0 +1,28 @@
+{% load humanize %}
+<div class="card shadow">
+    <div class="card-header bg-primary py-1"></div>
+    <div class="card-body pb-2">
+        <ul class="bg-transparent border-top-0 border-bottom-0 bg-white d-block p-0 m-0 lh-sm">
+            <li
+                class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pb-2">
+                <p class="p-0 m-0 text-muted fs-6">SUBSCRIBER:</p>
+                <span>{{ payment.subscriber }}</span>
+            </li>
+            <li
+                class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                <p class="p-0 m-0 text-muted fs-6">COMMISSION:</p>
+                <span>${{ payment.amount|intcomma }}</span>
+            </li>
+            <li
+                class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base border-bottom pt-3 pb-2">
+                <p class="p-0 m-0 text-muted fs-6">PAYMENT STATUS:</p>
+                <span
+                    class="badge py-2 px-3 rounded-pill bg-{% if payment.paid %}success{% else %}danger{% endif %}">{% if payment.paid %}Paid{% else %}Pending{% endif %}</span>
+            </li>
+            <li class="ps-0 pe-0 d-flex align-items-center justify-content-between position-relative lh-base pt-3 pb-2">
+                <p class="p-0 m-0 text-muted fs-6">PAYMENT DATE:</p>
+                <span>{{ payment.date_payment_confirmed|date:"F j, Y" }}</span>
+            </li>
+        </ul>
+    </div>
+</div>

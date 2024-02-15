@@ -757,6 +757,22 @@ class Affiliate(models.Model):
         """
         return self.affiliateinvitee_set.all()
 
+    def get_latest_invitees(self, limit=3):
+        """Get the latest invitee of this affiliate.
+
+        Returns:
+            QuerySet: The queryset of the latest 3 affiliate invitees.
+        """
+        return self.get_affiliate_invitees()[:limit]
+
+    def get_latest_payments(self, limit=3):
+        """Get the latest payments associated with this affiliate.
+
+        Returns:
+            QuerySet: The queryset of affiliate payments associated with this affiliate.
+        """
+        return self.get_affiliate_payments()[:limit]
+
 
 class AffiliateInvitee(models.Model):
     """Model representing Affiliate invitee."""
