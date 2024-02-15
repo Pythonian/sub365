@@ -6,7 +6,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q, Sum
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .managers import (
@@ -681,11 +680,6 @@ class Affiliate(models.Model):
     def get_absolute_url(self):
         """Returns the absolute URL for an affiliate instance."""
         return reverse("affiliate_detail", args=[self.subscriber.id])
-
-    def update_last_payment_date(self):
-        """Update the last payment date of the affiliate to the current date and time."""
-        self.last_payment_date = timezone.now()
-        self.save()
 
     def get_total_invitation_count(self):
         """Get the total count of affiliate invitees.

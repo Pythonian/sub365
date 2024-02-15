@@ -69,7 +69,6 @@ def stripe_webhook(request):
     #                     amount=affiliateinvitee.get_affiliate_commission_payment(),
     #                 )
 
-    #                 # TODO: affiliateinvitee.affiliate.update_last_payment_date()
     #                 affiliateinvitee.affiliate.pending_commissions = (
     #                     F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
     #                 )
@@ -126,7 +125,6 @@ def stripe_webhook(request):
                         amount=affiliateinvitee.get_affiliate_commission_payment(),
                     )
 
-                    # TODO: affiliateinvitee.affiliate.update_last_payment_date()
                     affiliateinvitee.affiliate.pending_commissions = (
                         F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
                     )
