@@ -1046,47 +1046,52 @@ def subscription_success(request):
             current_period_end = subscription_info.current_period_end
             expiration_date = datetime.fromtimestamp(current_period_end, tz=timezone.utc)
 
-            subscription = StripeSubscription.objects.create(
-                subscriber=subscriber,
-                subscribed_via=subscriber.subscribed_via,
-                plan=plan,
-                subscription_date=subscription_date,
-                expiration_date=expiration_date,
-                subscription_id=subscription_id,
-                session_id=session_id,
-                status=StripeSubscription.SubscriptionStatus.ACTIVE,
-            )
-
-            # Save the customer ID to the subscriber
-            subscriber.stripe_customer_id = session_info.customer
-            subscriber.save()
-
-            # Handle affiliate logic
-            try:
-                affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
-                AffiliatePayment.objects.create(
-                    serverowner=subscriber.subscribed_via,
-                    affiliate=affiliateinvitee.affiliate,
+            with transaction.atomic():
+                subscription = StripeSubscription.objects.create(
                     subscriber=subscriber,
-                    amount=affiliateinvitee.get_affiliate_commission_payment(),
+                    subscribed_via=subscriber.subscribed_via,
+                    plan=plan,
+                    subscription_date=subscription_date,
+                    expiration_date=expiration_date,
+                    subscription_id=subscription_id,
+                    session_id=session_id,
+                    status=StripeSubscription.SubscriptionStatus.ACTIVE,
                 )
 
-                affiliateinvitee.affiliate.pending_commissions = (
-                    F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
-                )
-                affiliateinvitee.affiliate.save()
+                # Save the customer ID to the subscriber
+                subscriber.stripe_customer_id = session_info.customer
+                subscriber.save()
 
-                subscriber.subscribed_via.total_pending_commissions = (
-                    F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
-                )
+                # Handle affiliate logic
+                try:
+                    affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
+                    AffiliatePayment.objects.create(
+                        serverowner=subscriber.subscribed_via,
+                        affiliate=affiliateinvitee.affiliate,
+                        subscriber=subscriber,
+                        amount=affiliateinvitee.get_affiliate_commission_payment(),
+                    )
+
+                    affiliateinvitee.affiliate.pending_commissions = (
+                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                    )
+                    affiliateinvitee.affiliate.save()
+
+                    subscriber.subscribed_via.total_pending_commissions = (
+                        F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                    )
+                    subscriber.subscribed_via.save()
+
+                except ObjectDoesNotExist:
+                    affiliateinvitee = None
+
+                # Increment the subscriber count for the plan
+                plan.subscriber_count = F("subscriber_count") + 1
+                plan.save()
+
+                # Increment the total earnings of the serverowner
+                subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
                 subscriber.subscribed_via.save()
-
-            except ObjectDoesNotExist:
-                affiliateinvitee = None
-
-            # Increment the subscriber count for the plan
-            plan.subscriber_count = F("subscriber_count") + 1
-            plan.save()
 
         except stripe.error.StripeError as e:
             logger.exception(f"Stripe Session retrieval error: {e}")

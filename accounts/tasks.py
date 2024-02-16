@@ -87,6 +87,11 @@ def check_coin_transaction_status():
                             plan = coin_subscription.plan
                             plan.subscriber_count = F("subscriber_count") + 1
                             plan.save()
+
+                            # Increment the total earnings of the serverowner
+                            subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
+                            subscriber.subscribed_via.save()
+
                     elif status == -1:
                         # Transaction failed, Delete the subscription object
                         coin_subscription.delete()

@@ -92,9 +92,7 @@ def stripe_webhook(request):
         try:
             subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
         except StripeSubscription.DoesNotExist:
-            msg = f"Subscription not found for ID: {subscription_id}"
-            logger.exception(msg)
-            return HttpResponse(status=404)
+            pass
 
         # Handle new subscription payment or subscription renewal
         if event.data.object.status == "paid":
@@ -142,6 +140,10 @@ def stripe_webhook(request):
                 plan = subscription.plan
                 plan.subscriber_count = F("subscriber_count") + 1
                 plan.save()
+
+                # Increment the total earnings of the serverowner
+                subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
+                subscriber.subscribed_via.save()
 
     # Handle when subscription payment fails
     elif event.type == "invoice.payment_failed":

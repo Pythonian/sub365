@@ -1,5 +1,5 @@
 import uuid
-from decimal import ROUND_DOWN, Decimal
+from decimal import Decimal
 
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -78,6 +78,14 @@ class ServerOwner(models.Model):
         null=True,
         validators=[MinValueValidator(1), MaxValueValidator(100)],
         help_text=_("Percentage commission for affiliates."),
+    )
+    total_earnings = models.DecimalField(
+        _("total earnings"),
+        max_digits=9,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text=_("Total subscription earnings of the Serverowner."),
     )
     total_pending_commissions = models.DecimalField(
         _("total pending commissions"),
@@ -360,34 +368,6 @@ class ServerOwner(models.Model):
         return SubscriptionModel.active_subscriptions.filter(
             subscribed_via=self,
         )[:limit]
-
-    def get_total_earnings(self):
-        """Calculate the total earnings of the ServerOwner based on subscriptions with
-        statuses ACTIVE, EXPIRED, and CANCELED.
-
-        Returns:
-            Decimal: The total earnings amount formatted with two decimal places.
-        """
-        SubscriptionModel = CoinSubscription if self.coinpayment_onboarding else StripeSubscription
-        total_earnings = (
-            SubscriptionModel.objects.filter(
-                subscribed_via=self,
-                status__in=[
-                    SubscriptionModel.SubscriptionStatus.ACTIVE,
-                    SubscriptionModel.SubscriptionStatus.EXPIRED,
-                    SubscriptionModel.SubscriptionStatus.CANCELED,
-                ],
-            )
-            .aggregate(total=Sum("plan__amount"))
-            .get("total")
-        )
-
-        if total_earnings is not None:
-            total_earnings = Decimal(total_earnings)
-        else:
-            total_earnings = Decimal(0)
-
-        return total_earnings.quantize(Decimal("0.00"), rounding=ROUND_DOWN)
 
     def get_active_subscribers_count(self):
         """Get the total number of subscribers with active subscriptions.
@@ -771,7 +751,7 @@ class Affiliate(models.Model):
         Returns:
             QuerySet: The queryset of affiliate payments associated with this affiliate.
         """
-        return self.get_affiliate_payments()[:limit]
+        return self.get_affiliate_payments().filter(paid=True)[:limit]
 
 
 class AffiliateInvitee(models.Model):
