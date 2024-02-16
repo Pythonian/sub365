@@ -92,7 +92,7 @@ def stripe_webhook(request):
         try:
             subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
         except StripeSubscription.DoesNotExist:
-            pass
+            subscription = None
 
         # Handle new subscription payment or subscription renewal
         if event.data.object.status == "paid":
@@ -139,6 +139,8 @@ def stripe_webhook(request):
                 # Increment the subscriber count for the plan
                 plan = subscription.plan
                 plan.subscriber_count = F("subscriber_count") + 1
+                # Increment the earnings for this plan
+                plan.subscription_earnings = F("subscription_earnings") + plan.amount
                 plan.save()
 
                 # Increment the total earnings of the serverowner

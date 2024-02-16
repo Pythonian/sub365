@@ -1087,6 +1087,8 @@ def subscription_success(request):
 
                 # Increment the subscriber count for the plan
                 plan.subscriber_count = F("subscriber_count") + 1
+                # Increment the earnings for this plan
+                plan.subscription_earnings = F("subscription_earnings") + plan.amount
                 plan.save()
 
                 # Increment the total earnings of the serverowner

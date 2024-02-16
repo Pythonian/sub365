@@ -74,7 +74,7 @@
     <div class="d-flex justify-content-between">
         <p class="text-body-secondary">Showing <span>{{ subscribers.start_index }}-{{ subscribers.end_index }}</span>
             of <span>{{ subscribers.paginator.count }}</span>
-            subscriber{{ subscribers.paginator.count|pluralize }}</p>
+            subscription{{ subscribers.paginator.count|pluralize }}</p>
         <div>{% include 'partials/_pagination.html' with page_obj=subscribers %}</div>
     </div>
 </div>

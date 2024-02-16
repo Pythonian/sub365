@@ -936,6 +936,14 @@ class BasePlan(models.Model):
         help_text=_("The amount in dollars for the plan."),
         validators=[MinValueValidator(0)],
     )
+    subscription_earnings = models.DecimalField(
+        _("subscription earnings"),
+        max_digits=9,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text=_("The total subscription earnings for this plan."),
+    )
     description = models.TextField(
         _("description"),
         max_length=300,
@@ -1009,16 +1017,6 @@ class StripePlan(BasePlan):
         verbose_name = _("stripe plan")
         verbose_name_plural = _("stripe plans")
 
-    def total_earnings(self):
-        """Calculate the total earnings from subscriptions to this plan.
-
-        Returns:
-            Decimal: The total earnings from subscriptions.
-        """
-        subscribers = StripeSubscription.objects.filter(plan=self, subscribed_via=self.serverowner)
-        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
-        return total_earnings or Decimal(0)
-
     def get_plan_subscribers(self):
         """Get all subscribers for this plan, filtered by the server owner.
 
@@ -1056,16 +1054,6 @@ class CoinPlan(BasePlan):
         ordering = ["-created"]
         verbose_name = _("coin plan")
         verbose_name_plural = _("coin plans")
-
-    def total_earnings(self):
-        """Calculate the total earnings from subscriptions to this plan.
-
-        Returns:
-            Decimal: The total earnings from subscriptions.
-        """
-        subscribers = CoinSubscription.objects.filter(plan=self, subscribed_via=self.serverowner)
-        total_earnings = subscribers.aggregate(total=models.Sum("plan__amount"))["total"]
-        return total_earnings or Decimal(0)
 
     def get_plan_subscribers(self):
         """Get all subscribers for this plan, filtered by the server owner.
