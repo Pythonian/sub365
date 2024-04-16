@@ -22,15 +22,27 @@ from .models import (
 class AccessCode(admin.ModelAdmin):
     """Admin class for managing AccessCode instances."""
 
-    list_display = ["code", "used_by", "is_used", "date_used"]
-    list_filter = ["is_used"]
+    list_display = [
+        "code",
+        "used_by",
+        "is_used",
+        "date_used",
+    ]
+    list_filter = [
+        "is_used",
+    ]
 
 
 class ServerInline(admin.TabularInline):
     """Inline admin class for managing Discord Server instances within the Serverowner admin."""
 
     model = Server
-    readonly_fields = ["name", "server_id", "icon", "choice_server"]
+    readonly_fields = [
+        "name",
+        "server_id",
+        "icon",
+        "choice_server",
+    ]
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete Server instances.
@@ -145,10 +157,22 @@ class CoinPlanInline(admin.StackedInline):
 class ServerOwnerAdmin(admin.ModelAdmin):
     """Admin class for managing ServerOwner instances."""
 
-    list_display = ["username", "subdomain", "email", "affiliate_commission"]
-    search_fields = ["username", "subdomain", "email"]
+    list_display = [
+        "username",
+        "subdomain",
+        "email",
+        "affiliate_commission",
+    ]
+    search_fields = [
+        "username",
+        "subdomain",
+        "email",
+    ]
     search_help_text = "Search by username, referral name or email"
-    list_filter = ["stripe_onboarding", "coinpayment_onboarding"]
+    list_filter = [
+        "stripe_onboarding",
+        "coinpayment_onboarding",
+    ]
     fieldsets = (
         (
             None,
@@ -327,7 +351,11 @@ class StripeSubscriptionInline(admin.StackedInline):
 class SubscriberAdmin(admin.ModelAdmin):
     """Admin class for managing Subscriber instances."""
 
-    list_display = ["username", "email", "subscribed_via"]
+    list_display = [
+        "username",
+        "email",
+        "subscribed_via",
+    ]
     readonly_fields = [
         "user",
         "username",
@@ -337,7 +365,10 @@ class SubscriberAdmin(admin.ModelAdmin):
         "avatar",
         "discord_id",
     ]
-    search_fields = ["username", "email"]
+    search_fields = [
+        "username",
+        "email",
+    ]
     search_help_text = "Search by username or email"
     view_on_site = False
 
@@ -363,15 +394,27 @@ class SubscriberAdmin(admin.ModelAdmin):
 class UserAdmin(admin.ModelAdmin):
     """Admin class for managing User instances."""
 
-    list_display = ["username", "is_serverowner", "is_affiliate", "is_subscriber", "is_superuser", "is_active"]
-    readonly_fields = ["password"]
+    list_display = [
+        "username",
+        "is_serverowner",
+        "is_affiliate",
+        "is_subscriber",
+        "is_superuser",
+        "is_active",
+    ]
+    readonly_fields = [
+        "password",
+    ]
 
 
 class PaymentDetailInline(admin.TabularInline):
     """Inline admin class for managing PaymentDetail instances within the Affiliate admin."""
 
     model = PaymentDetail
-    readonly_fields = ["litecoin_address", "body"]
+    readonly_fields = [
+        "litecoin_address",
+        "body",
+    ]
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete PaymentDetail instances.
@@ -402,7 +445,14 @@ class AffiliatePaymentInline(admin.TabularInline):
     """Inline admin class for managing AffiliatePayment instances within the Affiliate admin."""
 
     model = AffiliatePayment
-    readonly_fields = ["serverowner", "subscriber", "amount", "coin_amount", "paid", "date_payment_confirmed"]
+    readonly_fields = [
+        "serverowner",
+        "subscriber",
+        "amount",
+        "coin_amount",
+        "paid",
+        "date_payment_confirmed",
+    ]
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete AffiliatePayment instances.
@@ -433,7 +483,9 @@ class AffiliateInviteeInline(admin.TabularInline):
     """Inline admin class for managing AffiliateInvitee instances within the Affiliate admin."""
 
     model = AffiliateInvitee
-    readonly_fields = ["invitee_discord_id"]
+    readonly_fields = [
+        "invitee_discord_id",
+    ]
 
     def has_delete_permission(self, request, obj=None):
         """Determine whether the user has permission to delete AffiliateInvitee instances.
@@ -464,7 +516,12 @@ class AffiliateInviteeInline(admin.TabularInline):
 class AffiliateAdmin(admin.ModelAdmin):
     """Admin class for managing Affiliate instances."""
 
-    list_display = ["subscriber", "affiliate_link", "total_commissions_paid", "last_payment_date"]
+    list_display = [
+        "subscriber",
+        "affiliate_link",
+        "total_commissions_paid",
+        "last_payment_date",
+    ]
     readonly_fields = [
         "subscriber",
         "affiliate_link",
@@ -507,7 +564,11 @@ class AffiliateAdmin(admin.ModelAdmin):
         ),
     )
     view_on_site = False
-    inlines = [PaymentDetailInline, AffiliatePaymentInline, AffiliateInviteeInline]
+    inlines = [
+        PaymentDetailInline,
+        AffiliatePaymentInline,
+        AffiliateInviteeInline,
+    ]
 
 
 admin.site.unregister(Group)
