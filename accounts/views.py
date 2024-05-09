@@ -157,7 +157,7 @@ def discord_callback(request):
                             username=user_info["username"],
                             is_subscriber=True,
                         )
-                        # Update the subscriber object created by the signal for the user.
+                        # Update the subscriber object created by the signal.
                         subscriber = Subscriber.objects.get(user=user)
                         subscriber.discord_id = user_info.get("id")
                         subscriber.username = user_info.get("username")
@@ -187,7 +187,11 @@ def discord_callback(request):
                                 # Check if the user owns the server
                                 if serverowner:
                                     owned_servers.append(
-                                        {"id": server_id, "name": server_name, "icon": server_icon},
+                                        {
+                                            "id": server_id,
+                                            "name": server_name,
+                                            "icon": server_icon,
+                                        },
                                     )
                     else:
                         # Redirect user and show a message to create a server
