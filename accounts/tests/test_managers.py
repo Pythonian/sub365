@@ -21,7 +21,6 @@ class SubscriptionManagerTestCase(TestCase):
             username="Pythonian",
             is_serverowner=True,
         )
-
         # Create a server owner
         self.server_owner, _ = ServerOwner.objects.get_or_create(
             user=self.user,
