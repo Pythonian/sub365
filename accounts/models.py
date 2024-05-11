@@ -174,8 +174,8 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of active plans.
         """
-        PlanModel = CoinPlan if self.coinpayment_onboarding else StripePlan
-        return self.get_plans().filter(status=PlanModel.PlanStatus.ACTIVE.value).count()
+        plan_model = CoinPlan if self.coinpayment_onboarding else StripePlan
+        return self.get_plans().filter(status=plan_model.PlanStatus.ACTIVE.value).count()
 
     def get_inactive_plans_count(self):
         """Get the total number of inactive plans.
@@ -183,8 +183,8 @@ class ServerOwner(models.Model):
         Returns:
             int: The total number of inactive plans.
         """
-        PlanModel = CoinPlan if self.coinpayment_onboarding else StripePlan
-        return self.get_plans().filter(status=PlanModel.PlanStatus.INACTIVE.value).count()
+        plan_model = CoinPlan if self.coinpayment_onboarding else StripePlan
+        return self.get_plans().filter(status=plan_model.PlanStatus.INACTIVE.value).count()
 
     def get_popular_plans(self, limit=3):
         """Get the popular plans created by the ServerOwner based on number of subscribers.
@@ -193,10 +193,10 @@ class ServerOwner(models.Model):
             QuerySet: QuerySet of Plan objects ordered by subscriber count
                       in descending order excluding plans with no subscribers.
         """
-        PlanModel = CoinPlan if self.coinpayment_onboarding else StripePlan
+        plan_model = CoinPlan if self.coinpayment_onboarding else StripePlan
         return (
             self.get_plans()
-            .filter(status=PlanModel.PlanStatus.ACTIVE, subscriber_count__gt=0)
+            .filter(status=plan_model.PlanStatus.ACTIVE, subscriber_count__gt=0)
             .order_by(
                 "-subscriber_count",
             )[:limit]
@@ -364,8 +364,8 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
-        SubscriptionModel = CoinSubscription if self.coinpayment_onboarding else StripeSubscription
-        return SubscriptionModel.active_subscriptions.filter(
+        subscription_model = CoinSubscription if self.coinpayment_onboarding else StripeSubscription
+        return subscription_model.active_subscriptions.filter(
             subscribed_via=self,
         )[:limit]
 

@@ -9,7 +9,12 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import AffiliateInvitee, AffiliatePayment, ServerOwner, StripeSubscription
+from .models import (
+    AffiliateInvitee,
+    AffiliatePayment,
+    ServerOwner,
+    StripeSubscription,
+)
 from .tasks import send_payment_failed_email
 
 logger = logging.getLogger(__name__)
@@ -103,7 +108,8 @@ def stripe_webhook(request):
                 if subscription.subscription_date is None:
                     # Set the subscription date using the 'created' timestamp from the event
                     subscription.subscription_date = timezone.datetime.fromtimestamp(
-                        event.data.object.created, tz=timezone.utc
+                        event.data.object.created,
+                        tz=timezone.utc,
                     )
 
                 # Retrieve expiration date and update subscription

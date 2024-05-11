@@ -516,15 +516,15 @@ def plan_detail(request, plan_id):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     coinpayment_onboarding = serverowner.coinpayment_onboarding
 
-    PlanModel = CoinPlan if coinpayment_onboarding else StripePlan
-    plan = get_object_or_404(PlanModel, id=plan_id, serverowner=serverowner)
+    plan_model = CoinPlan if coinpayment_onboarding else StripePlan
+    plan = get_object_or_404(plan_model, id=plan_id, serverowner=serverowner)
     subscribers = plan.get_plan_subscribers()
     subscribers = mk_paginator(request, subscribers, PAGINATION_ITEMS)
 
-    FormClass = CoinPlanForm if coinpayment_onboarding else StripePlanForm
+    plan_form = CoinPlanForm if coinpayment_onboarding else StripePlanForm
 
     if request.method == "POST":
-        form = FormClass(request.POST, instance=plan)
+        form = plan_form(request.POST, instance=plan)
         if form.is_valid():
             if coinpayment_onboarding:
                 plan = form.save()
@@ -554,7 +554,7 @@ def plan_detail(request, plan_id):
         else:
             messages.error(request, "An error occurred while updating your Plan. Please try again.")
     else:
-        form = FormClass(instance=plan)
+        form = plan_form(instance=plan)
 
     template = "serverowner/plans/detail.html"
     context = {
@@ -573,11 +573,11 @@ def deactivate_plan(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
 
     try:
-        PlanModel = CoinPlan if serverowner.coinpayment_onboarding else StripePlan
+        plan_model = CoinPlan if serverowner.coinpayment_onboarding else StripePlan
 
         if request.method == "POST":
             product_id = request.POST.get("product_id")
-            plan = get_object_or_404(PlanModel, id=product_id, serverowner=serverowner)
+            plan = get_object_or_404(plan_model, id=product_id, serverowner=serverowner)
 
             if serverowner.coinpayment_onboarding:
                 # Update the plan status in the database
@@ -638,14 +638,14 @@ def subscriber_detail(request, subscriber_id):
     subscriptions = subscriber.get_subscriptions()
     subscriptions = mk_paginator(request, subscriptions, PAGINATION_ITEMS)
 
-    SubscriptionModel = CoinSubscription if request.user.serverowner.coinpayment_onboarding else StripeSubscription
+    subscription_model = CoinSubscription if request.user.serverowner.coinpayment_onboarding else StripeSubscription
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        subscription = SubscriptionModel.active_subscriptions.filter(
+        subscription = subscription_model.active_subscriptions.filter(
             subscriber=subscriber,
         ).latest()
-    except SubscriptionModel.DoesNotExist:
+    except subscription_model.DoesNotExist:
         subscription = None
 
     template = "serverowner/subscribers/detail.html"
@@ -868,17 +868,17 @@ def subscriber_dashboard(request):
         else StripePlan.active_plans.filter(serverowner=serverowner)
     )
 
-    SubscriptionModel = CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
+    subscription_model = CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        latest_subscription = SubscriptionModel.active_subscriptions.filter(subscriber=subscriber).latest()
-    except SubscriptionModel.DoesNotExist:
+        latest_subscription = subscription_model.active_subscriptions.filter(subscriber=subscriber).latest()
+    except subscription_model.DoesNotExist:
         latest_subscription = None
 
     # Retrieve all the subscriptions done by the subscriber
-    subscriptions = SubscriptionModel.objects.filter(subscriber=subscriber).exclude(
-        status=SubscriptionModel.SubscriptionStatus.PENDING,
+    subscriptions = subscription_model.objects.filter(subscriber=subscriber).exclude(
+        status=subscription_model.SubscriptionStatus.PENDING,
     )
 
     subscriptions = mk_paginator(request, subscriptions, PAGINATION_ITEMS)
@@ -1256,10 +1256,12 @@ def affiliate_dashboard(request):
 
         # Get the affiliate's payment detail instance
         payment_detail = affiliate.paymentdetail
-        FormClass = CoinPaymentDetailForm if affiliate.serverowner.coinpayment_onboarding else StripePaymentDetailForm
+        paymentdetail_form = (
+            CoinPaymentDetailForm if affiliate.serverowner.coinpayment_onboarding else StripePaymentDetailForm
+        )
 
         if request.method == "POST":
-            form = FormClass(request.POST, instance=payment_detail)
+            form = paymentdetail_form(request.POST, instance=payment_detail)
             if form.is_valid():
                 form.save()
                 messages.success(request, "Your payment detail has been updated.")
@@ -1267,7 +1269,7 @@ def affiliate_dashboard(request):
             else:
                 messages.error(request, "An error occurred while updating your payment details.")
         else:
-            form = FormClass(instance=payment_detail)
+            form = paymentdetail_form(instance=payment_detail)
 
         template = "affiliate/dashboard.html"
         context = {

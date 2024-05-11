@@ -10,7 +10,11 @@ class Command(BaseCommand):
     help = "Generate unique access codes"
 
     def add_arguments(self, parser):
-        parser.add_argument("num_codes", type=int, help="Number of access codes to generate")
+        parser.add_argument(
+            "num_codes",
+            type=int,
+            help="Number of access codes to generate",
+        )
 
     def handle(self, *args, **options):
         num_codes = options["num_codes"]
