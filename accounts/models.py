@@ -53,7 +53,7 @@ class ServerOwner(models.Model):
         _("avatar"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("The ID of the Serverowner's avatar from Discord."),
     )
     subdomain = models.CharField(
@@ -69,7 +69,7 @@ class ServerOwner(models.Model):
         _("stripe account id"),
         max_length=100,
         blank=True,
-        null=True,
+        default="",
         help_text=_("The stripe account ID of the Serverowner."),
     )
     affiliate_commission = models.IntegerField(
@@ -106,14 +106,14 @@ class ServerOwner(models.Model):
         _("coinpayment api secret key"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("Coinpayment API secret key of the serverowner."),
     )
     coinpayment_api_public_key = models.CharField(
         _("coinpayment api public key"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("Coinpayment API public key of the serverowner."),
     )
     coinpayment_onboarding = models.BooleanField(
@@ -432,7 +432,7 @@ class Server(models.Model):
         _("icon"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("Icon of the server on Discord."),
     )
     choice_server = models.BooleanField(
@@ -485,7 +485,7 @@ class Subscriber(models.Model):
         _("avatar"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("Avatar URL of the subscriber."),
     )
     email = models.EmailField(
@@ -504,7 +504,7 @@ class Subscriber(models.Model):
         _("stripe customer id"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("Stripe customer ID of the subscriber."),
     )
     created = models.DateTimeField(auto_now_add=True)
@@ -975,7 +975,7 @@ class BasePlan(models.Model):
         _("permission description"),
         max_length=255,
         blank=True,
-        null=True,
+        default="",
         help_text=_("Description of permissions to be given to subscribers."),
     )
     created = models.DateTimeField(auto_now_add=True)

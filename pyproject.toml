@@ -22,6 +22,7 @@ select = [
   "E",   # pycodestyle
   "F",   # pyflakes
   "I",   # isort
+  "DJ",  # flake8-django
 ]
 
 # Avoid enforcing line-length violations (`E501`)
