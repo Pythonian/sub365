@@ -26,6 +26,7 @@ select = [
   "COM", # flake8-commas
   "N",   # pep8-naming
   "G",   # flake8-logging-format
+  "TRY", # tryceratops
 ]
 
 # Avoid enforcing line-length violations (`E501`)

@@ -104,15 +104,15 @@ def check_coin_transaction_status():
                     logger.warning("Unexpected format for 'result': %s", result)
             except ObjectDoesNotExist:
                 coin_subscription = None
-            except requests.exceptions.RequestException as e:
-                logger.exception("Coinbase API request failed: %s", e)
-            except (ValueError, KeyError) as e:
-                logger.exception("Failed to parse Coinbase API response: %s", e)
-            except Exception as e:
-                logger.exception("An unexpected error occurred: %s", e)
+            except requests.exceptions.RequestException:
+                logger.exception("Coinbase API request failed")
+            except (ValueError, KeyError):
+                logger.exception("Failed to parse Coinbase API response")
+            except Exception:
+                logger.exception("An unexpected error occurred")
 
-    except Exception as e:
-        logger.exception("An unexpected error occurred: %s", e)
+    except Exception:
+        logger.exception("An unexpected error occurred")
 
 
 @shared_task(name="check_and_mark_expired_subscriptions")

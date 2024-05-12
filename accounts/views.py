@@ -67,7 +67,6 @@ def index(request):
 @redirect_authenticated_user
 def discord_login(request):
     """View for initiating Discord OAuth2 authentication."""
-
     # Generate a random state value for CSRF protection
     state = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
 
@@ -86,7 +85,6 @@ def discord_login(request):
 @redirect_authenticated_user
 def subscribe_redirect(request):
     """View for redirecting a new subscriber to Discord OAuth2 for authentication."""
-
     # Get the referral name from the query parameters
     referral = request.GET.get("ref")
 
@@ -318,20 +316,17 @@ def onboarding_crypto(request):
                     return redirect("dashboard_view")
                 else:
                     form.add_error(None, "Invalid Coinbase API keys.")
-            except RequestException as e:
+            except RequestException:
                 # RequestException includes issues like network errors, invalid responses etc.
-                msg = f"Failed to verify Coinbase API keys: {e}"
-                logger.exception(msg)
+                logger.exception("Failed to verify Coinbase API keys.")
                 form.add_error(None, "Failed to verify Coinbase API keys. Please try again.")
-            except ValueError as e:
+            except ValueError:
                 # Raised if there is an issue with parsing JSON response
-                msg = f"Failed to verify Coinbase API keys: {e}"
-                logger.exception(msg)
+                logger.exception("Failed to verify Coinbase API keys.")
                 form.add_error(None, "Failed to parse API response. Please try again.")
-            except Exception as e:
+            except Exception:
                 # Catch any other unexpected exceptions and log them
-                msg = f"An unexpected error occurred: {e}"
-                logger.exception(msg)
+                logger.exception("An unexpected error occurred.")
                 form.add_error(None, "An unexpected error occurred. Please try again later.")
     else:
         form = CoinpaymentsOnboardingForm()
@@ -488,8 +483,8 @@ def plans(request):
 
                 messages.success(request, "Your Subscription Plan has been successfully created.")
                 return redirect("plans")
-            except stripe.error.StripeError as e:
-                logger.exception("An error occurred during a Stripe API call: %s", str(e))
+            except stripe.error.StripeError:
+                logger.exception("An error occurred during a Stripe API call")
                 messages.error(request, "An error occurred while processing your request. Please try again later.")
         else:
             messages.error(request, "An error occurred while creating your Plan. Please try again.")
@@ -544,9 +539,8 @@ def plan_detail(request, plan_id):
                         plan = form.save()
                         messages.success(request, "Your Subscription Plan has been successfully updated.")
                         return redirect(plan)
-                except stripe.error.StripeError as e:
-                    msg = f"An error occurred during a Stripe API call: {e}"
-                    logger.exception(msg)
+                except stripe.error.StripeError:
+                    logger.exception("An error occurred during a Stripe API call.")
                     messages.error(
                         request,
                         "An error occurred while processing your request. Please try again later.",
@@ -600,8 +594,8 @@ def deactivate_plan(request):
                         plan.status = StripePlan.PlanStatus.INACTIVE
                         plan.save()
                         messages.success(request, "Your plan has been successfully deactivated.")
-                except stripe.error.StripeError as e:
-                    logger.exception("An error occurred during a Stripe API call: %s", str(e))
+                except stripe.error.StripeError:
+                    logger.exception("An error occurred during a Stripe API call.")
                     messages.error(
                         request,
                         "An error occurred while processing your request. Please try again later.",
@@ -767,25 +761,22 @@ def pending_affiliate_payment(request):
                             # TODO: If withdrawal amount is not enough?
                             msg = f"Withdrawal status: {result.get('status')}"
                             logger.warning(msg)
-                    except requests.exceptions.RequestException as e:
-                        msg = f"Coinbase API request failed: {e}"
-                        logger.exception(msg)
+                    except requests.exceptions.RequestException:
+                        logger.exception("Coinbase API request failed.")
                         messages.error(
                             request,
                             "An error occurred while communicating with Coinbase. Please try again later.",
                         )
                         return redirect("pending_affiliate_payment")
-                    except (ValueError, KeyError) as e:
-                        msg = f"Failed to parse Coinbase API response: {e}"
-                        logger.exception(msg)
+                    except (ValueError, KeyError):
+                        logger.exception("Failed to parse Coinbase API response.")
                         messages.error(
                             request,
                             "An unexpected error occurred while processing the response. Please try again later.",
                         )
                         return redirect("pending_affiliate_payment")
-                    except Exception as e:
-                        msg = f"An unexpected error occurred: {e}"
-                        logger.exception(msg)
+                    except Exception:
+                        logger.exception("An unexpected error occurred.")
                         messages.error(
                             request,
                             "An unexpected error occurred. Please try again later.",
@@ -962,22 +953,22 @@ def subscription_coin(request, plan_id):
                 "An error occurred during the transaction. Please try again later.",
             )
             return redirect("subscriber_dashboard")
-    except requests.exceptions.RequestException as e:
-        logger.exception("Coinbase API request failed: %s", e)
+    except requests.exceptions.RequestException:
+        logger.exception("Coinbase API request failed.")
         messages.error(
             request,
             "An error occurred while communicating with Coinbase. Please try again later.",
         )
         return redirect("subscriber_dashboard")
-    except (ValueError, KeyError) as e:
-        logger.exception("Failed to parse Coinbase API response: %s", e)
+    except (ValueError, KeyError):
+        logger.exception("Failed to parse Coinbase API response.")
         messages.error(
             request,
             "An unexpected error occurred while processing the response. Please try again later.",
         )
         return redirect("subscriber_dashboard")
-    except Exception as e:
-        logger.exception("An unexpected error occurred: %s", e)
+    except Exception:
+        logger.exception("An unexpected error occurred.")
         messages.error(request, "An unexpected error occurred. Please try again later.")
         return redirect("subscriber_dashboard")
 
@@ -1015,8 +1006,8 @@ def subscription_stripe(request, plan_id):
         else:
             session_data["customer_email"] = subscriber.email
         session = stripe.checkout.Session.create(**session_data)
-    except stripe.error.StripeError as e:
-        logger.exception("Stripe API Error: %s", e)
+    except stripe.error.StripeError:
+        logger.exception("A Stripe API error has occured.")
         messages.error(
             request,
             "An error occurred while processing your request. Please try again later.",
@@ -1099,8 +1090,8 @@ def subscription_success(request):
                 subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
                 subscriber.subscribed_via.save()
 
-        except stripe.error.StripeError as e:
-            logger.exception("Stripe Session retrieval error: %s", e)
+        except stripe.error.StripeError:
+            logger.exception("Stripe Session retrieval error.")
             messages.error(request, "An error occurred during the subscription process. Please try again.")
             return redirect("subscriber_dashboard")
 
@@ -1141,9 +1132,8 @@ def subscription_cancel(request):
         except Http404:
             # If the subscription is not found, it will raise a 404 error with a message
             messages.error(request, "No active subscription found for cancellation.")
-        except Exception as e:
-            msg = f"An unexpected error occurred: {e}"
-            logger.exception(msg)
+        except Exception:
+            logger.exception("An unexpected error occurred.")
             messages.error(
                 request,
                 "An unexpected error occurred while processing your request. Please try again later.",
@@ -1170,9 +1160,8 @@ def subscription_cancel(request):
                     request,
                     f"Your subscription has been canceled successfully. It will not be renewed when it expires on {subscription.expiration_date.strftime('%B %d, %Y')}",
                 )
-        except stripe.error.StripeError as e:
-            msg = f"An error occurred during a Stripe API call: {e}"
-            logger.exception(msg)
+        except stripe.error.StripeError:
+            logger.exception("An error occurred during a Stripe API call.")
             messages.error(
                 request,
                 "An error occurred while canceling your subscription. Please try again later.",
@@ -1182,9 +1171,8 @@ def subscription_cancel(request):
             # If the subscription is not found, it will raise a 404 error with a message
             messages.error(request, "No active subscription found for cancellation.")
 
-        except Exception as e:
-            msg = f"An unexpected error occurred: {e}"
-            logger.exception(msg)
+        except Exception:
+            logger.exception("An unexpected error occurred.")
             messages.error(
                 request,
                 "An unexpected error occurred while processing your request. Please try again later.",
