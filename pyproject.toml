@@ -25,6 +25,7 @@ select = [
   "DJ",  # flake8-django
   "COM", # flake8-commas
   "N",   # pep8-naming
+  "G",   # flake8-logging-format
 ]
 
 # Avoid enforcing line-length violations (`E501`)

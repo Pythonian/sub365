@@ -963,21 +963,21 @@ def subscription_coin(request, plan_id):
             )
             return redirect("subscriber_dashboard")
     except requests.exceptions.RequestException as e:
-        logger.exception(f"Coinbase API request failed: {e}")
+        logger.exception("Coinbase API request failed: %s", e)
         messages.error(
             request,
             "An error occurred while communicating with Coinbase. Please try again later.",
         )
         return redirect("subscriber_dashboard")
     except (ValueError, KeyError) as e:
-        logger.exception(f"Failed to parse Coinbase API response: {e}")
+        logger.exception("Failed to parse Coinbase API response: %s", e)
         messages.error(
             request,
             "An unexpected error occurred while processing the response. Please try again later.",
         )
         return redirect("subscriber_dashboard")
     except Exception as e:
-        logger.exception(f"An unexpected error occurred: {e}")
+        logger.exception("An unexpected error occurred: %s", e)
         messages.error(request, "An unexpected error occurred. Please try again later.")
         return redirect("subscriber_dashboard")
 
@@ -1016,7 +1016,7 @@ def subscription_stripe(request, plan_id):
             session_data["customer_email"] = subscriber.email
         session = stripe.checkout.Session.create(**session_data)
     except stripe.error.StripeError as e:
-        logger.exception(f"Stripe API Error: {e}")
+        logger.exception("Stripe API Error: %s", e)
         messages.error(
             request,
             "An error occurred while processing your request. Please try again later.",
@@ -1100,7 +1100,7 @@ def subscription_success(request):
                 subscriber.subscribed_via.save()
 
         except stripe.error.StripeError as e:
-            logger.exception(f"Stripe Session retrieval error: {e}")
+            logger.exception("Stripe Session retrieval error: %s", e)
             messages.error(request, "An error occurred during the subscription process. Please try again.")
             return redirect("subscriber_dashboard")
 
