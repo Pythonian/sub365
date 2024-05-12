@@ -1111,6 +1111,7 @@ class BaseSubscription(models.Model):
         _("subscription id"),
         max_length=225,
         blank=True,
+        default="",
         help_text=_("The subscription ID associated with this subscription."),
     )
     subscription_date = models.DateTimeField(
@@ -1169,6 +1170,7 @@ class StripeSubscription(BaseSubscription):
         _("session id"),
         max_length=200,
         blank=True,
+        default="",
         help_text=_("The Stripe checkout session ID associated with this subscription."),
     )
 
@@ -1200,18 +1202,21 @@ class CoinSubscription(BaseSubscription):
         _("address"),
         max_length=225,
         blank=True,
+        default="",
         help_text=_("The Litecoin address associated with the subscription."),
     )
     checkout_url = models.CharField(
         _("checkout url"),
         max_length=225,
         blank=True,
+        default="",
         help_text=_("The CoinPayment URL for subscriber redirection."),
     )
     status_url = models.CharField(
         _("status url"),
         max_length=225,
         blank=True,
+        default="",
         help_text=_("The URL for accessing transaction status information."),
     )
 
@@ -1235,11 +1240,13 @@ class PaymentDetail(models.Model):
         _("litecoin address"),
         max_length=255,
         blank=True,
+        default="",
         help_text=_("The Litecoin address of the affiliate, used when registered via CoinPayments."),
     )
     body = models.TextField(
         _("payment information"),
         blank=True,
+        default="",
         max_length=300,
         help_text=_("Payment details of the affiliate when registered via Stripe."),
     )
