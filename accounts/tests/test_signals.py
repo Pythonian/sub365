@@ -1,14 +1,14 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from accounts.models import ServerOwner, Subscriber
-from accounts.signals import create_user_profile
-
-User = get_user_model()
+from ..models import ServerOwner, Subscriber, User
+from ..signals import create_user_profile
 
 
 class SignalReceiverTest(TestCase):
+    """Test case for signal receivers."""
+
     def test_create_user_profile_serverowner(self):
+        """Test creation of a ServerOwner profile."""
         # Create a User instance with is_serverowner=True
         user = User.objects.create(username="pythonian", is_serverowner=True)
 
@@ -19,6 +19,7 @@ class SignalReceiverTest(TestCase):
         assert ServerOwner.objects.filter(user=user).exists()
 
     def test_create_user_profile_subscriber(self):
+        """Test creation of a Subscriber profile."""
         # Create a User instance with is_subscriber=True
         user = User.objects.create(username="pythonian", is_subscriber=True)
 
@@ -29,6 +30,7 @@ class SignalReceiverTest(TestCase):
         assert Subscriber.objects.filter(user=user).exists()
 
     def test_create_user_profile_existing_user(self):
+        """Test handling of an existing user."""
         # Create a User instance with is_serverowner=True
         user = User.objects.create(username="pythonian")
 

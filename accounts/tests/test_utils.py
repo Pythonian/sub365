@@ -4,17 +4,23 @@ import hmac
 from django.http import QueryDict
 from django.test import RequestFactory, TestCase
 
-from accounts.utils import create_hmac_signature, mk_paginator
+from ..utils import create_hmac_signature, mk_paginator
 
 
-class UtilityFunctionTests(TestCase):
+class MkPaginatorTests(TestCase):
+    """Test cases for the mk_paginator utility function."""
+
     def setUp(self):
-        # Create a request object for testing mk_paginator
+        """
+        Set up the test environment.
+
+        Creates a request object for testing mk_paginator.
+        """
         self.factory = RequestFactory()
         self.request = self.factory.get("/test-url/")
 
     def test_mk_paginator_valid_page(self):
-        # Test when the page is a valid integer
+        """Checks if the function correctly paginates items when the page number is valid."""
         items = range(1, 101)
         num_items = 10
         # Create a mutable QueryDict and assign it to self.request.GET
@@ -24,7 +30,7 @@ class UtilityFunctionTests(TestCase):
         assert list(paginated_items) == list(range(21, 31))
 
     def test_mk_paginator_invalid_page(self):
-        # Test when the page is not an integer
+        """Checks if the function returns the first page when the page number is invalid."""
         items = range(1, 101)
         num_items = 10
         self.request.GET = QueryDict(mutable=True)
@@ -34,7 +40,7 @@ class UtilityFunctionTests(TestCase):
         assert list(paginated_items) == list(range(1, 11))
 
     def test_mk_paginator_out_of_range_page(self):
-        # Test when the page is out of range
+        """Checks if the function returns the last page when the page number is out of range."""
         items = range(1, 101)
         num_items = 10
         self.request.GET = QueryDict(mutable=True)
@@ -43,8 +49,12 @@ class UtilityFunctionTests(TestCase):
         # Should return the last page
         assert list(paginated_items) == list(range(91, 101))
 
+
+class HMACSignatureTests(TestCase):
+    """Test cases for the create_hmac_signature utility function."""
+
     def test_create_hmac_signature(self):
-        # Test create_hmac_signature function
+        """Checks if the function correctly generates an HMAC signature."""
         data = "test_data"
         api_secret_key = "test_secret_key"
         expected_signature = hmac.new(
@@ -56,7 +66,7 @@ class UtilityFunctionTests(TestCase):
         assert signature == expected_signature
 
     def test_create_hmac_signature_empty_data(self):
-        # Test create_hmac_signature with empty data
+        """Checks if the function correctly handles empty data."""
         data = ""
         api_secret_key = "test_secret_key"
         expected_signature = hmac.new(
@@ -68,7 +78,7 @@ class UtilityFunctionTests(TestCase):
         assert signature == expected_signature
 
     def test_create_hmac_signature_empty_secret_key(self):
-        # Test create_hmac_signature with empty secret key
+        """Checks if the function correctly handles an empty secret key."""
         data = "test_data"
         api_secret_key = ""
         expected_signature = hmac.new(
@@ -80,7 +90,7 @@ class UtilityFunctionTests(TestCase):
         assert signature == expected_signature
 
     def test_create_hmac_signature_unicode_data(self):
-        # Test create_hmac_signature with unicode data
+        """Checks if the function correctly handles Unicode data."""
         data = "unicode_öäü"
         api_secret_key = "test_secret_key"
         expected_signature = hmac.new(
