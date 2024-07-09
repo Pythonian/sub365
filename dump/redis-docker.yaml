@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+    redis:
+        image: redis
+        restart: always
+        ports:
+            - 6178:6379
+        volumes:
+            - redis_data_a:/data
+        entrypoint: redis-server --appendonly yes
+    with-pw:
+        image: redis
+        restart: always
+        ports:
+            - 6179:6379
+        volumes:
+            - redis_data_b:/data
+        env_file: .env
+        entrypoint: redis-server --appendonly yes  --requirepass ${REDIS_PASSWORD}
+
+volumes:
+    redis_data_a:
+    redis_data_b:
+
+networks:
+  default:
+    name: redis_network
+
+# $ docker run -d --name my-redis-stack -p 6379:6379 -v /Users/my-redis/:/data -e REDIS_ARGS="--requirepass your_password_here --appendonly yes" redis/redis-stack-server:latest

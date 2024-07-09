@@ -64,6 +64,7 @@ coverage.xml
 # Django stuff:
 *.log
 celerybeat-schedule
+db.sqlite3
 
 # Sphinx documentation
 docs/_build/
@@ -103,3 +104,4 @@ Makefile
 docs
 .ruff_cache
 .pre-commit-config.yaml
+.github

@@ -431,7 +431,6 @@ class Server(models.Model):
     icon = models.CharField(
         _("icon"),
         max_length=255,
-        blank=True,
         default="",
         help_text=_("Icon of the server on Discord."),
     )

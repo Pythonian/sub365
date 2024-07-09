@@ -1,0 +1,4 @@
+-r requirements/base.txt
+-r requirements/development.txt
+-r requirements/production.txt
+-r requirements/testing.txt
