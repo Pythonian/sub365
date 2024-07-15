@@ -1,45 +1,77 @@
-[tool.black]
-target-version = ["py310"]
-line-length = 119
-include = '\.pyi?$'
-exclude = '''
-  /(
-      \.eggs
-    | \.git
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-'''
-
 [tool.ruff]
-select = [
-  "E",   # pycodestyle
-  "F",   # pyflakes
-  "I",   # isort
-  "DJ",  # flake8-django
-  "COM", # flake8-commas
-  "N",   # pep8-naming
-  "G",   # flake8-logging-format
-  "TRY", # tryceratops
+line-length = 88
+indent-width = 4
+target-version = "py310"
+exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+# Rules to ignore
+ignore = [
+    "E501", # Avoid enforcing line-length violations
+    "S311", # Avoid enforcing standard pseudo-random generators
+    "ANN101", # Avoid enforcing type annotation for `self` in method
+    "FBT001", # Avoid enforcing boolean-typed positional argument
+    "FBT002", # Avoid enforcing boolean default positional argument
+    "S101", # Use of `assert` detected
+    "PT027", # Avoid suggesting pytest.raises
+    "PT009", # Avoid suggesting assert as against using unittest-style assertions
+    "DJ001",
+    "ANN001",
+    "ANN201",
+    "ANN202", # Missing type annotation for private function
+    "ANN003", # Missing type annotation
+    "RUF012",
+    "PLR0915", # too many statements
+    "PLR0912", # Too many branches
+    "C901", # function too complex
+    "S113", # Probable use of `requests` call without timeout
+    "ARG002", # Unused method argument
 ]
 
-# Avoid enforcing line-length violations (`E501`)
-ignore = ["E501"]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
 
 # Avoid trying to fix flake8-bugbear (`B`) violations.
 unfixable = ["B"]
 
-# Exclude files and directories.
-extend-exclude = ["migrations", "manage.py"]
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
 
-[tool.ruff.pydocstyle]
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings.
+docstring-code-format = true
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
+
+[tool.mypy]
+disallow_subclassing_any = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+allow_redefinition = true
+pretty = true
+follow_imports = "silent"
+ignore_missing_imports = true
+show_error_codes = true
+show_column_numbers = true
+python_version = "3.10"

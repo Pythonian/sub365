@@ -1,6 +1,6 @@
 -r base.txt
 
 boto3==1.28.27
-django-storages==1.14.3
+django-storages==1.14.4
 gunicorn==22.0.0
-sentry-sdk==2.1.1
+sentry-sdk==2.9.0

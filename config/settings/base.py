@@ -1,18 +1,14 @@
+"""Base settings configuration for Sub365 project."""
+
 from pathlib import Path
 
-import sentry_sdk
 from celery.schedules import crontab
 from decouple import Csv, config
 from django.contrib.messages import constants as messages
-from sentry_sdk.integrations.django import DjangoIntegration
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config("SECRET_KEY")
-
-DEBUG = config("DEBUG", cast=bool)
-
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -26,12 +22,9 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.humanize",
     "accounts.apps.AccountsConfig",
-    "feedback.apps.FeedbackConfig",
     "widget_tweaks",
-    "storages",
     "django_celery_beat",
     "rest_framework",
-    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
@@ -43,7 +36,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.flatpages.middleware.FlatpageFallbackMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -53,7 +45,7 @@ SITE_ID = 1
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -103,22 +95,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-if DEBUG:
-    STATIC_URL = "/static/"
-    STATIC_ROOT = BASE_DIR / "staticfiles"
-else:
-    # aws settings
-    AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME")
-    AWS_DEFAULT_ACL = None
-    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-    # s3 static settings
-    STATIC_LOCATION = "static"
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
-    STATICFILES_STORAGE = "config.storage_backends.StaticStorage"
-
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -150,46 +126,6 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = config("EMAIL_PORT", cast=int)
 EMAIL_USE_TLS = True
 
-if DEBUG:
-    CORS_REPLACE_HTTPS_REFERER = False
-    HOST_SCHEME = "http://"
-    SECURE_FRAME_DENY = False
-    SECURE_PROXY_SSL_HEADER = None
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SECURE_HSTS_SECONDS = None
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-else:
-    CORS_REPLACE_HTTPS_REFERER = True
-    HOST_SCHEME = "https://"
-    SECURE_FRAME_DENY = True
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_HSTS_SECONDS = 2592000
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_REDIRECT_EXEMPT = []
-
-if not DEBUG:
-    sentry_sdk.init(
-        dsn=config("SENTRY"),
-        integrations=[
-            DjangoIntegration(),
-        ],
-        # Set traces_sample_rate to 1.0 to capture 100%
-        # of transactions for performance monitoring.
-        # We recommend adjusting this value in production.
-        traces_sample_rate=1.0,
-        # If you wish to associate users to errors (assuming you are using
-        # django.contrib.auth) you may enable sending PII data.
-        send_default_pii=True,
-    )
-
 COINBASE_CURRENCY = "LTC"
 
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
@@ -210,8 +146,4 @@ CELERY_BEAT_SCHEDULE = {
 }
 CELERY_IMPORTS = [
     "accounts.tasks",
-]
-
-INTERNAL_IPS = [
-    "127.0.0.1",
 ]

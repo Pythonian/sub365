@@ -1,13 +1,15 @@
+"""Test cases for the model signals."""
+
 from django.test import TestCase
 
-from ..models import ServerOwner, Subscriber, User
-from ..signals import create_user_profile
+from accounts.models import ServerOwner, Subscriber, User
+from accounts.signals import create_user_profile
 
 
 class SignalReceiverTest(TestCase):
     """Test case for signal receivers."""
 
-    def test_create_user_profile_serverowner(self):
+    def test_create_user_profile_serverowner(self) -> None:
         """Test creation of a ServerOwner profile."""
         # Create a User instance with is_serverowner=True
         user = User.objects.create(username="pythonian", is_serverowner=True)
@@ -18,7 +20,7 @@ class SignalReceiverTest(TestCase):
         # Check if a ServerOwner profile was created for the user
         assert ServerOwner.objects.filter(user=user).exists()
 
-    def test_create_user_profile_subscriber(self):
+    def test_create_user_profile_subscriber(self) -> None:
         """Test creation of a Subscriber profile."""
         # Create a User instance with is_subscriber=True
         user = User.objects.create(username="pythonian", is_subscriber=True)
@@ -29,7 +31,7 @@ class SignalReceiverTest(TestCase):
         # Check if a Subscriber profile was created for the user
         assert Subscriber.objects.filter(user=user).exists()
 
-    def test_create_user_profile_existing_user(self):
+    def test_create_user_profile_existing_user(self) -> None:
         """Test handling of an existing user."""
         # Create a User instance with is_serverowner=True
         user = User.objects.create(username="pythonian")

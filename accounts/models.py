@@ -1,3 +1,5 @@
+"""Model classes."""
+
 import uuid
 from decimal import Decimal
 
@@ -53,7 +55,7 @@ class ServerOwner(models.Model):
         _("avatar"),
         max_length=255,
         blank=True,
-        default="",
+        null=True,
         help_text=_("The ID of the Serverowner's avatar from Discord."),
     )
     subdomain = models.CharField(
@@ -156,7 +158,11 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Plan objects belonging to the serverowner.
         """
-        plans_model = self.coinplan_plans if self.coinpayment_onboarding else self.stripeplan_plans
+        plans_model = (
+            self.coinplan_plans
+            if self.coinpayment_onboarding
+            else self.stripeplan_plans
+        )
         return plans_model.all()
 
     def get_plan_count(self):
@@ -165,7 +171,11 @@ class ServerOwner(models.Model):
         Returns:
             int: The total count of plans created by the serverowner.
         """
-        plans_model = self.coinplan_plans if self.coinpayment_onboarding else self.stripeplan_plans
+        plans_model = (
+            self.coinplan_plans
+            if self.coinpayment_onboarding
+            else self.stripeplan_plans
+        )
         return plans_model.count()
 
     def get_active_plans_count(self):
@@ -175,7 +185,9 @@ class ServerOwner(models.Model):
             int: The total number of active plans.
         """
         plan_model = CoinPlan if self.coinpayment_onboarding else StripePlan
-        return self.get_plans().filter(status=plan_model.PlanStatus.ACTIVE.value).count()
+        return (
+            self.get_plans().filter(status=plan_model.PlanStatus.ACTIVE.value).count()
+        )
 
     def get_inactive_plans_count(self):
         """Get the total number of inactive plans.
@@ -184,7 +196,9 @@ class ServerOwner(models.Model):
             int: The total number of inactive plans.
         """
         plan_model = CoinPlan if self.coinpayment_onboarding else StripePlan
-        return self.get_plans().filter(status=plan_model.PlanStatus.INACTIVE.value).count()
+        return (
+            self.get_plans().filter(status=plan_model.PlanStatus.INACTIVE.value).count()
+        )
 
     def get_popular_plans(self, limit=3):
         """Get the popular plans created by the ServerOwner based on number of subscribers.
@@ -210,7 +224,9 @@ class ServerOwner(models.Model):
         Returns:
             Decimal: The total payments the serverowner has paid to affiliates.
         """
-        return self.affiliate_set.aggregate(total_payments=Sum("total_commissions_paid")).get(
+        return self.affiliate_set.aggregate(
+            total_payments=Sum("total_commissions_paid"),
+        ).get(
             "total_payments",
         ) or Decimal(0)
 
@@ -286,7 +302,11 @@ class ServerOwner(models.Model):
         """
         confirmed_payments = self.get_confirmed_affiliate_payments()
         total_amount = confirmed_payments.aggregate(total=Sum("amount")).get("total")
-        return Decimal(total_amount).quantize(Decimal("0.00")) if total_amount is not None else Decimal("0.00")
+        return (
+            Decimal(total_amount).quantize(Decimal("0.00"))
+            if total_amount is not None
+            else Decimal("0.00")
+        )
 
     def calculate_affiliate_commission(self, subscription_amount):
         """Calculate the affiliate commission based on the subscription
@@ -337,8 +357,7 @@ class ServerOwner(models.Model):
     # ===== SERVEROWNER SUBSCRIBER METHODS ===== #
 
     def get_subscribed_users(self):
-        """Retrieve the subscribers who subscribed to any of the plans created by the
-        ServerOwner.
+        """Retrieve all the subscribers to a ServerOwner's plans.
 
         Returns:
             QuerySet: QuerySet of Subscriber objects who subscribed via the ServerOwner.
@@ -364,7 +383,9 @@ class ServerOwner(models.Model):
         Returns:
             QuerySet: QuerySet of Subscription objects ordered by creation date.
         """
-        subscription_model = CoinSubscription if self.coinpayment_onboarding else StripeSubscription
+        subscription_model = (
+            CoinSubscription if self.coinpayment_onboarding else StripeSubscription
+        )
         return subscription_model.active_subscriptions.filter(
             subscribed_via=self,
         )[:limit]
@@ -378,15 +399,18 @@ class ServerOwner(models.Model):
         if self.coinpayment_onboarding:
             return (
                 self.get_subscribed_users()
-                .filter(coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE)
+                .filter(
+                    coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE,
+                )
                 .count()
             )
-        else:
-            return (
-                self.get_subscribed_users()
-                .filter(stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE)
-                .count()
+        return (
+            self.get_subscribed_users()
+            .filter(
+                stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE,
             )
+            .count()
+        )
 
     def get_inactive_subscribers_count(self):
         """Get the total number of subscribers with inactive subscriptions.
@@ -397,15 +421,18 @@ class ServerOwner(models.Model):
         if self.coinpayment_onboarding:
             return (
                 self.get_subscribed_users()
-                .exclude(coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE)
+                .exclude(
+                    coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE,
+                )
                 .count()
             )
-        else:
-            return (
-                self.get_subscribed_users()
-                .exclude(stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE)
-                .count()
+        return (
+            self.get_subscribed_users()
+            .exclude(
+                stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE,
             )
+            .count()
+        )
 
 
 class Server(models.Model):
@@ -431,7 +458,8 @@ class Server(models.Model):
     icon = models.CharField(
         _("icon"),
         max_length=255,
-        default="",
+        blank=True,
+        null=True,
         help_text=_("Icon of the server on Discord."),
     )
     choice_server = models.BooleanField(
@@ -484,7 +512,7 @@ class Subscriber(models.Model):
         _("avatar"),
         max_length=255,
         blank=True,
-        default="",
+        null=True,
         help_text=_("Avatar URL of the subscriber."),
     )
     email = models.EmailField(
@@ -533,13 +561,10 @@ class Subscriber(models.Model):
         if self.subscribed_via.coinpayment_onboarding:
             return self.coinsubscription_subscriptions.filter(
                 status=CoinSubscription.SubscriptionStatus.ACTIVE,
-                # expiration_date__gt=timezone.now(),
             ).exists()
-        else:
-            return self.stripesubscription_subscriptions.filter(
-                status=StripeSubscription.SubscriptionStatus.ACTIVE,
-                # expiration_date__gt=timezone.now(),
-            ).exists()
+        return self.stripesubscription_subscriptions.filter(
+            status=StripeSubscription.SubscriptionStatus.ACTIVE,
+        ).exists()
 
     def get_latest_pending_subscription(self):
         """Get the latest PENDING subscription of the subscriber.
@@ -560,8 +585,7 @@ class Subscriber(models.Model):
 
         if subscriptions.exists():
             return subscriptions.first()
-        else:
-            return None
+        return None
 
     def get_subscriptions(self):
         """Get the subscriptions associated with the subscriber.
@@ -571,8 +595,7 @@ class Subscriber(models.Model):
         """
         if self.subscribed_via.coinpayment_onboarding:
             return self.coinsubscription_subscriptions.all()
-        else:
-            return self.stripesubscription_subscriptions.all()
+        return self.stripesubscription_subscriptions.all()
 
 
 class Affiliate(models.Model):
@@ -681,13 +704,12 @@ class Affiliate(models.Model):
                 ).values("discord_id"),
             )
             return invitees_with_active_coin_subscriptions.count()
-        else:
-            invitees_with_active_stripe_subscriptions = self.affiliateinvitee_set.filter(
-                invitee_discord_id__in=Subscriber.objects.filter(
-                    stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE,
-                ).values("discord_id"),
-            )
-            return invitees_with_active_stripe_subscriptions.count()
+        invitees_with_active_stripe_subscriptions = self.affiliateinvitee_set.filter(
+            invitee_discord_id__in=Subscriber.objects.filter(
+                stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE,
+            ).values("discord_id"),
+        )
+        return invitees_with_active_stripe_subscriptions.count()
 
     def calculate_conversion_rate(self):
         """Calculate the conversion rate of the affiliate.
@@ -699,17 +721,29 @@ class Affiliate(models.Model):
         if self.serverowner.coinpayment_onboarding:
             successful_invitees_count = self.affiliateinvitee_set.filter(
                 invitee_discord_id__in=Subscriber.objects.filter(
-                    Q(coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE)
-                    | Q(coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.CANCELED)
-                    | Q(coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.EXPIRED),
+                    Q(
+                        coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.ACTIVE,
+                    )
+                    | Q(
+                        coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.CANCELED,
+                    )
+                    | Q(
+                        coinsubscription_subscriptions__status=CoinSubscription.SubscriptionStatus.EXPIRED,
+                    ),
                 ).values("discord_id"),
             ).count()
         else:
             successful_invitees_count = self.affiliateinvitee_set.filter(
                 invitee_discord_id__in=Subscriber.objects.filter(
-                    Q(stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE)
-                    | Q(stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.CANCELED)
-                    | Q(stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.EXPIRED),
+                    Q(
+                        stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.ACTIVE,
+                    )
+                    | Q(
+                        stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.CANCELED,
+                    )
+                    | Q(
+                        stripesubscription_subscriptions__status=StripeSubscription.SubscriptionStatus.EXPIRED,
+                    ),
                 ).values("discord_id"),
             ).count()
 
@@ -788,7 +822,9 @@ class AffiliateInvitee(models.Model):
         Returns:
             str: The username of the invitee, or the discord id if username not found.
         """
-        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id,
+        ).first()
         if subscriber:
             return subscriber.username
         return self.invitee_discord_id
@@ -799,7 +835,9 @@ class AffiliateInvitee(models.Model):
         Returns:
             Decimal: The affiliate commission payment received.
         """
-        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id,
+        ).first()
         if subscriber:
             subscription_model = (
                 subscriber.coinsubscription_subscriptions
@@ -814,9 +852,13 @@ class AffiliateInvitee(models.Model):
         return Decimal(0)
 
     def get_affiliate_coin_commission_payment(self):
-        subscriber = Subscriber.objects.filter(discord_id=self.invitee_discord_id).first()
+        subscriber = Subscriber.objects.filter(
+            discord_id=self.invitee_discord_id,
+        ).first()
         if subscriber and self.affiliate.serverowner.coinpayment_onboarding:
-            subscription = subscriber.coinsubscription_subscriptions.order_by("-created").first()
+            subscription = subscriber.coinsubscription_subscriptions.order_by(
+                "-created",
+            ).first()
             if subscription:
                 subscription_amount = subscription.coin_amount
                 serverowner = self.affiliate.serverowner
@@ -834,7 +876,9 @@ class AffiliateInvitee(models.Model):
             subscriber__discord_id=self.invitee_discord_id,
             paid=True,
         )
-        total_commission = affiliate_payments.aggregate(total_commission=Sum("amount")).get("total_commission")
+        total_commission = affiliate_payments.aggregate(
+            total_commission=Sum("amount"),
+        ).get("total_commission")
         return total_commission or Decimal(0)
 
 
@@ -984,6 +1028,8 @@ class BasePlan(models.Model):
     active_plans = ActivePlanManager()
 
     class Meta:
+        """Metadata options for the BasePlan model."""
+
         abstract = True
 
     def __str__(self) -> str:
@@ -1022,7 +1068,10 @@ class StripePlan(BasePlan):
         Returns:
             QuerySet: A queryset of subscribers for this plan and serverowner.
         """
-        return StripeSubscription.objects.filter(plan=self, subscribed_via=self.serverowner)
+        return StripeSubscription.objects.filter(
+            plan=self,
+            subscribed_via=self.serverowner,
+        )
 
     def active_subscriptions_count(self):
         """Count the number of active subscriptions for this plan.
@@ -1031,7 +1080,9 @@ class StripePlan(BasePlan):
             int: The count of active subscriptions.
         """
         subscribers = self.get_plan_subscribers()
-        active_subscriptions = subscribers.filter(status=StripeSubscription.SubscriptionStatus.ACTIVE)
+        active_subscriptions = subscribers.filter(
+            status=StripeSubscription.SubscriptionStatus.ACTIVE,
+        )
         return active_subscriptions.count()
 
     def total_subscriptions_count(self):
@@ -1060,7 +1111,10 @@ class CoinPlan(BasePlan):
         Returns:
             QuerySet: A queryset of subscribers for this plan and serverowner.
         """
-        return CoinSubscription.objects.filter(plan=self, subscribed_via=self.serverowner)
+        return CoinSubscription.objects.filter(
+            plan=self,
+            subscribed_via=self.serverowner,
+        )
 
     def active_subscriptions_count(self):
         """Count the number of active subscriptions for this plan.
@@ -1069,7 +1123,9 @@ class CoinPlan(BasePlan):
             int: The count of active subscriptions.
         """
         subscribers = self.get_plan_subscribers()
-        active_subscriptions = subscribers.filter(status=CoinSubscription.SubscriptionStatus.ACTIVE)
+        active_subscriptions = subscribers.filter(
+            status=CoinSubscription.SubscriptionStatus.ACTIVE,
+        )
         return active_subscriptions.count()
 
     def total_subscriptions_count(self):
@@ -1170,7 +1226,9 @@ class StripeSubscription(BaseSubscription):
         max_length=200,
         blank=True,
         default="",
-        help_text=_("The Stripe checkout session ID associated with this subscription."),
+        help_text=_(
+            "Stripe checkout session ID associated with this subscription.",
+        ),
     )
 
     class Meta(BaseSubscription.Meta):
@@ -1240,7 +1298,9 @@ class PaymentDetail(models.Model):
         max_length=255,
         blank=True,
         default="",
-        help_text=_("The Litecoin address of the affiliate, used when registered via CoinPayments."),
+        help_text=_(
+            "The Litecoin address of the affiliate, used when registered via CoinPayments.",
+        ),
     )
     body = models.TextField(
         _("payment information"),

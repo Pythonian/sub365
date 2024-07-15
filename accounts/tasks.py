@@ -32,19 +32,30 @@ def check_coin_transaction_status():
                 data = f"version=1&cmd=get_tx_info&txid={coin_subscription.subscription_id}&key={coin_subscription.subscribed_via.coinpayment_api_public_key}&format=json"
                 header = {
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "HMAC": create_hmac_signature(data, coin_subscription.subscribed_via.coinpayment_api_secret_key),
+                    "HMAC": create_hmac_signature(
+                        data,
+                        coin_subscription.subscribed_via.coinpayment_api_secret_key,
+                    ),
                 }
                 response = requests.post(endpoint, data=data, headers=header)
                 result = response.json().get("result")
 
                 if isinstance(result, dict):
                     status = result.get("status")
-                    if status == 100 and coin_subscription.status == CoinSubscription.SubscriptionStatus.PENDING:
+                    if (
+                        status == 100
+                        and coin_subscription.status
+                        == CoinSubscription.SubscriptionStatus.PENDING
+                    ):
                         with transaction.atomic():
-                            coin_subscription.status = CoinSubscription.SubscriptionStatus.ACTIVE
+                            coin_subscription.status = (
+                                CoinSubscription.SubscriptionStatus.ACTIVE
+                            )
                             coin_subscription.subscription_date = timezone.now()
                             interval_count = coin_subscription.plan.interval_count
-                            coin_subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
+                            coin_subscription.expiration_date = (
+                                timezone.now() + relativedelta(months=interval_count)
+                            )
                             coin_subscription.save()
 
                             subscriber = coin_subscription.subscriber
@@ -66,7 +77,8 @@ def check_coin_transaction_status():
                                     + affiliateinvitee.get_affiliate_coin_commission_payment()
                                 )
                                 affiliateinvitee.affiliate.pending_commissions = (
-                                    F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                                    F("pending_commissions")
+                                    + affiliateinvitee.get_affiliate_commission_payment()
                                 )
                                 affiliateinvitee.affiliate.save()
 
@@ -87,11 +99,15 @@ def check_coin_transaction_status():
                             plan = coin_subscription.plan
                             plan.subscriber_count = F("subscriber_count") + 1
                             # Increment the earnings for this plan
-                            plan.subscription_earnings = F("subscription_earnings") + plan.amount
+                            plan.subscription_earnings = (
+                                F("subscription_earnings") + plan.amount
+                            )
                             plan.save()
 
                             # Increment the total earnings of the serverowner
-                            subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
+                            subscriber.subscribed_via.total_earnings = (
+                                F("total_earnings") + plan.amount
+                            )
                             subscriber.subscribed_via.save()
 
                     elif status == -1:

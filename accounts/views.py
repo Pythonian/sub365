@@ -1,3 +1,5 @@
+"""Business logic functions."""
+
 import logging
 import random
 import string
@@ -52,15 +54,18 @@ from .models import (
 from .tasks import check_coin_transaction_status, send_affiliate_email
 from .utils import create_hmac_signature, mk_paginator
 
-discord_oauth2_authorization_url = "https://discord.com/api/oauth2/authorize"
+discord_oauth2_authorization_url = "https://discord.com/oauth2/authorize"
+discord_token_url = "https://discord.com/api/oauth2/token"
 
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_API_KEY
 
 PAGINATION_ITEMS = 12
+HTTP_STATUS_200 = 200
 
 
 def index(request):
+    """Render the index page."""
     return render(request, "index.html")
 
 
@@ -68,7 +73,9 @@ def index(request):
 def discord_login(request):
     """View for initiating Discord OAuth2 authentication."""
     # Generate a random state value for CSRF protection
-    state = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
+    state = "".join(
+        random.choice(string.ascii_letters + string.digits) for _ in range(32)
+    )
 
     # Store the generated state value in the session for later use
     request.session["discord_oauth_state"] = state
@@ -113,7 +120,10 @@ def discord_callback(request):
 
     # Check if the state parameter matches the stored state value
     if stored_state and state != stored_state:
-        messages.error(request, "An error occured. Your discord authorization was aborted.")
+        messages.error(
+            request,
+            "An error occured. Your discord authorization was aborted.",
+        )
         del request.session["discord_oauth_state"]
         return redirect("index")
 
@@ -130,18 +140,21 @@ def discord_callback(request):
         }
 
         # Make the POST request to obtain the access token
-        token_url = "https://discord.com/api/oauth2/token"
+        token_url = discord_token_url
         response = requests.post(token_url, data=payload)
 
-        if response.status_code == 200:
+        if response.status_code == HTTP_STATUS_200:
             access_token = response.json().get("access_token")
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {access_token}",
             }
 
-            response = requests.get("https://discord.com/api/users/@me", headers=headers)
-            if response.status_code == 200:
+            response = requests.get(
+                "https://discord.com/api/users/@me",
+                headers=headers,
+            )
+            if response.status_code == HTTP_STATUS_200:
                 # Get the user information from the response
                 user_info = response.json()
                 # This user is registering via a referral link
@@ -170,8 +183,11 @@ def discord_callback(request):
                     return redirect("dashboard_view")
                 else:
                     # This is a serverowner
-                    guild_response = requests.get("https://discord.com/api/users/@me/guilds", headers=headers)
-                    if guild_response.status_code == 200:
+                    guild_response = requests.get(
+                        "https://discord.com/api/users/@me/guilds",
+                        headers=headers,
+                    )
+                    if guild_response.status_code == HTTP_STATUS_200:
                         # Gets all the discord servers joined by the user
                         server_list = guild_response.json()
                         # Process the server list to only return servers owned by user
@@ -225,7 +241,10 @@ def discord_callback(request):
                     login(request, user)
                     return redirect("dashboard_view")
             else:
-                messages.error(request, "Failed to obtain user information from Discord.")
+                messages.error(
+                    request,
+                    "Failed to obtain user information from Discord.",
+                )
                 return redirect("index")
         else:
             messages.error(request, "Failed to obtain access token.")
@@ -319,7 +338,10 @@ def onboarding_crypto(request):
             except RequestException:
                 # RequestException includes issues like network errors, invalid responses etc.
                 logger.exception("Failed to verify Coinbase API keys.")
-                form.add_error(None, "Failed to verify Coinbase API keys. Please try again.")
+                form.add_error(
+                    None,
+                    "Failed to verify Coinbase API keys. Please try again.",
+                )
             except ValueError:
                 # Raised if there is an issue with parsing JSON response
                 logger.exception("Failed to verify Coinbase API keys.")
@@ -327,7 +349,10 @@ def onboarding_crypto(request):
             except Exception:
                 # Catch any other unexpected exceptions and log them
                 logger.exception("An unexpected error occurred.")
-                form.add_error(None, "An unexpected error occurred. Please try again later.")
+                form.add_error(
+                    None,
+                    "An unexpected error occurred. Please try again later.",
+                )
     else:
         form = CoinpaymentsOnboardingForm()
 
@@ -352,7 +377,10 @@ def dashboard_view(request):
     elif user.is_subscriber and not user.is_affiliate:
         return redirect("subscriber_dashboard")
     else:
-        messages.info(request, "You don't have the permission to access that. Please logout and retry.")
+        messages.info(
+            request,
+            "You don't have the permission to access that. Please logout and retry.",
+        )
         return redirect("index")
 
 
@@ -449,7 +477,11 @@ def plans(request):
     coinpayment_onboarding = serverowner.coinpayment_onboarding
 
     if request.method == "POST":
-        form = CoinPlanForm(request.POST) if coinpayment_onboarding else StripePlanForm(request.POST)
+        form = (
+            CoinPlanForm(request.POST)
+            if coinpayment_onboarding
+            else StripePlanForm(request.POST)
+        )
 
         if form.is_valid():
             try:
@@ -481,13 +513,22 @@ def plans(request):
                     stripe_product.serverowner = serverowner
                     stripe_product.save()
 
-                messages.success(request, "Your Subscription Plan has been successfully created.")
+                messages.success(
+                    request,
+                    "Your Subscription Plan has been successfully created.",
+                )
                 return redirect("plans")
             except stripe.error.StripeError:
                 logger.exception("An error occurred during a Stripe API call")
-                messages.error(request, "An error occurred while processing your request. Please try again later.")
+                messages.error(
+                    request,
+                    "An error occurred while processing your request. Please try again later.",
+                )
         else:
-            messages.error(request, "An error occurred while creating your Plan. Please try again.")
+            messages.error(
+                request,
+                "An error occurred while creating your Plan. Please try again.",
+            )
     else:
         form = CoinPlanForm() if coinpayment_onboarding else StripePlanForm()
 
@@ -523,7 +564,10 @@ def plan_detail(request, plan_id):
         if form.is_valid():
             if coinpayment_onboarding:
                 plan = form.save()
-                messages.success(request, "Your Subscription Plan has been successfully updated.")
+                messages.success(
+                    request,
+                    "Your Subscription Plan has been successfully updated.",
+                )
                 return redirect(plan)
             else:
                 try:
@@ -537,7 +581,10 @@ def plan_detail(request, plan_id):
                         stripe.Product.modify(plan.product_id, **product_params)
                         # Save the updated plan details in the database
                         plan = form.save()
-                        messages.success(request, "Your Subscription Plan has been successfully updated.")
+                        messages.success(
+                            request,
+                            "Your Subscription Plan has been successfully updated.",
+                        )
                         return redirect(plan)
                 except stripe.error.StripeError:
                     logger.exception("An error occurred during a Stripe API call.")
@@ -546,7 +593,10 @@ def plan_detail(request, plan_id):
                         "An error occurred while processing your request. Please try again later.",
                     )
         else:
-            messages.error(request, "An error occurred while updating your Plan. Please try again.")
+            messages.error(
+                request,
+                "An error occurred while updating your Plan. Please try again.",
+            )
     else:
         form = plan_form(instance=plan)
 
@@ -577,7 +627,10 @@ def deactivate_plan(request):
                 # Update the plan status in the database
                 plan.status = CoinPlan.PlanStatus.INACTIVE
                 plan.save()
-                messages.success(request, "Your plan has been successfully deactivated.")
+                messages.success(
+                    request,
+                    "Your plan has been successfully deactivated.",
+                )
             else:
                 try:
                     with transaction.atomic():
@@ -586,14 +639,21 @@ def deactivate_plan(request):
                         # Deactivate the product on Stripe
                         stripe.Product.modify(product_id, active=False)
                         # Deactivate the prices associated with the product
-                        prices = stripe.Price.list(product=product_id, active=True, limit=100)
+                        prices = stripe.Price.list(
+                            product=product_id,
+                            active=True,
+                            limit=100,
+                        )
                         for price in prices:
                             stripe.Price.modify(price.id, active=False)
 
                         # Update the plan status in the database
                         plan.status = StripePlan.PlanStatus.INACTIVE
                         plan.save()
-                        messages.success(request, "Your plan has been successfully deactivated.")
+                        messages.success(
+                            request,
+                            "Your plan has been successfully deactivated.",
+                        )
                 except stripe.error.StripeError:
                     logger.exception("An error occurred during a Stripe API call.")
                     messages.error(
@@ -632,7 +692,11 @@ def subscriber_detail(request, subscriber_id):
     subscriptions = subscriber.get_subscriptions()
     subscriptions = mk_paginator(request, subscriptions, PAGINATION_ITEMS)
 
-    subscription_model = CoinSubscription if request.user.serverowner.coinpayment_onboarding else StripeSubscription
+    subscription_model = (
+        CoinSubscription
+        if request.user.serverowner.coinpayment_onboarding
+        else StripeSubscription
+    )
 
     try:
         # Retrieve the latest active subscription for the subscriber
@@ -690,6 +754,7 @@ def affiliate_detail(request, subscriber_id):
 @login_required
 @onboarding_completed
 def pending_affiliate_payment(request):
+    """Handle pending affiliate payment processing."""
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     affiliates = serverowner.get_pending_affiliates()
     affiliates = mk_paginator(request, affiliates, PAGINATION_ITEMS)
@@ -709,7 +774,10 @@ def pending_affiliate_payment(request):
                         )
                         headers = {
                             "Content-Type": "application/x-www-form-urlencoded",
-                            "HMAC": create_hmac_signature(data, serverowner.coinpayment_api_secret_key),
+                            "HMAC": create_hmac_signature(
+                                data,
+                                serverowner.coinpayment_api_secret_key,
+                            ),
                         }
                         response = requests.post(endpoint, data=data, headers=headers)
                         response.raise_for_status()
@@ -717,19 +785,23 @@ def pending_affiliate_payment(request):
                         if result.get("status") == 1:
                             affiliate_pending_commission = affiliate.pending_commissions
                             serverowner.total_coin_pending_commissions = (
-                                F("total_coin_pending_commissions") - affiliate.pending_coin_commissions
+                                F("total_coin_pending_commissions")
+                                - affiliate.pending_coin_commissions
                             )
                             serverowner.total_pending_commissions = (
-                                F("total_pending_commissions") - affiliate.pending_commissions
+                                F("total_pending_commissions")
+                                - affiliate.pending_commissions
                             )
                             serverowner.save()
 
                             # Update the affiliate's pending_commissions and total_coin_commissions_paid fields
                             affiliate.total_coin_commissions_paid = (
-                                F("total_coin_commissions_paid") + affiliate.pending_coin_commissions
+                                F("total_coin_commissions_paid")
+                                + affiliate.pending_coin_commissions
                             )
                             affiliate.total_commissions_paid = (
-                                F("total_commissions_paid") + affiliate.pending_commissions
+                                F("total_commissions_paid")
+                                + affiliate.pending_commissions
                             )
                             affiliate.pending_coin_commissions = Decimal(0)
                             affiliate.pending_commissions = Decimal(0)
@@ -742,7 +814,10 @@ def pending_affiliate_payment(request):
                                 affiliate=affiliate,
                                 paid=False,
                             )
-                            affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
+                            affiliate_payments.update(
+                                paid=True,
+                                date_payment_confirmed=timezone.now(),
+                            )
                             messages.success(
                                 request,
                                 "The commission has been sent to the affiliate.",
@@ -782,7 +857,7 @@ def pending_affiliate_payment(request):
                             "An unexpected error occurred. Please try again later.",
                         )
                         return redirect("pending_affiliate_payment")
-    else:
+    elif serverowner.stripe_onboarding:
         if request.method == "POST":
             affiliate_id = request.POST.get("affiliate_id")
             if affiliate_id is not None:
@@ -796,7 +871,9 @@ def pending_affiliate_payment(request):
                     serverowner.save()
 
                     # Update the affiliate's pending_commissions and total_commissions_paid fields
-                    affiliate.total_commissions_paid = F("total_commissions_paid") + affiliate.pending_commissions
+                    affiliate.total_commissions_paid = (
+                        F("total_commissions_paid") + affiliate.pending_commissions
+                    )
                     affiliate.pending_commissions = Decimal(0)
                     affiliate.last_payment_date = timezone.now()
                     affiliate.save()
@@ -807,7 +884,10 @@ def pending_affiliate_payment(request):
                         affiliate=affiliate,
                         paid=False,
                     )
-                    affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
+                    affiliate_payments.update(
+                        paid=True,
+                        date_payment_confirmed=timezone.now(),
+                    )
 
                     messages.success(
                         request,
@@ -859,11 +939,15 @@ def subscriber_dashboard(request):
         else StripePlan.active_plans.filter(serverowner=serverowner)
     )
 
-    subscription_model = CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
+    subscription_model = (
+        CoinSubscription if serverowner.coinpayment_onboarding else StripeSubscription
+    )
 
     try:
         # Retrieve the latest active subscription for the subscriber
-        latest_subscription = subscription_model.active_subscriptions.filter(subscriber=subscriber).latest()
+        latest_subscription = subscription_model.active_subscriptions.filter(
+            subscriber=subscriber,
+        ).latest()
     except subscription_model.DoesNotExist:
         latest_subscription = None
 
@@ -874,7 +958,11 @@ def subscriber_dashboard(request):
 
     subscriptions = mk_paginator(request, subscriptions, PAGINATION_ITEMS)
 
-    form = CoinPaymentDetailForm() if serverowner.coinpayment_onboarding else StripePaymentDetailForm()
+    form = (
+        CoinPaymentDetailForm()
+        if serverowner.coinpayment_onboarding
+        else StripePaymentDetailForm()
+    )
 
     template = "subscriber/dashboard.html"
     context = {
@@ -892,6 +980,7 @@ def subscriber_dashboard(request):
 @api_view(["GET"])
 @login_required
 def check_pending_subscription(request):
+    """Check if the logged-in subscriber has any pending subscription."""
     try:
         subscriber = Subscriber.objects.get(user=request.user)
         latest_pending_subscription = subscriber.get_latest_pending_subscription()
@@ -925,7 +1014,10 @@ def subscription_coin(request, plan_id):
         )
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "HMAC": create_hmac_signature(data, subscriber.subscribed_via.coinpayment_api_secret_key),
+            "HMAC": create_hmac_signature(
+                data,
+                subscriber.subscribed_via.coinpayment_api_secret_key,
+            ),
         }
         response = requests.post(endpoint, data=data, headers=headers)
         response.raise_for_status()
@@ -1019,6 +1111,7 @@ def subscription_stripe(request, plan_id):
 
 @login_required
 def subscription_success(request):
+    """Process successful subscription payments via Stripe checkout session."""
     if request.method == "GET" and request.GET.get("session_id"):
         subscriber = get_object_or_404(Subscriber, user=request.user)
         subscription = None
@@ -1037,9 +1130,15 @@ def subscription_success(request):
             subscription_info = stripe.Subscription.retrieve(subscription_id)
 
             # Extract the dates directly from Stripe API response
-            subscription_date = datetime.fromtimestamp(session_info.created, tz=timezone.utc)
+            subscription_date = datetime.fromtimestamp(
+                session_info.created,
+                tz=timezone.utc,
+            )
             current_period_end = subscription_info.current_period_end
-            expiration_date = datetime.fromtimestamp(current_period_end, tz=timezone.utc)
+            expiration_date = datetime.fromtimestamp(
+                current_period_end,
+                tz=timezone.utc,
+            )
 
             with transaction.atomic():
                 subscription = StripeSubscription.objects.create(
@@ -1059,7 +1158,9 @@ def subscription_success(request):
 
                 # Handle affiliate logic
                 try:
-                    affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
+                    affiliateinvitee = AffiliateInvitee.objects.get(
+                        invitee_discord_id=subscriber.discord_id,
+                    )
                     AffiliatePayment.objects.create(
                         serverowner=subscriber.subscribed_via,
                         affiliate=affiliateinvitee.affiliate,
@@ -1068,12 +1169,14 @@ def subscription_success(request):
                     )
 
                     affiliateinvitee.affiliate.pending_commissions = (
-                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                        F("pending_commissions")
+                        + affiliateinvitee.get_affiliate_commission_payment()
                     )
                     affiliateinvitee.affiliate.save()
 
                     subscriber.subscribed_via.total_pending_commissions = (
-                        F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                        F("total_pending_commissions")
+                        + affiliateinvitee.get_affiliate_commission_payment()
                     )
                     subscriber.subscribed_via.save()
 
@@ -1087,12 +1190,17 @@ def subscription_success(request):
                 plan.save()
 
                 # Increment the total earnings of the serverowner
-                subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
+                subscriber.subscribed_via.total_earnings = (
+                    F("total_earnings") + plan.amount
+                )
                 subscriber.subscribed_via.save()
 
         except stripe.error.StripeError:
             logger.exception("Stripe Session retrieval error.")
-            messages.error(request, "An error occurred during the subscription process. Please try again.")
+            messages.error(
+                request,
+                "An error occurred during the subscription process. Please try again.",
+            )
             return redirect("subscriber_dashboard")
 
         except Http404:
@@ -1149,7 +1257,9 @@ def subscription_cancel(request):
                 )
 
                 # Cancel the subscription at the end of the billing period
-                subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
+                subscription_stripe = stripe.Subscription.retrieve(
+                    subscription.subscription_id,
+                )
                 subscription_stripe.cancel_at_period_end = True
                 subscription_stripe.save()
                 # Update the Subscription object
@@ -1223,10 +1333,16 @@ def affiliate_upgrade(request):
                 return redirect("affiliate_dashboard")
         except Exception:
             # Handle any exceptions that might occur during the transaction
-            messages.error(request, "An error occurred while upgrading to an affiliate.")
+            messages.error(
+                request,
+                "An error occurred while upgrading to an affiliate.",
+            )
     else:
         # Form is invalid, display error message
-        messages.error(request, "An error occurred while submitting your form. Please try again.")
+        messages.error(
+            request,
+            "An error occurred while submitting your form. Please try again.",
+        )
 
     return redirect("subscriber_dashboard")
 
@@ -1245,7 +1361,9 @@ def affiliate_dashboard(request):
         # Get the affiliate's payment detail instance
         payment_detail = affiliate.paymentdetail
         paymentdetail_form = (
-            CoinPaymentDetailForm if affiliate.serverowner.coinpayment_onboarding else StripePaymentDetailForm
+            CoinPaymentDetailForm
+            if affiliate.serverowner.coinpayment_onboarding
+            else StripePaymentDetailForm
         )
 
         if request.method == "POST":
@@ -1255,7 +1373,10 @@ def affiliate_dashboard(request):
                 messages.success(request, "Your payment detail has been updated.")
                 return redirect("affiliate_dashboard")
             else:
-                messages.error(request, "An error occurred while updating your payment details.")
+                messages.error(
+                    request,
+                    "An error occurred while updating your payment details.",
+                )
         else:
             form = paymentdetail_form(instance=payment_detail)
 
@@ -1317,20 +1438,25 @@ def affiliate_invitees(request):
 
 
 def error_400(request, exception):
+    """Handle 400 Bad Request errors."""
     return render(request, "400.html", status=400)
 
 
 def error_403(request, exception):
+    """Handle 403 Forbidden errors."""
     return render(request, "403.html", status=403)
 
 
 def error_405(request, exception):
+    """Handle 405 Method Not Allowed errors."""
     return render(request, "405.html", status=405)
 
 
 def error_404(request, exception):
+    """Handle 404 Not Found errors."""
     return render(request, "404.html", status=404)
 
 
 def error_500(request):
+    """Handle 500 Internal Server Error errors."""
     return render(request, "500.html", status=500)

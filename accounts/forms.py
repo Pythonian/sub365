@@ -139,8 +139,12 @@ class CoinpaymentsOnboardingForm(forms.Form):
 
         # Check if the API keys already exist in the database
         if (
-            ServerOwner.objects.filter(coinpayment_api_secret_key=api_secret_key).exists()
-            or ServerOwner.objects.filter(coinpayment_api_public_key=api_public_key).exists()
+            ServerOwner.objects.filter(
+                coinpayment_api_secret_key=api_secret_key,
+            ).exists()
+            or ServerOwner.objects.filter(
+                coinpayment_api_public_key=api_public_key,
+            ).exists()
         ):
             msg = "One or both of the API keys already exist."
             raise forms.ValidationError(msg)

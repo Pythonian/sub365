@@ -1,9 +1,11 @@
+"""Test cases for the Model manager classes."""
+
 from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
 
-from ..models import (
+from accounts.models import (
     CoinPlan,
     CoinSubscription,
     ServerOwner,
@@ -17,7 +19,7 @@ from ..models import (
 class SubscriptionManagerTestCase(TestCase):
     """Test case for the Subscription Manager."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up initial data for the test."""
         # Create or retrieve a user
         self.user, _ = User.objects.get_or_create(
@@ -122,25 +124,25 @@ class SubscriptionManagerTestCase(TestCase):
             status_url="http://example.com/status/2",
         )
 
-    def test_active_stripe_subscriptions(self):
+    def test_active_stripe_subscriptions(self) -> None:
         """Test active Stripe subscriptions."""
         active_subscriptions = StripeSubscription.active_subscriptions.all()
         self.assertEqual(active_subscriptions.count(), 1)
         self.assertEqual(active_subscriptions[0], self.active_stripe_subscription)
 
-    def test_pending_stripe_subscriptions(self):
+    def test_pending_stripe_subscriptions(self) -> None:
         """Test pending Stripe subscriptions."""
         pending_subscriptions = StripeSubscription.pending_subscriptions.all()
         self.assertEqual(pending_subscriptions.count(), 1)
         self.assertEqual(pending_subscriptions[0], self.pending_stripe_subscription)
 
-    def test_active_coin_subscriptions(self):
+    def test_active_coin_subscriptions(self) -> None:
         """Test active Coin subscriptions."""
         active_subscriptions = CoinSubscription.active_subscriptions.all()
         self.assertEqual(active_subscriptions.count(), 1)
         self.assertEqual(active_subscriptions[0], self.active_coin_subscription)
 
-    def test_pending_coin_subscriptions(self):
+    def test_pending_coin_subscriptions(self) -> None:
         """Test pending Coin subscriptions."""
         pending_subscriptions = CoinSubscription.pending_subscriptions.all()
         self.assertEqual(pending_subscriptions.count(), 1)
@@ -150,7 +152,7 @@ class SubscriptionManagerTestCase(TestCase):
 class ActivePlanManagerTestCase(TestCase):
     """Test case for the Active Plans Manager."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up initial data for the test."""
         # Create or retrieve a user
         self.user, _ = User.objects.get_or_create(username="Pythonian")
@@ -211,19 +213,19 @@ class ActivePlanManagerTestCase(TestCase):
             created=timezone.now(),
         )
 
-    def test_active_stripe_plan_manager(self):
+    def test_active_stripe_plan_manager(self) -> None:
         """Test active Stripe plan manager."""
         active_plans = StripePlan.active_plans.all()
         self.assertEqual(active_plans.count(), 1)
         self.assertEqual(active_plans[0], self.active_stripe_plan)
 
-    def test_active_coin_plan_manager(self):
+    def test_active_coin_plan_manager(self) -> None:
         """Test active Coin plan manager."""
         active_plans = CoinPlan.active_plans.all()
         self.assertEqual(active_plans.count(), 1)
         self.assertEqual(active_plans[0], self.active_coin_plan)
 
-    def test_inactive_plans_not_in_active_manager(self):
+    def test_inactive_plans_not_in_active_manager(self) -> None:
         """Test that inactive plans are not included in the active plan manager."""
         active_stripe_plans = StripePlan.active_plans.all()
         self.assertNotIn(self.inactive_stripe_plan, active_stripe_plans)

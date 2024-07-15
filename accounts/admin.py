@@ -1,3 +1,5 @@
+"""Admin module for managing model contents."""
+
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
@@ -232,10 +234,9 @@ class ServerOwnerAdmin(admin.ModelAdmin):
             list of InlineModelAdmin: A list of inline classes based on conditions or None.
         """
         if obj:
-            if obj.stripe_onboarding:
-                return [ServerInline, StripePlanInline]
-            elif obj.coinpayment_onboarding:
+            if obj.coinpayment_onboarding:
                 return [ServerInline, CoinPlanInline]
+            return [ServerInline, StripePlanInline]
         return []
 
     def get_all_model_fields(self, model):
@@ -383,10 +384,9 @@ class SubscriberAdmin(admin.ModelAdmin):
             list of InlineModelAdmin: A list of inline classes based on conditions or None.
         """
         if obj:
-            if obj.subscribed_via.stripe_onboarding:
-                return [StripeSubscriptionInline]
-            elif obj.subscribed_via.coinpayment_onboarding:
+            if obj.subscribed_via.coinpayment_onboarding:
                 return [CoinSubscriptionInline]
+            return [StripeSubscriptionInline]
         return []
 
 

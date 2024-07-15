@@ -1,3 +1,5 @@
+"""URL configurations for the accounts app."""
+
 from django.contrib.auth.views import LogoutView
 from django.urls import include, path
 

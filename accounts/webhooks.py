@@ -1,3 +1,5 @@
+"""Stripe webhook endpoint for real-time event notifications."""
+
 import logging
 
 import stripe
@@ -22,168 +24,136 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def stripe_webhook(request):
-    """Webhook endpoint to handle Stripe events."""
-    # Verify the webhook event using the Stripe signature
+    """Handle incoming Stripe webhook events.
+
+    This function verifies the webhook event, processes different types of events,
+    and updates relevant database records accordingly.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing the webhook payload.
+
+    Returns:
+        HttpResponse: HTTP response indicating the status of webhook processing.
+            - 200 OK if the webhook event was processed successfully.
+            - 400 Bad Request if there was an error verifying the webhook event.
+    """
     payload = request.body
     sig_header = request.META["HTTP_STRIPE_SIGNATURE"]
     event = None
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig_header,
+            settings.STRIPE_WEBHOOK_SECRET,
+        )
     except ValueError as e:
         # Invalid payload
-        msg = f"An error occurred during a Stripe API call: {e}"
+        msg = f"Error verifying webhook payload: {e}"
         logger.exception(msg)
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
         # Invalid signature
-        msg = f"An error occurred during a Stripe API call: {e}"
+        msg = f"Error verifying webhook signature: {e}"
         logger.exception(msg)
         return HttpResponse(status=400)
 
-    # if event.type == "checkout.session.completed":
-    #     session = event.data.object
-    #     subscription_id = session.subscription
-
-    #     if session.mode == "subscription" and session.payment_status == "paid":
-    #         try:
-    #             subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
-    #         except StripeSubscription.DoesNotExist:
-    #             msg = f"Subscription not found for ID: {subscription_id}"
-    #             logger.exception(msg)
-    #             return HttpResponse(status=404)
-
-    #         # Handle new subscription payment or subscription renewal
-    #         with transaction.atomic():
-    #             # Payment was successful
-    #             subscription.status = StripeSubscription.SubscriptionStatus.ACTIVE
-    #             # Set the subscription date if it's a new subscription
-    #             if subscription.subscription_date is None:
-    #                 subscription.subscription_date = timezone.now()
-    #             interval_count = subscription.plan.interval_count
-    #             subscription.expiration_date = timezone.now() + relativedelta(months=interval_count)
-    #             subscription.save()
-
-    #             subscriber = subscription.subscriber
-    #             try:
-    #                 affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
-    #                 AffiliatePayment.objects.create(
-    #                     serverowner=subscriber.subscribed_via,
-    #                     affiliate=affiliateinvitee.affiliate,
-    #                     subscriber=subscriber,
-    #                     amount=affiliateinvitee.get_affiliate_commission_payment(),
-    #                 )
-
-    #                 affiliateinvitee.affiliate.pending_commissions = (
-    #                     F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
-    #                 )
-    #                 affiliateinvitee.affiliate.save()
-
-    #                 subscriber.subscribed_via.total_pending_commissions = (
-    #                     F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
-    #                 )
-    #                 subscriber.subscribed_via.save()
-
-    #             except ObjectDoesNotExist:
-    #                 affiliateinvitee = None
-
-    #             # Increment the subscriber count for the plan
-    #             plan = subscription.plan
-    #             plan.subscriber_count = F("subscriber_count") + 1
-    #             plan.save()
-
     if event.type == "invoice.paid":
+        # Process payment success event
         subscription_id = event.data.object.subscription
         try:
-            subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
+            subscription = StripeSubscription.objects.get(
+                subscription_id=subscription_id,
+            )
         except StripeSubscription.DoesNotExist:
             subscription = None
 
-        # Handle new subscription payment or subscription renewal
         if event.data.object.status == "paid":
             with transaction.atomic():
-                # Payment was successful
+                # Update subscription status and dates
                 subscription.status = StripeSubscription.SubscriptionStatus.ACTIVE
-                # Set the subscription date if it's a new subscription
                 if subscription.subscription_date is None:
-                    # Set the subscription date using the 'created' timestamp from the event
                     subscription.subscription_date = timezone.datetime.fromtimestamp(
                         event.data.object.created,
                         tz=timezone.utc,
                     )
-
-                # Retrieve expiration date and update subscription
                 current_period_end = event.data.object.lines.data[0].period.end
-                expiration_date = timezone.datetime.fromtimestamp(current_period_end, tz=timezone.utc)
+                expiration_date = timezone.datetime.fromtimestamp(
+                    current_period_end,
+                    tz=timezone.utc,
+                )
                 subscription.expiration_date = expiration_date
-
                 subscription.save()
 
+                # Handle affiliate commission payment and updates
                 subscriber = subscription.subscriber
                 try:
-                    affiliateinvitee = AffiliateInvitee.objects.get(invitee_discord_id=subscriber.discord_id)
+                    affiliateinvitee = AffiliateInvitee.objects.get(
+                        invitee_discord_id=subscriber.discord_id,
+                    )
                     AffiliatePayment.objects.create(
                         serverowner=subscriber.subscribed_via,
                         affiliate=affiliateinvitee.affiliate,
                         subscriber=subscriber,
                         amount=affiliateinvitee.get_affiliate_commission_payment(),
                     )
-
                     affiliateinvitee.affiliate.pending_commissions = (
-                        F("pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                        F("pending_commissions")
+                        + affiliateinvitee.get_affiliate_commission_payment()
                     )
                     affiliateinvitee.affiliate.save()
 
                     subscriber.subscribed_via.total_pending_commissions = (
-                        F("total_pending_commissions") + affiliateinvitee.get_affiliate_commission_payment()
+                        F("total_pending_commissions")
+                        + affiliateinvitee.get_affiliate_commission_payment()
                     )
                     subscriber.subscribed_via.save()
 
                 except ObjectDoesNotExist:
                     affiliateinvitee = None
 
-                # Increment the subscriber count for the plan
+                # Update plan statistics
                 plan = subscription.plan
                 plan.subscriber_count = F("subscriber_count") + 1
-                # Increment the earnings for this plan
                 plan.subscription_earnings = F("subscription_earnings") + plan.amount
                 plan.save()
 
-                # Increment the total earnings of the serverowner
-                subscriber.subscribed_via.total_earnings = F("total_earnings") + plan.amount
+                # Update server owner earnings
+                subscriber.subscribed_via.total_earnings = (
+                    F("total_earnings") + plan.amount
+                )
                 subscriber.subscribed_via.save()
 
-    # Handle when subscription payment fails
     elif event.type == "invoice.payment_failed":
+        # Handle payment failure event
         subscription_id = event.data.object.subscription
-
         try:
-            subscription = StripeSubscription.objects.get(subscription_id=subscription_id)
+            subscription = StripeSubscription.objects.get(
+                subscription_id=subscription_id,
+            )
         except StripeSubscription.DoesNotExist:
             logger.exception("Subscription not found")
             return HttpResponse(status=404)
 
-        # Check the current status of the subscription
         if subscription.status == StripeSubscription.SubscriptionStatus.PENDING:
-            # This is a new subscription that failed, delete it
+            # Delete new subscription if payment failed
             subscription.delete()
         else:
-            # This is a renewal subscription that failed, mark it as expired
+            # Mark renewal subscription as expired if payment failed
             subscription.status = StripeSubscription.SubscriptionStatus.EXPIRED
             subscription.expiration_date = timezone.now()
             subscription.save()
 
-        # Send a notification to the subscriber
+        # Send notification email to subscriber
         send_payment_failed_email.delay(subscription.subscriber.email)
 
-    # Handle when a new user onboards via stripe
     elif event.type == "account.updated":
+        # Handle server owner onboarding status update event
         account = event.data.object
         charges_enabled = account.charges_enabled
         payouts_enabled = account.payouts_enabled
         details_submitted = account.details_submitted
 
-        # Update Serverowner's stripe_onboarding field if conditions are met
         try:
             serverowner = ServerOwner.objects.get(stripe_account_id=account.id)
             if charges_enabled and payouts_enabled and details_submitted:
