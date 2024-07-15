@@ -1,6 +1,7 @@
 """Stripe webhook endpoint for real-time event notifications."""
 
 import logging
+from datetime import timezone
 
 import stripe
 from django.conf import settings
@@ -8,7 +9,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
 from django.http import HttpResponse
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import (

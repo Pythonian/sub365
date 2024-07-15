@@ -3,7 +3,7 @@
 import logging
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import requests
@@ -19,7 +19,6 @@ from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 from requests.exceptions import RequestException
 from rest_framework.decorators import api_view
@@ -503,7 +502,7 @@ def plans(request):
                         unit_amount=int(form.cleaned_data["amount"] * 100),
                         currency="usd",
                         recurring={
-                            "interval": "month",
+                            "interval": "day",
                             "interval_count": interval_count,
                         },
                     )
@@ -758,140 +757,52 @@ def pending_affiliate_payment(request):
     affiliates = serverowner.get_pending_affiliates()
     affiliates = mk_paginator(request, affiliates, PAGINATION_ITEMS)
 
-    if serverowner.coinpayment_onboarding:
-        if request.method == "POST":
-            affiliate_id = request.POST.get("affiliate_id")
-            if affiliate_id is not None:
-                affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
-                if affiliate is not None:
-                    try:
-                        endpoint = "https://www.coinpayments.net/api.php"
-                        data = (
-                            f"version=1&cmd=create_withdrawal&amount={affiliate.pending_coin_commissions}&currency="
-                            + settings.COINBASE_CURRENCY
-                            + f"&add_tx_fee=1&auto_confirm=1&address={affiliate.paymentdetail.litecoin_address}&key={serverowner.coinpayment_api_public_key}&format=json"
-                        )
-                        headers = {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                            "HMAC": create_hmac_signature(
-                                data,
-                                serverowner.coinpayment_api_secret_key,
-                            ),
-                        }
-                        response = requests.post(endpoint, data=data, headers=headers)
-                        response.raise_for_status()
-                        result = response.json()["result"]
-                        if result.get("status") == 1:
-                            affiliate_pending_commission = affiliate.pending_commissions
-                            serverowner.total_coin_pending_commissions = (
-                                F("total_coin_pending_commissions")
-                                - affiliate.pending_coin_commissions
-                            )
-                            serverowner.total_pending_commissions = (
-                                F("total_pending_commissions")
-                                - affiliate.pending_commissions
-                            )
-                            serverowner.save()
-
-                            # Update the affiliate's pending_commissions and total_coin_commissions_paid fields
-                            affiliate.total_coin_commissions_paid = (
-                                F("total_coin_commissions_paid")
-                                + affiliate.pending_coin_commissions
-                            )
-                            affiliate.total_commissions_paid = (
-                                F("total_commissions_paid")
-                                + affiliate.pending_commissions
-                            )
-                            affiliate.pending_coin_commissions = Decimal(0)
-                            affiliate.pending_commissions = Decimal(0)
-                            affiliate.last_payment_date = timezone.now()
-                            affiliate.save()
-
-                            # Mark the associated AffiliatePayment instances as paid
-                            affiliate_payments = AffiliatePayment.objects.filter(
-                                serverowner=serverowner,
-                                affiliate=affiliate,
-                                paid=False,
-                            )
-                            affiliate_payments.update(
-                                paid=True,
-                                date_payment_confirmed=timezone.now(),
-                            )
-                            messages.success(
-                                request,
-                                "The commission has been sent to the affiliate.",
-                            )
-
-                            # Send email to affiliate
-                            send_affiliate_email.delay(
-                                affiliate.subscriber.email,
-                                affiliate.subscriber.username,
-                                serverowner.username,
-                                affiliate_pending_commission,
-                            )
-
-                            return redirect("pending_affiliate_payment")
-                        # FIX: If withdrawal amount is not enough?
-                        msg = f"Withdrawal status: {result.get('status')}"
-                        logger.warning(msg)
-                    except requests.exceptions.RequestException:
-                        logger.exception("Coinbase API request failed.")
-                        messages.error(
-                            request,
-                            "An error occurred while communicating with Coinbase. Please try again later.",
-                        )
+    if request.method == "POST":
+        affiliate_id = request.POST.get("affiliate_id")
+        if affiliate_id:
+            affiliate = get_object_or_404(Affiliate, pk=affiliate_id)
+            if serverowner.coinpayment_onboarding:
+                try:
+                    endpoint = "https://www.coinpayments.net/api.php"
+                    data = (
+                        f"version=1&cmd=create_withdrawal&amount={affiliate.pending_coin_commissions}&currency="
+                        f"{settings.COINBASE_CURRENCY}&add_tx_fee=1&auto_confirm=1&address="
+                        f"{affiliate.paymentdetail.litecoin_address}&key={serverowner.coinpayment_api_public_key}&format=json"
+                    )
+                    headers = {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "HMAC": create_hmac_signature(
+                            data, serverowner.coinpayment_api_secret_key
+                        ),
+                    }
+                    response = requests.post(endpoint, data=data, headers=headers)
+                    response.raise_for_status()
+                    result = response.json()["result"]
+                    if result.get("status") == 1:
+                        process_affiliate_payment(affiliate, serverowner, request)
                         return redirect("pending_affiliate_payment")
-                    except (ValueError, KeyError):
-                        logger.exception("Failed to parse Coinbase API response.")
-                        messages.error(
-                            request,
-                            "An unexpected error occurred while processing the response. Please try again later.",
-                        )
-                        return redirect("pending_affiliate_payment")
-                    except Exception:
-                        logger.exception("An unexpected error occurred.")
-                        messages.error(
-                            request,
-                            "An unexpected error occurred. Please try again later.",
-                        )
-                        return redirect("pending_affiliate_payment")
-    elif serverowner.stripe_onboarding:
-        if request.method == "POST":
-            affiliate_id = request.POST.get("affiliate_id")
-            if affiliate_id is not None:
-                affiliate = Affiliate.objects.filter(pk=affiliate_id).first()
-                if affiliate is not None:
-                    affiliate_pending_commission = affiliate.pending_commissions
-                    # Update the server owner's total_pending_commissions
-                    serverowner.total_pending_commissions = (
-                        F("total_pending_commissions") - affiliate.pending_commissions
-                    )
-                    serverowner.save()
-
-                    # Update the affiliate's pending_commissions and total_commissions_paid fields
-                    affiliate.total_commissions_paid = (
-                        F("total_commissions_paid") + affiliate.pending_commissions
-                    )
-                    affiliate.pending_commissions = Decimal(0)
-                    affiliate.last_payment_date = timezone.now()
-                    affiliate.save()
-
-                    # Mark the associated AffiliatePayment instances as paid
-                    affiliate_payments = AffiliatePayment.objects.filter(
-                        serverowner=serverowner,
-                        affiliate=affiliate,
-                        paid=False,
-                    )
-                    affiliate_payments.update(
-                        paid=True,
-                        date_payment_confirmed=timezone.now(),
-                    )
-
-                    messages.success(
+                    msg = f"Withdrawal status: {result.get('status')}"
+                    logger.warning(msg)
+                except requests.exceptions.RequestException:
+                    logger.exception("Coinbase API request failed.")
+                    messages.error(
                         request,
-                        f"You have marked payment of ${affiliate_pending_commission} to {affiliate.subscriber.username} as confirmed.",
+                        "An error occurred while communicating with Coinbase. Please try again later.",
                     )
-                    return redirect("pending_affiliate_payment")
+                except (ValueError, KeyError):
+                    logger.exception("Failed to parse Coinbase API response.")
+                    messages.error(
+                        request,
+                        "An unexpected error occurred while processing the response. Please try again later.",
+                    )
+                except Exception:
+                    logger.exception("An unexpected error occurred.")
+                    messages.error(
+                        request, "An unexpected error occurred. Please try again later."
+                    )
+                return redirect("pending_affiliate_payment")
+            process_affiliate_payment(affiliate, serverowner, request)
+            return redirect("pending_affiliate_payment")
 
     template = "serverowner/affiliate/payment_pending.html"
     context = {
@@ -900,6 +811,55 @@ def pending_affiliate_payment(request):
     }
 
     return render(request, template, context)
+
+
+def process_affiliate_payment(affiliate, serverowner, request):
+    """Process the affiliate payment and update relevant records."""
+    affiliate_pending_commission = affiliate.pending_commissions
+    if serverowner.coinpayment_onboarding:
+        serverowner.total_coin_pending_commissions = (
+            F("total_coin_pending_commissions") - affiliate.pending_coin_commissions
+        )
+    serverowner.total_pending_commissions = (
+        F("total_pending_commissions") - affiliate_pending_commission
+    )
+    serverowner.save()
+
+    # Update the affiliate's pending_commissions and total_commissions_paid fields
+    if serverowner.coinpayment_onboarding:
+        affiliate.total_coin_commissions_paid = (
+            F("total_coin_commissions_paid") + affiliate.pending_coin_commissions
+        )
+        affiliate.pending_coin_commissions = Decimal(0)
+    affiliate.total_commissions_paid = (
+        F("total_commissions_paid") + affiliate.pending_commissions
+    )
+    affiliate.pending_commissions = Decimal(0)
+    affiliate.last_payment_date = timezone.now()
+    affiliate.save()
+
+    # Mark the associated AffiliatePayment instances as paid
+    affiliate_payments = AffiliatePayment.objects.filter(
+        serverowner=serverowner, affiliate=affiliate, paid=False
+    )
+    affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
+
+    if serverowner.coinpayment_onboarding:
+        messages.success(
+            request,
+            f"The commission has been sent to the affiliate {affiliate.subscriber.username}.",
+        )
+        # Send email to affiliate
+        send_affiliate_email.delay(
+            affiliate.subscriber.email,
+            affiliate.subscriber.username,
+            serverowner.username,
+            affiliate_pending_commission,
+        )
+    messages.success(
+        request,
+        f"You have marked payment of ${affiliate_pending_commission} to {affiliate.subscriber.username} as confirmed.",
+    )
 
 
 @login_required
