@@ -12,19 +12,13 @@ ignore = [
     "E501", # Avoid enforcing line-length violations
     "S311", # Avoid enforcing standard pseudo-random generators
     "S101", # Use of `assert` detected
-    "PT027", # Avoid suggesting pytest.raises
-    "PT009", # Avoid suggesting assert as against using unittest-style assertions
-    "DJ001",
-    "ANN", # Ignore type annotations
-    "D100", # Missing docstring in public module
-    "D104", # Missing docstring in public package
-    "RUF012",
-    "PLR0915", # too many statements
-    "PLR0912", # Too many branches
-    "C901", # function too complex
+    "RUF012", # Ignore mutable class attributes should be annotated with `typing.ClassVar`
     "S113", # Probable use of `requests` call without timeout
-    "ARG002", # Unused method argument
-    "ARG001", # Unused function argument
+    "ANN", # Ignore type annotations
+    "PT", # Ignore pytest style
+    "ARG", # Ignore unused argument
+    "PLR", # Ignore 'Too many' warnings
+    "C90", # Ignore mccabe rules
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -32,6 +26,10 @@ fixable = ["ALL"]
 
 # Avoid trying to fix flake8-bugbear (`B`) violations.
 unfixable = ["B"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+# Ignore missing docstring warning for __init__.py files
+"__init__.py" = ["D104"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

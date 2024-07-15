@@ -55,7 +55,7 @@ from .tasks import check_coin_transaction_status, send_affiliate_email
 from .utils import create_hmac_signature, mk_paginator
 
 discord_oauth2_authorization_url = "https://discord.com/oauth2/authorize"
-discord_token_url = "https://discord.com/api/oauth2/token"
+discord_token_url = "https://discord.com/api/oauth2/token"  # noqa: S105
 
 logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_API_KEY
@@ -181,74 +181,72 @@ def discord_callback(request):
                         subscriber.save()
                     login(request, user)
                     return redirect("dashboard_view")
-                else:
-                    # This is a serverowner
-                    guild_response = requests.get(
-                        "https://discord.com/api/users/@me/guilds",
-                        headers=headers,
-                    )
-                    if guild_response.status_code == HTTP_STATUS_200:
-                        # Gets all the discord servers joined by the user
-                        server_list = guild_response.json()
-                        # Process the server list to only return servers owned by user
-                        owned_servers = []
-                        if server_list:
-                            for server in server_list:
-                                server_id = server["id"]
-                                server_name = server["name"]
-                                server_icon = server.get("icon", "")
-                                serverowner = server["owner"]
-                                # Check if the user owns the server
-                                if serverowner:
-                                    owned_servers.append(
-                                        {
-                                            "id": server_id,
-                                            "name": server_name,
-                                            "icon": server_icon,
-                                        },
-                                    )
-                    else:
-                        # Redirect user and show a message to create a server
-                        messages.info(
-                            request,
-                            "You do not have any servers. Please create a server on Discord before continuing.",
-                        )
-                        return redirect("index")
 
-                    try:
-                        # Check if a user already exists
-                        user = User.objects.get(username=user_info["username"])
-                    except User.DoesNotExist:
-                        # Create a new user as a serverowner
-                        user = User.objects.create_user(
-                            username=user_info["username"],
-                            is_serverowner=True,
-                        )
-                        # Update the serverowner object created by the signal
-                        serverowner = ServerOwner.objects.get(user=user)
-                        serverowner.discord_id = user_info.get("id")
-                        serverowner.username = user_info.get("username")
-                        serverowner.avatar = user_info.get("avatar", "")
-                        serverowner.email = user_info.get("email")
-                        serverowner.save()
-                        # Save server objects associated with the serverowner
-                        for server in owned_servers:
-                            owner_server = Server.objects.create(owner=serverowner)
-                            owner_server.server_id = server["id"]
-                            owner_server.name = server["name"]
-                            owner_server.icon = server["icon"]
-                            owner_server.save()
-                    login(request, user)
-                    return redirect("dashboard_view")
-            else:
-                messages.error(
-                    request,
-                    "Failed to obtain user information from Discord.",
+                # This is a serverowner
+                guild_response = requests.get(
+                    "https://discord.com/api/users/@me/guilds",
+                    headers=headers,
                 )
-                return redirect("index")
-        else:
-            messages.error(request, "Failed to obtain access token.")
+                if guild_response.status_code == HTTP_STATUS_200:
+                    # Gets all the discord servers joined by the user
+                    server_list = guild_response.json()
+                    # Process the server list to only return servers owned by user
+                    owned_servers = []
+                    if server_list:
+                        for server in server_list:
+                            server_id = server["id"]
+                            server_name = server["name"]
+                            server_icon = server.get("icon", "")
+                            serverowner = server["owner"]
+                            # Check if the user owns the server
+                            if serverowner:
+                                owned_servers.append(
+                                    {
+                                        "id": server_id,
+                                        "name": server_name,
+                                        "icon": server_icon,
+                                    },
+                                )
+                else:
+                    # Redirect user and show a message to create a server
+                    messages.info(
+                        request,
+                        "You do not have any servers. Please create a server on Discord before continuing.",
+                    )
+                    return redirect("index")
+
+                try:
+                    # Check if a user already exists
+                    user = User.objects.get(username=user_info["username"])
+                except User.DoesNotExist:
+                    # Create a new user as a serverowner
+                    user = User.objects.create_user(
+                        username=user_info["username"],
+                        is_serverowner=True,
+                    )
+                    # Update the serverowner object created by the signal
+                    serverowner = ServerOwner.objects.get(user=user)
+                    serverowner.discord_id = user_info.get("id")
+                    serverowner.username = user_info.get("username")
+                    serverowner.avatar = user_info.get("avatar", "")
+                    serverowner.email = user_info.get("email")
+                    serverowner.save()
+                    # Save server objects associated with the serverowner
+                    for server in owned_servers:
+                        owner_server = Server.objects.create(owner=serverowner)
+                        owner_server.server_id = server["id"]
+                        owner_server.name = server["name"]
+                        owner_server.icon = server["icon"]
+                        owner_server.save()
+                login(request, user)
+                return redirect("dashboard_view")
+            messages.error(
+                request,
+                "Failed to obtain user information from Discord.",
+            )
             return redirect("index")
+        messages.error(request, "Failed to obtain access token.")
+        return redirect("index")
 
     messages.error(request, "Your discord authorization was aborted.")
     return redirect("index")
@@ -260,21 +258,21 @@ def onboarding(request):
     serverowner = get_object_or_404(ServerOwner, user=request.user)
     if serverowner.stripe_account_id and not serverowner.stripe_onboarding:
         return redirect("collect_user_info")
-    elif serverowner.stripe_onboarding or serverowner.coinpayment_onboarding:
+    if serverowner.stripe_onboarding or serverowner.coinpayment_onboarding:
         return redirect("dashboard")
 
     if request.method == "POST":
         form = OnboardingForm(request.POST, user=request.user)
         if form.is_valid():
-            # Check which button was clicked and set the appropriate session data
-            if "connect_stripe" in request.POST:
-                form.save(user=request.user)
-                return redirect("create_stripe_account")
-            elif "connect_coinbase" in request.POST:
+            # Coinbase button was clicked
+            if "connect_coinbase" in request.POST:
                 form.save(user=request.user)
                 # Set the session variable to indicate the user clicked "connect_coinbase"
                 request.session["coinbase_onboarding"] = True
                 return redirect("onboarding_crypto")
+            # Stripe button was clicked
+            form.save(user=request.user)
+            return redirect("create_stripe_account")
     else:
         form = OnboardingForm(user=request.user)
 
@@ -333,8 +331,7 @@ def onboarding_crypto(request):
                     serverowner.coinpayment_onboarding = True
                     serverowner.save()
                     return redirect("dashboard_view")
-                else:
-                    form.add_error(None, "Invalid Coinbase API keys.")
+                form.add_error(None, "Invalid Coinbase API keys.")
             except RequestException:
                 # RequestException includes issues like network errors, invalid responses etc.
                 logger.exception("Failed to verify Coinbase API keys.")
@@ -834,10 +831,9 @@ def pending_affiliate_payment(request):
                             )
 
                             return redirect("pending_affiliate_payment")
-                        else:
-                            # FIX: If withdrawal amount is not enough?
-                            msg = f"Withdrawal status: {result.get('status')}"
-                            logger.warning(msg)
+                        # FIX: If withdrawal amount is not enough?
+                        msg = f"Withdrawal status: {result.get('status')}"
+                        logger.warning(msg)
                     except requests.exceptions.RequestException:
                         logger.exception("Coinbase API request failed.")
                         messages.error(
@@ -1041,12 +1037,11 @@ def subscription_coin(request, plan_id):
                 eta=timezone.now() + timedelta(minutes=1),
             )
             return redirect(checkout_url)
-        else:
-            messages.error(
-                request,
-                "An error occurred during the transaction. Please try again later.",
-            )
-            return redirect("subscriber_dashboard")
+        messages.error(
+            request,
+            "An error occurred during the transaction. Please try again later.",
+        )
+        return redirect("subscriber_dashboard")
     except requests.exceptions.RequestException:
         logger.exception("Coinbase API request failed.")
         messages.error(
@@ -1333,7 +1328,7 @@ def affiliate_upgrade(request):
 
                 messages.success(request, "You have upgraded to being an Affiliate.")
                 return redirect("affiliate_dashboard")
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Handle any exceptions that might occur during the transaction
             messages.error(
                 request,

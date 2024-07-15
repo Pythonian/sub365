@@ -1,3 +1,5 @@
+"""Form classes."""
+
 import re
 
 import coinaddrvalidator
@@ -214,6 +216,8 @@ class StripePlanForm(forms.ModelForm):
     """Form for creating a Stripe Product."""
 
     class Meta:
+        """Meta configuration for the StripePlanForm."""
+
         model = StripePlan
         fields = [
             "name",
@@ -299,6 +303,8 @@ class CoinPlanForm(forms.ModelForm):
     """Form for creating a Coin plan."""
 
     class Meta:
+        """Meta configuration for the CoinPlanForm."""
+
         model = CoinPlan
         fields = [
             "name",
@@ -384,6 +390,8 @@ class StripePaymentDetailForm(forms.ModelForm):
     """Form for affiliates to add Stripe payment details."""
 
     class Meta:
+        """Meta configuration for the StripePaymentDetailForm."""
+
         model = PaymentDetail
         fields = ["body"]
 
@@ -392,6 +400,8 @@ class CoinPaymentDetailForm(forms.ModelForm):
     """Form for affiliates to add a Litecoin payment address."""
 
     class Meta:
+        """Meta configuration for the CoinPaymentDetailForm."""
+
         model = PaymentDetail
         fields = ["litecoin_address"]
 

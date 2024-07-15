@@ -21,7 +21,7 @@ from .models import (
 
 
 @admin.register(AccessCode)
-class AccessCode(admin.ModelAdmin):
+class AccessCodeAdmin(admin.ModelAdmin):
     """Admin class for managing AccessCode instances."""
 
     list_display = [
@@ -248,7 +248,7 @@ class ServerOwnerAdmin(admin.ModelAdmin):
         Returns:
             list of str: A list of field names of the specified model.
         """
-        return [field.name for field in model._meta.get_fields()]
+        return [field.name for field in model._meta.get_fields()]  # noqa: SLF001
 
     def get_readonly_fields(self, request, obj=None):
         """Overrides the get_readonly_fields method to make all fields read-only.

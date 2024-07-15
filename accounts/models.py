@@ -51,7 +51,7 @@ class ServerOwner(models.Model):
         unique=True,
         help_text=_("The username of the Serverowner from Discord."),
     )
-    avatar = models.CharField(
+    avatar = models.CharField(  # noqa: DJ001
         _("avatar"),
         max_length=255,
         blank=True,
@@ -454,7 +454,7 @@ class Server(models.Model):
         max_length=100,
         help_text=_("Name of the server."),
     )
-    icon = models.CharField(
+    icon = models.CharField(  # noqa: DJ001
         _("icon"),
         max_length=255,
         blank=True,
@@ -507,7 +507,7 @@ class Subscriber(models.Model):
         unique=True,
         help_text=_("Username of the subscriber."),
     )
-    avatar = models.CharField(
+    avatar = models.CharField(  # noqa: DJ001
         _("avatar"),
         max_length=255,
         blank=True,

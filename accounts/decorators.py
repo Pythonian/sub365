@@ -33,8 +33,9 @@ def onboarding_completed(view_func):
                 or not serverowner.coinpayment_api_secret_key
             ):
                 return view_func(request, *args, **kwargs)
-            # Check when a user neither has the api keys set
-            elif (
+
+            # Check when a user neither has the API keys set
+            if (
                 not serverowner.coinpayment_api_public_key
                 and not serverowner.coinpayment_api_secret_key
             ):
