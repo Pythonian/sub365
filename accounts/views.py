@@ -368,20 +368,23 @@ def onboarding_crypto(request):
 def dashboard_view(request):
     """Redirect the user to the appropriate dashboard."""
     user = request.user
+
     if user.is_serverowner:
         if not user.serverowner.subdomain:
             return redirect("onboarding")
         return redirect("dashboard")
-    elif user.is_affiliate:
+
+    if user.is_affiliate:
         return redirect("affiliate_dashboard")
-    elif user.is_subscriber and not user.is_affiliate:
+
+    if user.is_subscriber and not user.is_affiliate:
         return redirect("subscriber_dashboard")
-    else:
-        messages.info(
-            request,
-            "You don't have the permission to access that. Please logout and retry.",
-        )
-        return redirect("index")
+
+    messages.info(
+        request,
+        "You don't have the permission to access that. Please logout and retry.",
+    )
+    return redirect("index")
 
 
 @login_required
@@ -569,29 +572,28 @@ def plan_detail(request, plan_id):
                     "Your Subscription Plan has been successfully updated.",
                 )
                 return redirect(plan)
-            else:
-                try:
-                    with transaction.atomic():
-                        # Update the product on Stripe
-                        product_params = {
-                            "name": form.cleaned_data["name"],
-                            "description": form.cleaned_data["description"],
-                            "active": True,
-                        }
-                        stripe.Product.modify(plan.product_id, **product_params)
-                        # Save the updated plan details in the database
-                        plan = form.save()
-                        messages.success(
-                            request,
-                            "Your Subscription Plan has been successfully updated.",
-                        )
-                        return redirect(plan)
-                except stripe.error.StripeError:
-                    logger.exception("An error occurred during a Stripe API call.")
-                    messages.error(
+            try:
+                with transaction.atomic():
+                    # Update the product on Stripe
+                    product_params = {
+                        "name": form.cleaned_data["name"],
+                        "description": form.cleaned_data["description"],
+                        "active": True,
+                    }
+                    stripe.Product.modify(plan.product_id, **product_params)
+                    # Save the updated plan details in the database
+                    plan = form.save()
+                    messages.success(
                         request,
-                        "An error occurred while processing your request. Please try again later.",
+                        "Your Subscription Plan has been successfully updated.",
                     )
+                    return redirect(plan)
+            except stripe.error.StripeError:
+                logger.exception("An error occurred during a Stripe API call.")
+                messages.error(
+                    request,
+                    "An error occurred while processing your request. Please try again later.",
+                )
         else:
             messages.error(
                 request,
@@ -833,7 +835,7 @@ def pending_affiliate_payment(request):
 
                             return redirect("pending_affiliate_payment")
                         else:
-                            # TODO: If withdrawal amount is not enough?
+                            # FIX: If withdrawal amount is not enough?
                             msg = f"Withdrawal status: {result.get('status')}"
                             logger.warning(msg)
                     except requests.exceptions.RequestException:
@@ -1372,11 +1374,10 @@ def affiliate_dashboard(request):
                 form.save()
                 messages.success(request, "Your payment detail has been updated.")
                 return redirect("affiliate_dashboard")
-            else:
-                messages.error(
-                    request,
-                    "An error occurred while updating your payment details.",
-                )
+            messages.error(
+                request,
+                "An error occurred while updating your payment details.",
+            )
         else:
             form = paymentdetail_form(instance=payment_detail)
 

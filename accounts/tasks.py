@@ -1,3 +1,5 @@
+"""Background tasks."""
+
 import logging
 
 import requests
@@ -29,15 +31,18 @@ def check_coin_transaction_status():
         for coin_subscription in pending_subscriptions:
             try:
                 endpoint = "https://www.coinpayments.net/api.php"
-                data = f"version=1&cmd=get_tx_info&txid={coin_subscription.subscription_id}&key={coin_subscription.subscribed_via.coinpayment_api_public_key}&format=json"
-                header = {
+                data = (
+                    f"version=1&cmd=get_tx_info&txid={coin_subscription.subscription_id}"
+                    f"&key={coin_subscription.subscribed_via.coinpayment_api_public_key}&format=json"
+                )
+                headers = {
                     "Content-Type": "application/x-www-form-urlencoded",
                     "HMAC": create_hmac_signature(
                         data,
                         coin_subscription.subscribed_via.coinpayment_api_secret_key,
                     ),
                 }
-                response = requests.post(endpoint, data=data, headers=header)
+                response = requests.post(endpoint, data=data, headers=headers)
                 result = response.json().get("result")
 
                 if isinstance(result, dict):
@@ -61,50 +66,47 @@ def check_coin_transaction_status():
                             subscriber = coin_subscription.subscriber
 
                             try:
-                                affiliateinvitee = AffiliateInvitee.objects.get(
+                                affiliate_invitee = AffiliateInvitee.objects.get(
                                     invitee_discord_id=subscriber.discord_id,
                                 )
                                 AffiliatePayment.objects.create(
                                     serverowner=subscriber.subscribed_via,
-                                    affiliate=affiliateinvitee.affiliate,
+                                    affiliate=affiliate_invitee.affiliate,
                                     subscriber=subscriber,
-                                    amount=affiliateinvitee.get_affiliate_commission_payment(),
-                                    coin_amount=affiliateinvitee.get_affiliate_coin_commission_payment(),
+                                    amount=affiliate_invitee.get_affiliate_commission_payment(),
+                                    coin_amount=affiliate_invitee.get_affiliate_coin_commission_payment(),
                                 )
 
-                                affiliateinvitee.affiliate.pending_coin_commissions = (
+                                affiliate_invitee.affiliate.pending_coin_commissions = (
                                     F("pending_coin_commissions")
-                                    + affiliateinvitee.get_affiliate_coin_commission_payment()
+                                    + affiliate_invitee.get_affiliate_coin_commission_payment()
                                 )
-                                affiliateinvitee.affiliate.pending_commissions = (
+                                affiliate_invitee.affiliate.pending_commissions = (
                                     F("pending_commissions")
-                                    + affiliateinvitee.get_affiliate_commission_payment()
+                                    + affiliate_invitee.get_affiliate_commission_payment()
                                 )
-                                affiliateinvitee.affiliate.save()
+                                affiliate_invitee.affiliate.save()
 
                                 subscriber.subscribed_via.total_coin_pending_commissions = (
                                     F("total_coin_pending_commissions")
-                                    + affiliateinvitee.get_affiliate_coin_commission_payment()
+                                    + affiliate_invitee.get_affiliate_coin_commission_payment()
                                 )
                                 subscriber.subscribed_via.total_pending_commissions = (
                                     F("total_pending_commissions")
-                                    + affiliateinvitee.get_affiliate_commission_payment()
+                                    + affiliate_invitee.get_affiliate_commission_payment()
                                 )
                                 subscriber.subscribed_via.save()
 
                             except AffiliateInvitee.DoesNotExist:
-                                affiliateinvitee = None
+                                affiliate_invitee = None
 
-                            # Increment the subscriber count for the plan
                             plan = coin_subscription.plan
                             plan.subscriber_count = F("subscriber_count") + 1
-                            # Increment the earnings for this plan
                             plan.subscription_earnings = (
                                 F("subscription_earnings") + plan.amount
                             )
                             plan.save()
 
-                            # Increment the total earnings of the serverowner
                             subscriber.subscribed_via.total_earnings = (
                                 F("total_earnings") + plan.amount
                             )
@@ -121,9 +123,9 @@ def check_coin_transaction_status():
             except ObjectDoesNotExist:
                 coin_subscription = None
             except requests.exceptions.RequestException:
-                logger.exception("Coinbase API request failed")
+                logger.exception("CoinPayments API request failed")
             except (ValueError, KeyError):
-                logger.exception("Failed to parse Coinbase API response")
+                logger.exception("Failed to parse CoinPayments API response")
             except Exception:
                 logger.exception("An unexpected error occurred")
 
@@ -145,7 +147,10 @@ def check_and_mark_expired_subscriptions():
 
         # Send email to the subscriber
         subject = "Sub365.co: Your Subscription has Expired"
-        message = f"Dear {subscription.subscriber}, your subscription has expired. You can visit your account to start a new subscription today.\n\nBest regards,\nwww.sub365.co"
+        message = (
+            f"Dear {subscription.subscriber}, your subscription has expired. "
+            "You can visit your account to start a new subscription today.\n\nBest regards,\nwww.sub365.co"
+        )
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [subscription.subscriber.email]
         send_mail(subject, message, from_email, recipient_list)
@@ -153,8 +158,19 @@ def check_and_mark_expired_subscriptions():
 
 @shared_task
 def send_affiliate_email(affiliate_email, affiliate, serverowner, commission_amount):
+    """Task to send an email notification to an affiliate about received commission.
+
+    Args:
+        affiliate_email (str): The email address of the affiliate.
+        affiliate (str): The name of the affiliate.
+        serverowner (str): The name of the server owner.
+        commission_amount (float): The amount of commission received.
+    """
     subject = "Sub365.co: Affiliate Commission Received"
-    message = f"Dear {affiliate}, \n\nYou have just received an affiliate commission of ${commission_amount} from {serverowner}.\n\nBest regards,\nwww.sub365.co"
+    message = (
+        f"Dear {affiliate}, \n\nYou have just received an affiliate commission of ${commission_amount} "
+        f"from {serverowner}.\n\nBest regards,\nwww.sub365.co"
+    )
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [affiliate_email]
     send_mail(subject, message, from_email, recipient_list)
@@ -162,6 +178,11 @@ def send_affiliate_email(affiliate_email, affiliate, serverowner, commission_amo
 
 @shared_task
 def send_payment_failed_email(subscriber_email):
+    """Task to send an email notification to a subscriber about a failed payment.
+
+    Args:
+        subscriber_email (str): The email address of the subscriber.
+    """
     subject = "Sub365.co: Subscription Payment Failed Notification"
     message = "Your subscription payment has failed. Please visit your dashboard and try again."
     from_email = settings.DEFAULT_FROM_EMAIL

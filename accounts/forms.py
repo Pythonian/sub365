@@ -9,7 +9,15 @@ from .models import AccessCode, CoinPlan, PaymentDetail, Server, ServerOwner, St
 
 
 def forbidden_referralname_validator(value):
-    forbidden_subdomain = [
+    """Validate that the referral name is not one of the forbidden names.
+
+    Args:
+        value (str): The referral name to validate.
+
+    Raises:
+        ValidationError: If the referral name is forbidden.
+    """
+    forbidden_names = [
         "accounts",
         "admin",
         "administrator",
@@ -24,22 +32,38 @@ def forbidden_referralname_validator(value):
         "subscribe",
         "subscriber",
     ]
-    if value.lower() in forbidden_subdomain:
+    if value.lower() in forbidden_names:
         msg = "You are not allowed to use this name."
         raise ValidationError(msg)
 
 
 class Lowercase(forms.CharField):
-    """Convert values in a field to lowercase."""
+    """Custom form field to convert values to lowercase."""
 
     def to_python(self, value):
+        """Convert the input value to lowercase.
+
+        Args:
+            value (str): The input value.
+
+        Returns:
+            str: The input value converted to lowercase.
+        """
         return value.lower()
 
 
 class Uppercase(forms.CharField):
-    """Convert values in a field to uppercase."""
+    """Custom form field to convert values to uppercase."""
 
     def to_python(self, value):
+        """Convert the input value to uppercase.
+
+        Args:
+            value (str): The input value.
+
+        Returns:
+            str: The input value converted to uppercase.
+        """
         return value.upper()
 
 
@@ -60,9 +84,11 @@ class OnboardingForm(forms.Form):
         max_length=5,
     )
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize the form with the user and populate the server choices with
-        servers of the current user.
+    def __init__(self, *args, **kwargs):
+        """Form initialization.
+
+        Initialize the form with the user and populate the server choices
+        with servers of the current user.
         """
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
@@ -72,7 +98,14 @@ class OnboardingForm(forms.Form):
             self.fields["referral"].validators.append(forbidden_referralname_validator)
 
     def clean_referral(self):
-        """Validate that the referral name is unique."""
+        """Validate that the referral name is unique and meets the required pattern.
+
+        Returns:
+            str: The cleaned referral name.
+
+        Raises:
+            forms.ValidationError: If the referral name is not unique or doesn't match the pattern.
+        """
         referral = self.cleaned_data.get("referral")
         if ServerOwner.objects.filter(subdomain__iexact=referral).exists():
             msg = "This referral name has already been chosen."
@@ -83,7 +116,14 @@ class OnboardingForm(forms.Form):
         return referral
 
     def clean_affiliate_commission(self):
-        """Validate that the commission is between 1 and 99."""
+        """Validate that the affiliate commission is between 1 and 99.
+
+        Returns:
+            int: The cleaned affiliate commission.
+
+        Raises:
+            forms.ValidationError: If the affiliate commission is not between 1 and 99.
+        """
         affiliate_commission = self.cleaned_data.get("affiliate_commission")
         if affiliate_commission < 1 or affiliate_commission > 99:
             msg = "Affiliate commission must be between 1 and 99."
@@ -91,6 +131,14 @@ class OnboardingForm(forms.Form):
         return affiliate_commission
 
     def clean_access_code(self):
+        """Validate the access code and check if it has been used.
+
+        Returns:
+            str: The cleaned access code.
+
+        Raises:
+            forms.ValidationError: If the access code is invalid or has been used.
+        """
         access_code = self.cleaned_data.get("access_code")
         try:
             access_code_obj = AccessCode.objects.get(code=access_code)
@@ -103,15 +151,23 @@ class OnboardingForm(forms.Form):
         return access_code
 
     def save(self, user):
+        """Save the form data, updating the serverowner and access code details.
+
+        Args:
+            user (User): The user saving the form.
+        """
         referral = self.cleaned_data["referral"]
         server = self.cleaned_data["server"]
         affiliate_commission = self.cleaned_data["affiliate_commission"]
+
         serverowner = ServerOwner.objects.get(user=user)
         serverowner.subdomain = referral
         serverowner.affiliate_commission = affiliate_commission
         serverowner.save()
+
         server.choice_server = True
         server.save()
+
         access_code = self.cleaned_data["access_code"]
         code = AccessCode.objects.get(code=access_code)
         code.is_used = True
@@ -133,11 +189,15 @@ class CoinpaymentsOnboardingForm(forms.Form):
     )
 
     def clean(self):
+        """Validate that the Coinpayment API keys are unique.
+
+        Raises:
+            forms.ValidationError: If one or both of the API keys already exist.
+        """
         cleaned_data = super().clean()
         api_secret_key = cleaned_data.get("coinpayment_api_secret_key")
         api_public_key = cleaned_data.get("coinpayment_api_public_key")
 
-        # Check if the API keys already exist in the database
         if (
             ServerOwner.objects.filter(
                 coinpayment_api_secret_key=api_secret_key,
@@ -165,7 +225,14 @@ class StripePlanForm(forms.ModelForm):
         ]
 
     def clean_amount(self):
-        """Validate that the amount is a positive value."""
+        """Validate that the amount is a positive value.
+
+        Returns:
+            int: The cleaned amount.
+
+        Raises:
+            forms.ValidationError: If the amount is not positive.
+        """
         amount = self.cleaned_data.get("amount")
         if amount <= 0:
             msg = "Amount must be a positive value."
@@ -173,7 +240,14 @@ class StripePlanForm(forms.ModelForm):
         return amount
 
     def clean_interval_count(self):
-        """Validate that the interval_count is a positive value."""
+        """Validate that the interval count is between 1 and 12.
+
+        Returns:
+            int: The cleaned interval count.
+
+        Raises:
+            forms.ValidationError: If the interval count is not between 1 and 12.
+        """
         interval_count = self.cleaned_data.get("interval_count")
         if interval_count < 1 or interval_count > 12:
             msg = "Interval count must be between 1 and 12."
@@ -181,7 +255,14 @@ class StripePlanForm(forms.ModelForm):
         return interval_count
 
     def clean_name(self):
-        """Validate that the Plan name is unique for the Serverowner."""
+        """Validate that the plan name is unique for the Serverowner.
+
+        Returns:
+            str: The cleaned plan name.
+
+        Raises:
+            forms.ValidationError: If the plan name is not unique.
+        """
         name = self.cleaned_data.get("name")
         if self.instance and self.instance.name == name:
             # Plan name remains the same, no need for uniqueness check
@@ -192,14 +273,22 @@ class StripePlanForm(forms.ModelForm):
         return name
 
     def clean_description(self):
-        """Clean up the description field to remove excess whitespace."""
+        """Clean up the description field to remove excess whitespace.
+
+        Returns:
+            str: The cleaned description.
+        """
         description = self.cleaned_data.get("description")
         if description:
             description = re.sub(r"\s+", " ", description).strip()
         return description
 
     def clean_permission_description(self):
-        """Clean up the permission_description field to remove excess whitespace."""
+        """Clean up the permission description field to remove excess whitespace.
+
+        Returns:
+            str: The cleaned permission description.
+        """
         permission_description = self.cleaned_data.get("permission_description")
         if permission_description:
             permission_description = re.sub(r"\s+", " ", permission_description).strip()
@@ -221,7 +310,14 @@ class CoinPlanForm(forms.ModelForm):
         ]
 
     def clean_amount(self):
-        """Validate that the amount is a positive value."""
+        """Validate that the amount is a positive value.
+
+        Returns:
+            int: The cleaned amount.
+
+        Raises:
+            forms.ValidationError: If the amount is not positive.
+        """
         amount = self.cleaned_data.get("amount")
         if amount <= 0:
             msg = "Amount must be a positive value."
@@ -229,7 +325,14 @@ class CoinPlanForm(forms.ModelForm):
         return amount
 
     def clean_interval_count(self):
-        """Validate that the interval_count is a positive value."""
+        """Validate that the interval count is between 1 and 12.
+
+        Returns:
+            int: The cleaned interval count.
+
+        Raises:
+            forms.ValidationError: If the interval count is not between 1 and 12.
+        """
         interval_count = self.cleaned_data.get("interval_count")
         if interval_count < 1 or interval_count > 12:
             msg = "Interval count must be between 1 and 12."
@@ -237,7 +340,14 @@ class CoinPlanForm(forms.ModelForm):
         return interval_count
 
     def clean_name(self):
-        """Validate that the Plan name is unique for the Serverowner."""
+        """Validate that the plan name is unique for the Serverowner.
+
+        Returns:
+            str: The cleaned plan name.
+
+        Raises:
+            forms.ValidationError: If the plan name is not unique.
+        """
         name = self.cleaned_data.get("name")
         if self.instance and self.instance.name == name:
             # Plan name remains the same, no need for uniqueness check
@@ -248,14 +358,22 @@ class CoinPlanForm(forms.ModelForm):
         return name
 
     def clean_description(self):
-        """Clean up the description field to remove excess whitespace."""
+        """Clean up the description field to remove excess whitespace.
+
+        Returns:
+            str: The cleaned description.
+        """
         description = self.cleaned_data.get("description")
         if description:
             description = re.sub(r"\s+", " ", description).strip()
         return description
 
     def clean_permission_description(self):
-        """Clean up the permission_description field to remove excess whitespace."""
+        """Clean up the permission description field to remove excess whitespace.
+
+        Returns:
+            str: The cleaned permission description.
+        """
         permission_description = self.cleaned_data.get("permission_description")
         if permission_description:
             permission_description = re.sub(r"\s+", " ", permission_description).strip()
@@ -263,7 +381,7 @@ class CoinPlanForm(forms.ModelForm):
 
 
 class StripePaymentDetailForm(forms.ModelForm):
-    """Form for affiliate to add payment details."""
+    """Form for affiliates to add Stripe payment details."""
 
     class Meta:
         model = PaymentDetail
@@ -271,14 +389,21 @@ class StripePaymentDetailForm(forms.ModelForm):
 
 
 class CoinPaymentDetailForm(forms.ModelForm):
-    """Form for affiliate to add Litecoin payment address."""
+    """Form for affiliates to add a Litecoin payment address."""
 
     class Meta:
         model = PaymentDetail
         fields = ["litecoin_address"]
 
     def clean_litecoin_address(self):
-        """Validate the Litecoin address."""
+        """Validate the Litecoin address.
+
+        Returns:
+            str: The cleaned Litecoin address.
+
+        Raises:
+            forms.ValidationError: If the Litecoin address is invalid.
+        """
         litecoin_address = self.cleaned_data.get("litecoin_address")
         if not coinaddrvalidator.validate("litecoin", litecoin_address):
             msg = "Invalid Litecoin address. Please crosscheck."

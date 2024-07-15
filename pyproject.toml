@@ -11,23 +11,20 @@ select = ["ALL"]
 ignore = [
     "E501", # Avoid enforcing line-length violations
     "S311", # Avoid enforcing standard pseudo-random generators
-    "ANN101", # Avoid enforcing type annotation for `self` in method
-    "FBT001", # Avoid enforcing boolean-typed positional argument
-    "FBT002", # Avoid enforcing boolean default positional argument
     "S101", # Use of `assert` detected
     "PT027", # Avoid suggesting pytest.raises
     "PT009", # Avoid suggesting assert as against using unittest-style assertions
     "DJ001",
-    "ANN001",
-    "ANN201",
-    "ANN202", # Missing type annotation for private function
-    "ANN003", # Missing type annotation
+    "ANN", # Ignore type annotations
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
     "RUF012",
     "PLR0915", # too many statements
     "PLR0912", # Too many branches
     "C901", # function too complex
     "S113", # Probable use of `requests` call without timeout
     "ARG002", # Unused method argument
+    "ARG001", # Unused function argument
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

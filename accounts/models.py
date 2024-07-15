@@ -309,8 +309,7 @@ class ServerOwner(models.Model):
         )
 
     def calculate_affiliate_commission(self, subscription_amount):
-        """Calculate the affiliate commission based on the subscription
-        amount and affiliate commission percentage.
+        """Calculate the affiliate commission.
 
         Args:
             subscription_amount (float): The subscription amount.
@@ -852,6 +851,11 @@ class AffiliateInvitee(models.Model):
         return Decimal(0)
 
     def get_affiliate_coin_commission_payment(self):
+        """Calculate the affiliate's coin commission payment.
+
+        Returns:
+            int: The commission amount in coins, or 0 if conditions are not met.
+        """
         subscriber = Subscriber.objects.filter(
             discord_id=self.invitee_discord_id,
         ).first()
