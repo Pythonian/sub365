@@ -1,0 +1,6 @@
+Dear {{ affiliate }},
+
+You have just received an affiliate commission of ${{ commission_amount }} from {{ serverowner }}.
+
+Best regards,
+www.sub365.co

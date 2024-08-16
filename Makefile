@@ -28,5 +28,17 @@ migrate: ## Run django db migrations
 	@python manage.py makemigrations
 	@python manage.py migrate
 
+stripe: ## Listen to stripe webhook
+	@stripe listen --forward-to localhost:8000/webhook/ --forward-connect-to localhost:8000/webhook/
+
+beat: ## Start the celery beat
+	@celery -A config.celery beat -l INFO
+
+worker: ## Start the celery worker
+	@celery -A config.celery worker -l INFO --concurrency 4 -E
+
 accesscodes: ## Generate 50 access codes
 	@python manage.py access_codes 50
+
+backup: ## Backup data to JSON file
+	@python manage.py dumpdata --indent 4 --format json accounts > dump.json

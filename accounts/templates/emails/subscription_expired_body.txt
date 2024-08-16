@@ -1,0 +1,6 @@
+Dear {{ subscriber }},
+
+Your subscription has expired. You can visit your account to start a new subscription today.
+
+Best regards,
+www.sub365.co

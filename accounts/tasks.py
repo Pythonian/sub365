@@ -7,9 +7,10 @@ from celery import shared_task
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import F
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import AffiliateInvitee, AffiliatePayment, CoinSubscription
@@ -145,15 +146,26 @@ def check_and_mark_expired_subscriptions():
         subscription.status = CoinSubscription.SubscriptionStatus.EXPIRED
         subscription.save()
 
-        # Send email to the subscriber
-        subject = "Sub365.co: Your Subscription has Expired"
-        message = (
-            f"Dear {subscription.subscriber}, your subscription has expired. "
-            "You can visit your account to start a new subscription today.\n\nBest regards,\nwww.sub365.co"
+        # Render the email content
+        context = {"subscriber": subscription.subscriber}
+        subject = render_to_string("emails/subscription_expired_subject.txt").strip()
+        text_content = render_to_string("emails/subscription_expired_body.txt", context)
+        html_content = render_to_string(
+            "emails/subscription_expired_body.html",
+            context,
         )
+
+        # Send the email
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [subscription.subscriber.email]
-        send_mail(subject, message, from_email, recipient_list)
+        email = EmailMultiAlternatives(
+            subject,
+            text_content,
+            from_email,
+            recipient_list,
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send()
 
 
 @shared_task
@@ -166,14 +178,25 @@ def send_affiliate_email(affiliate_email, affiliate, serverowner, commission_amo
         serverowner (str): The name of the server owner.
         commission_amount (float): The amount of commission received.
     """
-    subject = "Sub365.co: Affiliate Commission Received"
-    message = (
-        f"Dear {affiliate}, \n\nYou have just received an affiliate commission of ${commission_amount} "
-        f"from {serverowner}.\n\nBest regards,\nwww.sub365.co"
-    )
+    subject = render_to_string(
+        "emails/affiliate_commission_payment_subject.txt",
+    ).strip()
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [affiliate_email]
-    send_mail(subject, message, from_email, recipient_list)
+
+    # Render the templates
+    context = {
+        "affiliate": affiliate,
+        "serverowner": serverowner,
+        "commission_amount": commission_amount,
+    }
+    html_content = render_to_string("emails/affiliate_commission_body.html", context)
+    text_content = render_to_string("emails/affiliate_commission_body.txt", context)
+
+    # Send the email
+    email = EmailMultiAlternatives(subject, text_content, from_email, recipient_list)
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
 @shared_task
@@ -183,8 +206,18 @@ def send_payment_failed_email(subscriber_email):
     Args:
         subscriber_email (str): The email address of the subscriber.
     """
-    subject = "Sub365.co: Subscription Payment Failed Notification"
-    message = "Your subscription payment has failed. Please visit your dashboard and try again."
+    subject = render_to_string("emails/subscription_payment_failed_subject.txt").strip()
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [subscriber_email]
-    send_mail(subject, message, from_email, recipient_list)
+
+    html_content = render_to_string(
+        "emails/subscription_payment_failed_body.html",
+    )
+    text_content = render_to_string(
+        "emails/subscription_payment_failed_body.txt",
+    )
+
+    # Send the email
+    email = EmailMultiAlternatives(subject, text_content, from_email, recipient_list)
+    email.attach_alternative(html_content, "text/html")
+    email.send()

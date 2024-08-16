@@ -772,7 +772,8 @@ def pending_affiliate_payment(request):
                     headers = {
                         "Content-Type": "application/x-www-form-urlencoded",
                         "HMAC": create_hmac_signature(
-                            data, serverowner.coinpayment_api_secret_key
+                            data,
+                            serverowner.coinpayment_api_secret_key,
                         ),
                     }
                     response = requests.post(endpoint, data=data, headers=headers)
@@ -798,7 +799,8 @@ def pending_affiliate_payment(request):
                 except Exception:
                     logger.exception("An unexpected error occurred.")
                     messages.error(
-                        request, "An unexpected error occurred. Please try again later."
+                        request,
+                        "An unexpected error occurred. Please try again later.",
                     )
                 return redirect("pending_affiliate_payment")
             process_affiliate_payment(affiliate, serverowner, request)
@@ -840,7 +842,9 @@ def process_affiliate_payment(affiliate, serverowner, request):
 
     # Mark the associated AffiliatePayment instances as paid
     affiliate_payments = AffiliatePayment.objects.filter(
-        serverowner=serverowner, affiliate=affiliate, paid=False
+        serverowner=serverowner,
+        affiliate=affiliate,
+        paid=False,
     )
     affiliate_payments.update(paid=True, date_payment_confirmed=timezone.now())
 
