@@ -42,3 +42,6 @@ accesscodes: ## Generate 50 access codes
 
 backup: ## Backup data to JSON file
 	@python manage.py dumpdata --indent 4 --format json accounts > dump.json
+
+install: ## Install development dependencies
+	@pip install -r requirements/development.txt

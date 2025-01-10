@@ -99,13 +99,20 @@ var copyButton = document.getElementById("copy-button");
 if (copyButton) {
     copyButton.addEventListener("click", function () {
         var textLink = this.getAttribute("data-copy-link");
+        var originalText = this.innerHTML; // Save the original button text
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(textLink)
-                .then(function () {
-                    alert("Link copied to clipboard!");
+                .then(() => {
+                    // Update the button text
+                    this.innerHTML = '<i class="fa-solid fa-check me-1"></i> Subscription Link Copied!';
+
+                    // Reset button text after 3 seconds
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                    }, 3000);
                 })
-                .catch(function (error) {
+                .catch((error) => {
                     console.error("Failed to copy link:", error);
                 });
         } else {
@@ -119,8 +126,15 @@ if (copyButton) {
 
             try {
                 var successful = document.execCommand("copy");
-                var msg = successful ? "Link copied to clipboard!" : "Failed to copy link.";
-                alert(msg);
+                if (successful) {
+                    this.innerHTML = '<i class="fa-regular fa-clipboard-check me-1"></i> Subscription Link Copied!';
+                    this.classList.replace("btn-primary", "btn-success");
+
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.replace("btn-success", "btn-primary");
+                    }, 3000);
+                }
             } catch (error) {
                 console.error("Failed to copy link:", error);
             }
