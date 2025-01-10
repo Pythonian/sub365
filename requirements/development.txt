@@ -2,5 +2,5 @@
 
 django-debug-toolbar==4.4.6
 flower==2.0.1
-pre-commit==3.7.1
-tox==4.16.0
+pre-commit==3.8.0
+tox==4.18.0

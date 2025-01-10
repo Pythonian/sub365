@@ -9,7 +9,7 @@ help: ## Show this help
 
 clean: ## Clean up the project of unneeded files
 	@echo "Cleaning up the project of unneeded files..."
-	@rm -rf .tox .mypy_cache .ruff_cache *.egg-info dist .cache htmlcov coverage.xml .coverage
+	@rm -rf .tox .mypy_cache .ruff_cache *.egg-info dist .cache htmlcov coverage.xml .coverage .venv
 	@find . -name '*.pyc' -delete
 	@find . -name 'db.sqlite3' -delete
 	@find . -type d -name '__pycache__' -exec rm -r {} \+
