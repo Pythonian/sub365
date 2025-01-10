@@ -1,7 +1,7 @@
 celery==5.4.0
 coinaddrvalidator==1.2.3
 Django==5.1.4
-django-celery-beat==2.6.0
+django-celery-beat==2.7.0
 django-widget-tweaks==1.5.0
 djangorestframework==3.15.2
 docutils==0.21.2
